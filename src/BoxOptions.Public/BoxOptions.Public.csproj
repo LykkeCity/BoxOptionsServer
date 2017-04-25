@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp1.1</TargetFramework>
@@ -45,6 +45,15 @@
     <PackageReference Include="WampSharp.AspNetCore.WebSockets.Server" Version="1.2.5.35-beta" />
     <PackageReference Include="WampSharp.NewtonsoftJson" Version="1.2.5.35-beta" />
     <PackageReference Include="Lykke.RabbitMqBroker" Version="1.0.62" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="appsettings.dev.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
