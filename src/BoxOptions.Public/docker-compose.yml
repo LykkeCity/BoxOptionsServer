@@ -1,0 +1,23 @@
+﻿version: '2'
+services:
+  boxoptions:
+    image: lykkex/boxoptionsserver
+    container_name: boxoptions
+    environment:
+      - RabbitMqConnectionString=
+      - RabbitMqExchangeName=
+      - RabbitMqQueueName=
+      - RabbitMqRoutingKey=
+      - RabbitMqIsDurable=
+      - PricesTopicName=
+      - GraphPointsCount=
+    ports:
+      - "5000:5000"
+    networks:
+      mynet:
+        aliases:
+          - boxoptions
+
+networks:
+  mynet:
+    driver: bridge

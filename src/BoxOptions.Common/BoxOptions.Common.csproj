@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <AssemblyName>BoxOptions.Common</AssemblyName>
+    <PackageId>BoxOptions.Common</PackageId>
+    <RuntimeFrameworkVersion>1.1.1</RuntimeFrameworkVersion>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BoxOptions.Core\BoxOptions.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WampSharp.Default" Version="1.2.5.35-beta" />
+    <PackageReference Include="WampSharp.AspNetCore.WebSockets.Server" Version="1.2.5.35-beta" />
+    <PackageReference Include="WampSharp.NewtonsoftJson" Version="1.2.5.35-beta" />
+    <PackageReference Include="Lykke.RabbitMqBroker" Version="1.0.62" />
+  </ItemGroup>
+
+</Project>
