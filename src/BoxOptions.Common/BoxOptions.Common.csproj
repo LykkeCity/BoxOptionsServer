@@ -5,6 +5,7 @@
     <AssemblyName>BoxOptions.Common</AssemblyName>
     <PackageId>BoxOptions.Common</PackageId>
     <RuntimeFrameworkVersion>1.1.1</RuntimeFrameworkVersion>
+    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50;portable-net451+win8</PackageTargetFallback>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
@@ -15,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Lykke.AzureQueueIntegration" Version="1.0.7" />
     <PackageReference Include="WampSharp.Default" Version="1.2.5.35-beta" />
     <PackageReference Include="WampSharp.AspNetCore.WebSockets.Server" Version="1.2.5.35-beta" />
     <PackageReference Include="WampSharp.NewtonsoftJson" Version="1.2.5.35-beta" />

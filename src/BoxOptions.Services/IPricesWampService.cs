@@ -20,20 +20,20 @@ namespace BoxOptions.Services
             IWampHostedRealm realm)
         {
             _settings = settings;
-            _subject = realm.Services.GetSubject<InstrumentBidAskPair>(_settings.PricesTopicName);
+            _subject = realm.Services.GetSubject<InstrumentBidAskPair>(_settings.BoxOptionsApi.PricesSettings.PricesTopicName);
         }
 
         public void Start()
         {
             _subscriber = new RabbitMqSubscriber<InstrumentBidAskPair>(new RabbitMqSubscriberSettings
                 {
-                    ConnectionString = _settings.RabbitMqConnectionString,
-                    ExchangeName = _settings.RabbitMqExchangeName,
-                    QueueName = _settings.RabbitMqQueueName,
-                    IsDurable = _settings.RabbitMqIsDurable
+                    ConnectionString = _settings.BoxOptionsApi.PricesSettings.RabbitMqConnectionString,
+                    ExchangeName = _settings.BoxOptionsApi.PricesSettings.RabbitMqExchangeName,
+                    QueueName = _settings.BoxOptionsApi.PricesSettings.RabbitMqQueueName,
+                    IsDurable = _settings.BoxOptionsApi.PricesSettings.RabbitMqIsDurable
                 })
                 .SetMessageDeserializer(new MessageDeserializer<InstrumentBidAskPair>())
-                .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy(_settings.RabbitMqRoutingKey))
+                .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy(_settings.BoxOptionsApi.PricesSettings.RabbitMqRoutingKey))
                 .Subscribe(ProcessPrice)
                 .Start();
         }

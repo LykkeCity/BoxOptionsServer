@@ -1,4 +1,4 @@
-﻿FROM microsoft/dotnet:1.1.0-runtime
+﻿FROM microsoft/aspnetcore:1.1.1
 WORKDIR /app
 COPY . .
 ENTRYPOINT ["dotnet", "BoxOptions.Public.dll"]

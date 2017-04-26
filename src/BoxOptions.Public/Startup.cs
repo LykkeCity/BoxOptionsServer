@@ -1,9 +1,14 @@
 ﻿using System;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using BoxOptions.Common;
 using BoxOptions.Core;
+using BoxOptions.Public.Exceptions;
 using BoxOptions.Public.Modules;
 using BoxOptions.Services;
+using Common.Log;
+using Flurl.Http;
+using Lykke.SlackNotification.AzureQueue;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -37,7 +42,10 @@ namespace BoxOptions.Public
 
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc()
+            services.AddMvc(o =>
+                {
+                    o.Filters.Add(new HandleAllExceptionsFilterFactory());
+                })
                 .AddJsonOptions(options =>
                 {
                     options.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
@@ -53,12 +61,13 @@ namespace BoxOptions.Public
                 options.DescribeAllEnumsAsStrings();
             });
 
+            var settings = Environment.IsEnvironment("Development") 
+                ? Configuration.Get<BoxOptionsSettings>() 
+                : Configuration.GetValue<string>("SettingsUrl").GetJsonAsync<BoxOptionsSettings>().Result;
+
             var builder = new ContainerBuilder();
 
-            var settings = new BoxOptionsSettings();
-            Configuration.Bind(settings);
-
-            builder.RegisterModule(new PublicApiModule(settings));
+            builder.RegisterModule(new PublicApiModule(services, settings, Program.Name));
 
             builder.Populate(services);
 

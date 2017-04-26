@@ -7,6 +7,8 @@ namespace BoxOptions.Public
 {
     public class Program
     {
+        public const string Name = "BoxOptions.Public";
+
         public static void Main(string[] args)
         {
             var cfgBuilder = new ConfigurationBuilder()

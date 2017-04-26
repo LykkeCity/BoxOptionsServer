@@ -30,12 +30,12 @@ namespace BoxOptions.Services
         {
             _subscriber = new RabbitMqSubscriber<InstrumentBidAskPair>(new RabbitMqSubscriberSettings
                 {
-                    ConnectionString = _settings.RabbitMqConnectionString,
-                    ExchangeName = _settings.RabbitMqExchangeName,
+                    ConnectionString = _settings.BoxOptionsApi.PricesSettings.RabbitMqConnectionString,
+                    ExchangeName = _settings.BoxOptionsApi.PricesSettings.RabbitMqExchangeName,
                     IsDurable = false
                 })
                 .SetMessageDeserializer(new MessageDeserializer<InstrumentBidAskPair>())
-                .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy(_settings.RabbitMqRoutingKey))
+                .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy(_settings.BoxOptionsApi.PricesSettings.RabbitMqRoutingKey))
                 .Subscribe(ProcessPrice)
                 .Start();
         }
@@ -88,7 +88,7 @@ namespace BoxOptions.Services
                     Date = DateTime.UtcNow
                 });
 
-                if (_graphQueue[bidAskPair.Instrument].Count > _settings.GraphPointsCount)
+                if (_graphQueue[bidAskPair.Instrument].Count > _settings.BoxOptionsApi.PricesSettings.GraphPointsCount)
                 {
                     _graphQueue[bidAskPair.Instrument] = _graphQueue[bidAskPair.Instrument]
                         .GetRange(1, _graphQueue[bidAskPair.Instrument].Count - 1);
