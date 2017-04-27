@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Autofac;
 using BoxOptions.Common;
 using BoxOptions.Core;
+using Common.Log;
 using Lykke.RabbitMqBroker.Subscriber;
 
 namespace BoxOptions.Services
@@ -16,13 +17,17 @@ namespace BoxOptions.Services
     public class MicrographCacheService : IMicrographCacheService, IStartable, IDisposable
     {
         private readonly BoxOptionsSettings _settings;
+        private readonly ILog _log;
         private RabbitMqSubscriber<InstrumentBidAskPair> _subscriber;
         private readonly Dictionary<string, List<GraphBidAskPair>> _graphQueue;
         private static readonly object GraphQueueLock = new object();
 
-        public MicrographCacheService(BoxOptionsSettings settings)
+        public MicrographCacheService(
+            BoxOptionsSettings settings,
+            ILog log)
         {
             _settings = settings;
+            _log = log;
             _graphQueue = new Dictionary<string, List<GraphBidAskPair>>();
         }
 
@@ -36,6 +41,7 @@ namespace BoxOptions.Services
                 })
                 .SetMessageDeserializer(new MessageDeserializer<InstrumentBidAskPair>())
                 .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy(_settings.BoxOptionsApi.PricesSettings.RabbitMqRoutingKey))
+                .SetLogger(_log)
                 .Subscribe(ProcessPrice)
                 .Start();
         }

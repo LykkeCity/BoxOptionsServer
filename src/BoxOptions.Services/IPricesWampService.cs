@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Autofac;
 using BoxOptions.Common;
 using BoxOptions.Core;
+using Common.Log;
 using Lykke.RabbitMqBroker.Subscriber;
 using WampSharp.V2.Realm;
 
@@ -12,14 +13,19 @@ namespace BoxOptions.Services
     public class PricesWampService : IStartable, IDisposable
     {
         private readonly BoxOptionsSettings _settings;
+        private readonly ILog _log;
         private RabbitMqSubscriber<InstrumentBidAskPair> _subscriber;
         private readonly ISubject<InstrumentBidAskPair> _subject;
 
 
-        public PricesWampService(BoxOptionsSettings settings,
-            IWampHostedRealm realm)
+        public PricesWampService(
+            BoxOptionsSettings settings, 
+            IWampHostedRealm realm,
+            ILog log)
+            
         {
             _settings = settings;
+            _log = log;
             _subject = realm.Services.GetSubject<InstrumentBidAskPair>(_settings.BoxOptionsApi.PricesSettings.PricesTopicName);
         }
 
@@ -34,6 +40,7 @@ namespace BoxOptions.Services
                 })
                 .SetMessageDeserializer(new MessageDeserializer<InstrumentBidAskPair>())
                 .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy(_settings.BoxOptionsApi.PricesSettings.RabbitMqRoutingKey))
+                .SetLogger(_log)
                 .Subscribe(ProcessPrice)
                 .Start();
         }

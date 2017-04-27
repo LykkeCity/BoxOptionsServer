@@ -1,4 +1,5 @@
-﻿using Autofac;
+﻿using System;
+using Autofac;
 using AzureStorage.Tables;
 using BoxOptions.AzureRepositories;
 using BoxOptions.Common;
