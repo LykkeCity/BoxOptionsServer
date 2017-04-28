@@ -12,6 +12,7 @@ namespace BoxOptions.Common
     {
         public ConnectionStringsSettings ConnectionStrings { get; set; } = new ConnectionStringsSettings();
         public PricesSettings PricesSettings { get; set;}
+        public string CoefApiUrl { get; set; }
     }
 
     public class ConnectionStringsSettings
