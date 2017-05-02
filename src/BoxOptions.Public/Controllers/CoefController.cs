@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using BoxOptions.Common;
 using BoxOptions.Public.Models;
 using Flurl;
@@ -21,18 +22,27 @@ namespace BoxOptions.Public.Controllers
         [Route("change")]
         public async Task<IActionResult> ChangeAsync(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
         {
-            var result =await $"{_settings.BoxOptionsApi.CoefApiUrl}/change"
-                .SetQueryParams(new
-                {
-                    pair,
-                    timeToFirstOption,
-                    optionLen,
-                    priceSize,
-                    nPriceIndex,
-                    nTimeIndex
-                })
-                .GetStringAsync();
+            string result;
 
+            try
+            {
+                result = await $"{_settings.BoxOptionsApi.CoefApiUrl}/change"
+                    .SetQueryParams(new
+                    {
+                        pair,
+                        timeToFirstOption,
+                        optionLen,
+                        priceSize,
+                        nPriceIndex,
+                        nTimeIndex
+                    })
+                    .GetStringAsync();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+            
             return Ok(result);
         }
 
@@ -40,10 +50,18 @@ namespace BoxOptions.Public.Controllers
         [Route("request")]
         public async Task<IActionResult> RequestAsync(string pair)
         {
-            var result =await $"{_settings.BoxOptionsApi.CoefApiUrl}/request"
-                .SetQueryParams(new { pair })
-                .GetStringAsync();
-
+            string result;
+            try
+            {
+                result = await $"{_settings.BoxOptionsApi.CoefApiUrl}/request"
+                    .SetQueryParams(new {pair})
+                    .GetStringAsync();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+            
             return Ok(result);
         }
     }
