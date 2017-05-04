@@ -9,11 +9,6 @@ using Lykke.RabbitMqBroker.Subscriber;
 
 namespace BoxOptions.Services
 {
-    public interface IMicrographCacheService
-    {
-        Dictionary<string, GraphBidAskPair[]> GetGraphData();
-    }
-
     public class MicrographCacheService : IMicrographCacheService, IStartable, IDisposable
     {
         private readonly BoxOptionsSettings _settings;
@@ -29,18 +24,20 @@ namespace BoxOptions.Services
             _settings = settings;
             _log = log;
             _graphQueue = new Dictionary<string, List<GraphBidAskPair>>();
-        }
-
+        }        
+        /// <summary>
+        /// Subscribe RabbitMq
+        /// </summary>
         public void Start()
         {
             _subscriber = new RabbitMqSubscriber<InstrumentBidAskPair>(new RabbitMqSubscriberSettings
                 {
                     ConnectionString = _settings.BoxOptionsApi.PricesSettings.RabbitMqConnectionString,
-                    ExchangeName = _settings.BoxOptionsApi.PricesSettings.RabbitMqExchangeName,
-                    IsDurable = false
+                    ExchangeName = _settings.BoxOptionsApi.PricesSettings.RabbitMqExchangeName, // lykke.margintrading
+                IsDurable = false
                 })
                 .SetMessageDeserializer(new MessageDeserializer<InstrumentBidAskPair>())
-                .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy(_settings.BoxOptionsApi.PricesSettings.RabbitMqRoutingKey))
+                .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy(_settings.BoxOptionsApi.PricesSettings.RabbitMqRoutingKey))//
                 .SetLogger(_log)
                 .Subscribe(ProcessPrice)
                 .Start();
@@ -78,8 +75,14 @@ namespace BoxOptions.Services
             }
         }
 
+        /// <summary>
+        /// Update graph data when rabbitmq event received
+        /// </summary>
+        /// <param name="bidAskPair"></param>
+        /// <returns></returns>
         private Task ProcessPrice(InstrumentBidAskPair bidAskPair)
         {
+            
             lock (GraphQueueLock)
             {
                 if (!_graphQueue.ContainsKey(bidAskPair.Instrument))

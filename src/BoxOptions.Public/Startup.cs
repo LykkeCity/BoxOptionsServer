@@ -81,9 +81,13 @@ namespace BoxOptions.Public
             IWampHost host = ApplicationContainer.Resolve<IWampHost>();
             IWampHostedRealm realm = ApplicationContainer.Resolve<IWampHostedRealm>();
             var rpcMethods = ApplicationContainer.Resolve<IRpcMethodsService>();
-            
 
-            appLifetime.ApplicationStopped.Register(() => ApplicationContainer.Dispose());
+
+            appLifetime.ApplicationStopped.Register(() =>
+            {                
+                ApplicationContainer.Dispose();
+                //host.Dispose();
+            });
 
             appLifetime.ApplicationStarted.Register(() =>
                 realm.Services.RegisterCallee(rpcMethods).Wait()

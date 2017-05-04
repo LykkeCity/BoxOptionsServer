@@ -12,6 +12,7 @@ namespace BoxOptions.Common
     {
         public ConnectionStringsSettings ConnectionStrings { get; set; } = new ConnectionStringsSettings();
         public PricesSettings PricesSettings { get; set;}
+        public PricesSettingsBoxOptions PricesSettingsBoxOptions { get; set; }
         public string CoefApiUrl { get; set; }
     }
 
@@ -28,6 +29,22 @@ namespace BoxOptions.Common
         public string RabbitMqQueueName { get; set; }
         public bool RabbitMqIsDurable { get; set; }
         public string RabbitMqRoutingKey { get; set; }
+        public string PricesTopicName { get; set; }
+        public int GraphPointsCount { get; set; }
+    }
+
+    public class PricesSettingsBoxOptions
+    {
+        public string RabbitMqMicrographConnectionString { get; set; }
+        public string RabbitMqMicrographExchangeName { get; set; }
+        public string RabbitMqMicrographRoutingKey { get; set; }        
+
+        public string RabbitMqPricesConnectionString { get; set; }
+        public string RabbitMqPricesExchangeName { get; set; }
+        public string RabbitMqPricesQueueName { get; set; }
+        public string RabbitMqPricesRoutingKey { get; set; }
+        public bool RabbitMqPricesIsDurable { get; set; }
+
         public string PricesTopicName { get; set; }
         public int GraphPointsCount { get; set; }
     }

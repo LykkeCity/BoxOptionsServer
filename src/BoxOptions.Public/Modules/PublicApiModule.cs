@@ -44,18 +44,28 @@ namespace BoxOptions.Public.Modules
                 .AsSelf()
                 .SingleInstance();
 
-            builder.RegisterType<MicrographCacheService>()
-                .As<IMicrographCacheService>()
-                .As<IStartable>()
-                .SingleInstance();
+            //builder.RegisterType<MicrographCacheService>()
+            //    .As<IMicrographCacheService>()
+            //    .As<IStartable>()
+            //    .SingleInstance();
 
-            builder.RegisterType<PricesWampService>()
+            //builder.RegisterType<PricesWampService>()
+            //    .As<IStartable>()
+            //    .SingleInstance();
+                        
+            builder.RegisterType<BoxOptionsMicrographCacheService>()
+              .As<IMicrographCacheService>()
+              .As<IStartable>()
+              .SingleInstance();
+
+            builder.RegisterType<BoxOptionsPricesWampService>()
                 .As<IStartable>()
                 .SingleInstance();
 
             builder.RegisterType<RpcMethodsService>()
                 .As<IRpcMethodsService>()
                 .SingleInstance();
+
 
             var logAggregate = new LogAggregate();
 

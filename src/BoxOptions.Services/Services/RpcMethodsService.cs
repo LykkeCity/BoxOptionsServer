@@ -1,18 +1,11 @@
 ﻿using System.Collections.Generic;
 using BoxOptions.Core;
-using WampSharp.V2.Rpc;
 
 namespace BoxOptions.Services
 {
-    public interface IRpcMethodsService
-    {
-        [WampProcedure("init.chartdata")]
-        Dictionary<string, GraphBidAskPair[]> InitChardData();
-
-        [WampProcedure("init.assets")]
-        AssetPair[] InitAssets();
-    }
-
+    /// <summary>
+    /// Wamp RPC Host
+    /// </summary>
     public class RpcMethodsService : IRpcMethodsService
     {
         private readonly IMicrographCacheService _micrographCacheService;
@@ -24,9 +17,14 @@ namespace BoxOptions.Services
 
         public Dictionary<string, GraphBidAskPair[]> InitChardData()
         {
+            // Request data from RabbitMq and forward it.
             return _micrographCacheService.GetGraphData();
         }
 
+        /// <summary>
+        /// Initial Data for charts
+        /// </summary>
+        /// <returns></returns>
         public AssetPair[] InitAssets()
         {
             return new[]

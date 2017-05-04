@@ -27,8 +27,9 @@ namespace BoxOptions.Client
                     Console.WriteLine($"Trying to connect to server {_serverAddress}...");
                     channel.Open().Wait();
                 }
-                catch
+                catch(Exception ex)
                 {
+                    Console.WriteLine("Exception: {0}", ex);
                     Console.WriteLine("Retrying in 5 sec...");
                     Thread.Sleep(5000);
                 }
@@ -44,7 +45,10 @@ namespace BoxOptions.Client
             switch (env)
             {
                 case ClientEnv.Local:
+                    // kestrel Port
                     _serverAddress = "ws://localhost:5000/ws";
+                    // IIS Port from launchSettings.json
+                    //_serverAddress = "ws://127.0.0.1:59136/ws";
                     break;
                 case ClientEnv.Prod:
                     _serverAddress = "ws://boxoptions-api.lykke.com:5000/ws";
@@ -73,7 +77,8 @@ namespace BoxOptions.Client
             IDisposable subscription = _realmProxy.Services.GetSubject<InstrumentBidAskPair>("prices.update")
                 .Subscribe(info =>
                 {
-                    Console.WriteLine($"{info.Instrument} {info.Bid}/{info.Ask}");
+                    if (info.Instrument=="EURUSD")
+                        Console.WriteLine($"{info.Date} > {info.Instrument} {info.Bid}/{info.Ask}");
                 });
 
 

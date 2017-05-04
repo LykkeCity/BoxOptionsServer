@@ -10,11 +10,21 @@ using WampSharp.V2.Realm;
 
 namespace BoxOptions.Services
 {
+    /// <summary>
+    /// Connects to the rabbitmq queue with prices and push it forward to wamp 
+    /// topic named "prices.update" (by default)
+    /// </summary>
     public class PricesWampService : IStartable, IDisposable
     {
         private readonly BoxOptionsSettings _settings;
         private readonly ILog _log;
+        /// <summary>
+        /// Rabbit MQ Subscriber
+        /// </summary>
         private RabbitMqSubscriber<InstrumentBidAskPair> _subscriber;
+        /// <summary>
+        /// Wamp Host Publisher
+        /// </summary>
         private readonly ISubject<InstrumentBidAskPair> _subject;
 
 
@@ -29,6 +39,9 @@ namespace BoxOptions.Services
             _subject = realm.Services.GetSubject<InstrumentBidAskPair>(_settings.BoxOptionsApi.PricesSettings.PricesTopicName);
         }
 
+        /// <summary>
+        /// Subscribe RabbitMq
+        /// </summary>
         public void Start()
         {
             _subscriber = new RabbitMqSubscriber<InstrumentBidAskPair>(new RabbitMqSubscriberSettings
@@ -50,8 +63,13 @@ namespace BoxOptions.Services
             _subscriber.Stop();
         }
 
-        private Task ProcessPrice(InstrumentBidAskPair instrumentBidAskPair)
-        {
+        /// <summary>
+        /// Publish Data to Wamp Topic "PricesTopicName" when rabbitmq event received
+        /// </summary>
+        /// <param name="instrumentBidAskPair"></param>
+        /// <returns></returns>
+        private Task ProcessPrice(InstrumentBidAskPair instrumentBidAskPair)        {
+            
             _subject.OnNext(instrumentBidAskPair);
             return Task.FromResult(0);
         }
