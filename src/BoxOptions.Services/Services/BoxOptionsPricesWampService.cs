@@ -52,13 +52,13 @@ namespace BoxOptions.Services
         {
             _subscriber = new RabbitMqSubscriber<AssetQuote>(new RabbitMqSubscriberSettings
             {
-                ConnectionString = _settings.BoxOptionsApi.PricesSettingsBoxOptions.RabbitMqPricesConnectionString,
-                ExchangeName = _settings.BoxOptionsApi.PricesSettingsBoxOptions.RabbitMqPricesExchangeName,
-                QueueName = _settings.BoxOptionsApi.PricesSettingsBoxOptions.RabbitMqPricesQueueName,
-                IsDurable = _settings.BoxOptionsApi.PricesSettingsBoxOptions.RabbitMqPricesIsDurable
+                ConnectionString = _settings.BoxOptionsApi.PricesSettingsBoxOptions.RabbitMqBOConnectionString,
+                ExchangeName = _settings.BoxOptionsApi.PricesSettingsBoxOptions.RabbitMqBOExchangeName,
+                QueueName = _settings.BoxOptionsApi.PricesSettingsBoxOptions.RabbitMqBOPricesQueueName,
+                IsDurable = false
             })
                 .SetMessageDeserializer(new MessageDeserializer<AssetQuote>())
-                .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy(_settings.BoxOptionsApi.PricesSettingsBoxOptions.RabbitMqPricesRoutingKey))
+                .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy())
                 .SetLogger(_log)
                 .Subscribe(ProcessPrice)
                 .Start();

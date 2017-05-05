@@ -12,6 +12,7 @@
 
             var assets = client.GetAssets();
             var chart = client.GetChardData();
+            System.Console.WriteLine("Chart Entries: {0}", chart.Count);
             client.Prices();
             System.Console.ReadLine();
         }

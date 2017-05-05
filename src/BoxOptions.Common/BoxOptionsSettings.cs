@@ -35,16 +35,10 @@ namespace BoxOptions.Common
 
     public class PricesSettingsBoxOptions
     {
-        public string RabbitMqMicrographConnectionString { get; set; }
-        public string RabbitMqMicrographExchangeName { get; set; }
-        public string RabbitMqMicrographRoutingKey { get; set; }        
-
-        public string RabbitMqPricesConnectionString { get; set; }
-        public string RabbitMqPricesExchangeName { get; set; }
-        public string RabbitMqPricesQueueName { get; set; }
-        public string RabbitMqPricesRoutingKey { get; set; }
-        public bool RabbitMqPricesIsDurable { get; set; }
-
+        public string RabbitMqBOConnectionString { get; set; }
+        public string RabbitMqBOExchangeName { get; set; }
+        public string RabbitMqBOMicrographQueueName { get; set; }        
+        public string RabbitMqBOPricesQueueName { get; set; }        
         public string PricesTopicName { get; set; }
         public int GraphPointsCount { get; set; }
     }

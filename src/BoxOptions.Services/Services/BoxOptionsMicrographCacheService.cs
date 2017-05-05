@@ -37,14 +37,14 @@ namespace BoxOptions.Services
         {
             _subscriber = new RabbitMqSubscriber<AssetQuote>(new RabbitMqSubscriberSettings
             {
-                ConnectionString = _settings.BoxOptionsApi.PricesSettingsBoxOptions
-                    .RabbitMqMicrographConnectionString,
-                ExchangeName = _settings.BoxOptionsApi.PricesSettingsBoxOptions
-                    .RabbitMqMicrographExchangeName, // lykke.margintrading
+                ConnectionString = _settings.BoxOptionsApi.PricesSettingsBoxOptions.RabbitMqBOConnectionString,
+                ExchangeName = _settings.BoxOptionsApi.PricesSettingsBoxOptions.RabbitMqBOExchangeName,
+                QueueName = _settings.BoxOptionsApi.PricesSettingsBoxOptions.RabbitMqBOMicrographQueueName,
                 IsDurable = false
             })
                 .SetMessageDeserializer(new MessageDeserializer<AssetQuote>())
-                .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy(_settings.BoxOptionsApi.PricesSettingsBoxOptions.RabbitMqMicrographRoutingKey))//
+                //.SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy(_settings.BoxOptionsApi.PricesSettingsBoxOptions.RabbitMqMicrographRoutingKey))                
+                .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy())
                 .SetLogger(_log)
                 .Subscribe(ProcessPrice)
                 .Start();
