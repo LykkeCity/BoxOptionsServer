@@ -125,7 +125,7 @@ namespace BoxOptions.Services
         private Task PublishInstrumentPair(InstrumentBidAskPair instrumentBidAskPair)
         {
             _subject.OnNext(instrumentBidAskPair);
-            Console.WriteLine($"{instrumentBidAskPair.Date} > {instrumentBidAskPair.Instrument} {instrumentBidAskPair.Bid}/{instrumentBidAskPair.Ask}");
+            //Console.WriteLine($"{instrumentBidAskPair.Date} > {instrumentBidAskPair.Instrument} {instrumentBidAskPair.Bid}/{instrumentBidAskPair.Ask}");
             return Task.FromResult(0);
         }
 

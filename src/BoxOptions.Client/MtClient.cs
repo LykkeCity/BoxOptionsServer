@@ -77,7 +77,7 @@ namespace BoxOptions.Client
             IDisposable subscription = _realmProxy.Services.GetSubject<InstrumentBidAskPair>("prices.update")
                 .Subscribe(info =>
                 {
-                    if (info.Instrument=="EURUSD")
+                    if (info.Instrument=="EURUSD" || info.Instrument == "BTCEUR")
                         Console.WriteLine($"{info.Date} > {info.Instrument} {info.Bid}/{info.Ask}");
                 });
 
