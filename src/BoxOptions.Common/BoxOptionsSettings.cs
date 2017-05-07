@@ -10,8 +10,7 @@ namespace BoxOptions.Common
 
     public class BoxOptionsApiSettings
     {
-        public ConnectionStringsSettings ConnectionStrings { get; set; } = new ConnectionStringsSettings();
-        public PricesSettings PricesSettings { get; set;}
+        public ConnectionStringsSettings ConnectionStrings { get; set; } = new ConnectionStringsSettings();        
         public PricesSettingsBoxOptions PricesSettingsBoxOptions { get; set; }
         public string CoefApiUrl { get; set; }
     }
@@ -22,16 +21,7 @@ namespace BoxOptions.Common
         public string LogsConnString { get; set; }
     }
 
-    public class PricesSettings
-    {
-        public string RabbitMqConnectionString { get; set; }
-        public string RabbitMqExchangeName { get; set; }
-        public string RabbitMqQueueName { get; set; }
-        public bool RabbitMqIsDurable { get; set; }
-        public string RabbitMqRoutingKey { get; set; }
-        public string PricesTopicName { get; set; }
-        public int GraphPointsCount { get; set; }
-    }
+  
 
     public class PricesSettingsBoxOptions
     {

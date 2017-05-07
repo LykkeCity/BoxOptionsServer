@@ -135,7 +135,7 @@ namespace BoxOptions.Services
                         Date = DateTime.UtcNow
                     });
 
-                    if (_graphQueue[assetbid.Id].Count > _settings.BoxOptionsApi.PricesSettings.GraphPointsCount)
+                    if (_graphQueue[assetbid.Id].Count > _settings.BoxOptionsApi.PricesSettingsBoxOptions.GraphPointsCount)
                     {
                         _graphQueue[assetbid.Id] = _graphQueue[assetbid.Id]
                             .GetRange(1, _graphQueue[assetbid.Id].Count - 1);

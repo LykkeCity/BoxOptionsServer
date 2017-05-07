@@ -40,7 +40,7 @@ namespace BoxOptions.Services
         {
             _settings = settings;
             _log = log;
-            _subject = realm.Services.GetSubject<InstrumentBidAskPair>(_settings.BoxOptionsApi.PricesSettings.PricesTopicName);
+            _subject = realm.Services.GetSubject<InstrumentBidAskPair>(_settings.BoxOptionsApi.PricesSettingsBoxOptions.PricesTopicName);
 
             _assetCache = new List<AssetPairBid>();
         }
