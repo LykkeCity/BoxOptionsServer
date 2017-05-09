@@ -35,8 +35,9 @@ namespace BoxOptions.Public.Processors
         /// <param name="nPriceIndex"></param>
         /// <param name="nTimeIndex"></param>
         /// <returns></returns>
-        public async Task<string> ChangeAsync(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
+        public async Task<string> ChangeAsync(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex, string userId)
         {
+            //TODO: UserId??
             string result = await $"{settings.BoxOptionsApi.CoefApiUrl}/change"
                 .SetQueryParams(new
                 {
@@ -55,11 +56,11 @@ namespace BoxOptions.Public.Processors
         /// </summary>
         /// <param name="pair"></param>
         /// <returns></returns>
-        public async Task<string> RequestAsync(string pair)
+        public async Task<string> RequestAsync(string pair, string userId)
         {
-            //TODO: UserId??
+            //TODO: UserId??            
             string result = await $"{settings.BoxOptionsApi.CoefApiUrl}/request"
-                .SetQueryParams(new { pair })
+                .SetQueryParams(new { pair, userId })
                 .GetStringAsync();
             return result;
         }

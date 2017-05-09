@@ -43,16 +43,7 @@ namespace BoxOptions.Public.Modules
             builder.RegisterInstance(_settings)
                 .AsSelf()
                 .SingleInstance();
-
-            //builder.RegisterType<MicrographCacheService>()
-            //    .As<IMicrographCacheService>()
-            //    .As<IStartable>()
-            //    .SingleInstance();
-
-            //builder.RegisterType<PricesWampService>()
-            //    .As<IStartable>()
-            //    .SingleInstance();
-                        
+                      
             builder.RegisterType<BoxOptionsMicrographCacheService>()
               .As<IMicrographCacheService>()
               .As<IStartable>()

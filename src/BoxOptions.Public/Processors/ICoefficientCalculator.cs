@@ -20,12 +20,12 @@ namespace BoxOptions.Public.Processors
         /// <param name="nPriceIndex"></param>
         /// <param name="nTimeIndex"></param>
         /// <returns></returns>
-        Task<string> ChangeAsync(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex);
+        Task<string> ChangeAsync(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex, string userId);
         /// <summary>
         /// API Request method call
         /// </summary>
         /// <param name="pair"></param>
         /// <returns></returns>
-        Task<string> RequestAsync(string pair);
+        Task<string> RequestAsync(string pair, string userId);
     }
 }
