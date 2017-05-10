@@ -89,6 +89,16 @@ namespace BoxOptions.Services
         /// <returns></returns>
         private Task ProcessPrice(AssetQuote assetQuote)
         {
+            // TODO: update or clear asset filtering
+
+            // Filter Asset 
+            if (!Common.AllowedAssets.Contains(assetQuote.AssetPair))
+            {
+                // Not in allowed assets list, discard entry
+                return Task.FromResult(0);
+            }
+
+
             lock (GraphQueueLock)
             {
                 // Get Asset from cache
@@ -119,6 +129,10 @@ namespace BoxOptions.Services
                         assetbid.Bid = assetQuote.Price;
                 }
 
+                // TODO: clear date override
+                // override asset bid with server UTC date.now
+                assetbid.Date = DateTime.UtcNow;
+
                 // If assetbid has Ask and Bid prices, add it to Graphdata
                 if (assetbid.Ask > 0 && assetbid.Bid > 0)
                 {
@@ -132,7 +146,7 @@ namespace BoxOptions.Services
                     {
                         Bid = assetbid.Bid,
                         Ask = assetbid.Ask,
-                        Date = DateTime.UtcNow
+                        Date = assetbid.Date
                     });
 
                     if (_graphQueue[assetbid.Id].Count > _settings.BoxOptionsApi.PricesSettingsBoxOptions.GraphPointsCount)

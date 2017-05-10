@@ -76,6 +76,14 @@ namespace BoxOptions.Services
         /// <returns></returns>
         private Task ProcessPrice(AssetQuote assetQuote)
         {
+            // TODO: update or clear asset filtering
+
+            // Filter Asset 
+            if (!Common.AllowedAssets.Contains(assetQuote.AssetPair))
+            {
+                // Not in allowed assets list, discard entry
+                return Task.FromResult(0);
+            }
 
             // Get Asset from cache
             AssetPairBid assetbid = (from a in _assetCache
@@ -104,6 +112,10 @@ namespace BoxOptions.Services
                 else
                     assetbid.Bid = assetQuote.Price;
             }
+            
+            // TODO: clear date override
+            // override asset bid with server UTC date.now
+            assetbid.Date = DateTime.UtcNow;
 
             // If assetbid has Ask and Bid prices, publish to Wamp Topic
             if (assetbid.Ask > 0 && assetbid.Bid > 0)

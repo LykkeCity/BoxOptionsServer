@@ -349,7 +349,15 @@ namespace BoxOptions.Services
                     Id = "USDJPY",
                     Name = "USD/JPY",
                     QuoteAssetId = "JPY"
-                }
+                },
+                new AssetPair
+                {
+                    Accuracy = 5,
+                    BaseAssetId = "EUR",
+                    Id = "EURAUD",
+                    Name = "EUR/AUD",
+                    QuoteAssetId = "AUD"
+                },
             };
 
         }

@@ -14,6 +14,8 @@ namespace BoxOptions.Client
         private IWampRealmProxy _realmProxy;
         private IRpcMethodsService _service;
 
+        IDisposable subscription;
+
         public void Connect(ClientEnv env)
         {
             SetEnv(env);
@@ -74,15 +76,17 @@ namespace BoxOptions.Client
 
         public void Prices()
         {
-            IDisposable subscription = _realmProxy.Services.GetSubject<InstrumentBidAskPair>("prices.update")
+            subscription = _realmProxy.Services.GetSubject<InstrumentBidAskPair>("prices.update")
                 .Subscribe(info =>
                 {
-                    if (info.Instrument=="EURUSD" || info.Instrument == "BTCEUR")
-                        Console.WriteLine($"{info.Date} > {info.Instrument} {info.Bid}/{info.Ask}");
+                    Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > BidDate[{info.Date.ToString("yyyy-MM-dd HH:mm:ss")}] | {info.Instrument} {info.Bid}/{info.Ask}");
                 });
 
 
-            Console.ReadLine();
+            //Console.ReadLine();            
+        }
+        public void Stop()
+        {
             subscription.Dispose();
         }
 
