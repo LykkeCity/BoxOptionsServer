@@ -9,7 +9,7 @@ namespace BoxOptions.Services
     /// (well actually they all create their own queues, but with the same routing key - mt.pricefeed, 
     /// so the prices routes to their queues in rabbit mq)
     /// </summary>
-    public interface IMicrographCacheService
+    public interface IMicrographCache
     {
         /// <summary>
         /// Get Current Graph Data

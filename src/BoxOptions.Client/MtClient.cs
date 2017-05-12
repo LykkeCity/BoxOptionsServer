@@ -12,7 +12,7 @@ namespace BoxOptions.Client
     {
         private string _serverAddress;
         private IWampRealmProxy _realmProxy;
-        private IRpcMethodsService _service;
+        private IRpcMethods _service;
 
         IDisposable subscription;
 
@@ -39,7 +39,7 @@ namespace BoxOptions.Client
             Console.WriteLine($"Connected to server {_serverAddress}");
 
             _realmProxy = channel.RealmProxy;
-            _service = _realmProxy.Services.GetCalleeProxy<IRpcMethodsService>();
+            _service = _realmProxy.Services.GetCalleeProxy<IRpcMethods>();
         }
 
         public void SetEnv(ClientEnv env)
@@ -70,7 +70,7 @@ namespace BoxOptions.Client
 
         public Dictionary<string, GraphBidAskPair[]> GetChardData()
         {
-            var data = _service.InitChardData();
+            var data = _service.InitChartData();
             return data;
         }
 

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace BoxOptions.Services
 {
-    class AssetPairBid: GraphBidAskPair
+    public class AssetPairBid: GraphBidAskPair
     {
         public string Id { get; set; }
     }

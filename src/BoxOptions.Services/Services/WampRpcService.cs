@@ -6,16 +6,16 @@ namespace BoxOptions.Services
     /// <summary>
     /// Wamp RPC Host
     /// </summary>
-    public class RpcMethodsService : IRpcMethodsService
+    public class WampRpcService : IRpcMethods
     {
-        private readonly IMicrographCacheService _micrographCacheService;
+        private readonly IMicrographCache _micrographCacheService;
 
-        public RpcMethodsService(IMicrographCacheService micrographCacheService)
+        public WampRpcService(IMicrographCache micrographCacheService)
         {
             _micrographCacheService = micrographCacheService;
         }
 
-        public Dictionary<string, GraphBidAskPair[]> InitChardData()
+        public Dictionary<string, GraphBidAskPair[]> InitChartData()
         {
             // Request data from RabbitMq and forward it.
             return _micrographCacheService.GetGraphData();
