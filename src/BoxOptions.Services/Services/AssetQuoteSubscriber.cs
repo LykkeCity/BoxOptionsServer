@@ -1,5 +1,6 @@
 ﻿using BoxOptions.Common;
 using BoxOptions.Core;
+using Common.Log;
 using Lykke.RabbitMqBroker.Subscriber;
 using System;
 using System.Collections.Generic;
@@ -25,17 +26,22 @@ namespace BoxOptions.Services
         /// RabbitMQ Subscriber
         /// </summary>
         private RabbitMqSubscriber<AssetQuote> subscriber;
-        
-      
+
+        /// <summary>
+        /// Logger Object
+        /// </summary>
+        ILog log;
+
         /// <summary>
         /// Thrown when a new message is received from RabbitMQ Queue
         /// </summary>
         public event EventHandler<AssetPairBid> MessageReceived;
 
-        public AssetQuoteSubscriber(BoxOptionsSettings settings)
+        public AssetQuoteSubscriber(BoxOptionsSettings settings, ILog log)
         {
             assetCache = new List<AssetPairBid>();
             this.settings = settings;
+            this.log = log;
         }
 
         public void Start()
@@ -49,6 +55,7 @@ namespace BoxOptions.Services
             })
                .SetMessageDeserializer(new MessageDeserializer<AssetQuote>())
                .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy())
+               .SetLogger(log)
                .Subscribe(ProcessMessage)
                .Start();
         }

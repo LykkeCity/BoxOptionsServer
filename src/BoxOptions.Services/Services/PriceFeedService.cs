@@ -18,10 +18,7 @@ namespace BoxOptions.Services
         /// Settings Object        
         /// </summary>
         private readonly BoxOptionsSettings settings;
-        /// <summary>
-        /// Logger Object
-        /// </summary>
-        private readonly ILog log;
+        
         /// <summary>
         /// Wamp Subject Publisher
         /// </summary>
@@ -34,10 +31,9 @@ namespace BoxOptions.Services
 
 
 
-        public PriceFeedService(BoxOptionsSettings settings, IWampHostedRealm realm, ILog log, IAssetQuoteSubscriber subscriber)
+        public PriceFeedService(BoxOptionsSettings settings, IWampHostedRealm realm, IAssetQuoteSubscriber subscriber)
         {
-            this.settings = settings;
-            this.log = log;
+            this.settings = settings;            
             this.subscriber = subscriber;
 
             subject = realm.Services.GetSubject<InstrumentBidAskPair>(this.settings.BoxOptionsApi.PricesSettingsBoxOptions.PricesTopicName);         

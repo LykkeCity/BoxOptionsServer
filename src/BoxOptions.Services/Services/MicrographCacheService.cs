@@ -17,10 +17,6 @@ namespace BoxOptions.Services
         /// </summary>
         private readonly BoxOptionsSettings settings;
         /// <summary>
-        /// Logger Object
-        /// </summary>
-        private readonly ILog log;
-        /// <summary>
         /// Asset Quote Subscriber
         /// </summary>
         private readonly IAssetQuoteSubscriber subscriber;
@@ -34,13 +30,14 @@ namespace BoxOptions.Services
         /// </summary>
         private static readonly object GraphQueueLock = new object();
 
-        public MicrographCacheService(BoxOptionsSettings settings, ILog log, IAssetQuoteSubscriber subscriber)
+        public MicrographCacheService(BoxOptionsSettings settings, IAssetQuoteSubscriber subscriber)
         {
             this.settings = settings;
-            this.log = log;
+            
             this.subscriber = subscriber;
             graphData = new Dictionary<string, List<GraphBidAskPair>>();
         }
+        
         /// <summary>
         /// Start receiving events from IAssetQuoteSubscriber
         /// </summary>
@@ -65,22 +62,33 @@ namespace BoxOptions.Services
         /// <param name="e"></param>
         private async void Subscriber_MessageReceived(object sender, AssetPairBid e)
         {
-            await ProcessPrice(e);
+            try { await ProcessPrice(e); }
+            catch
+            {
+                //TODO: Log Error
+                throw;
+            }
         }
-
-
+        
         /// <summary>
         /// Process AssetQuote received from IAssetQuoteSubscriber
         /// </summary>
         /// <param name="assetQuote"></param>
         /// <returns></returns>
         private Task ProcessPrice(AssetPairBid assetBid)
-        {         
+        {
+            // Parameter validation
+            if (assetBid == null ||
+                string.IsNullOrEmpty(assetBid.Id) ||
+                assetBid.Ask <= 0 ||
+                assetBid.Bid <= 0)
+            {
+                return Task.FromResult(0);
+            }
+
             // Add Received Asset Quote to Graph Data
             lock (GraphQueueLock)
             {
-                Console.WriteLine("{4}>> MicrographCacheS: {0} > {1} | {2}/{3}", assetBid.Id, assetBid.Date, assetBid.Bid, assetBid.Ask, DateTime.Now.ToString("HH:mm:ss.fff"));
-
                 // If assetbid has Ask and Bid prices, add it to Graphdata
                 if (assetBid.Ask > 0 && assetBid.Bid > 0)
                 {
