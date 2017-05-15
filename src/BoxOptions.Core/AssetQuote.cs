@@ -10,6 +10,10 @@ namespace BoxOptions.Core
         public double Price { get; set; }
         public DateTime Timestamp { get; set; }
 
-       
+        public override string ToString()
+        {
+            return string.Format("[{0}]>{1} | {2}/{3}", AssetPair, Timestamp, IsBuy, Price);
+        }
+
     }
 }

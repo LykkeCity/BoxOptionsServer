@@ -77,6 +77,8 @@ namespace BoxOptions.Services
         /// <returns></returns>
         private Task ProcessPrice(AssetPairBid assetBid)
         {
+            //Console.WriteLine("{4}>> MicrographCacheService: {0} > {1} | {2}/{3}", assetBid.Id, assetBid.Date, assetBid.Bid, assetBid.Ask,DateTime.Now.ToString("HH:mm:ss.fff"));
+
             // Parameter validation
             if (assetBid == null ||
                 string.IsNullOrEmpty(assetBid.Id) ||

@@ -71,7 +71,16 @@ namespace BoxOptions.Services
         /// <returns></returns>
         private Task ProcessPrice(AssetPairBid assetBid)
         {
-            Console.WriteLine("{4}>> PriceFeedService: {0} > {1} | {2}/{3}", assetBid.Id, assetBid.Date, assetBid.Bid, assetBid.Ask,DateTime.Now.ToString("HH:mm:ss.fff"));
+            //Console.WriteLine("{4}>> PriceFeedService: {0} > {1} | {2}/{3}", assetBid.Id, assetBid.Date, assetBid.Bid, assetBid.Ask,DateTime.Now.ToString("HH:mm:ss.fff"));
+
+            // Parameter validation
+            if (assetBid == null ||
+                string.IsNullOrEmpty(assetBid.Id) ||
+                assetBid.Ask <= 0 ||
+                assetBid.Bid <= 0)
+            {
+                return Task.FromResult(0);
+            }
 
             // If assetbid has Ask and Bid prices, publish to Wamp Topic
             if (assetBid.Ask > 0 && assetBid.Bid > 0)
