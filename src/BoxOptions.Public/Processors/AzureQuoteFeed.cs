@@ -59,7 +59,6 @@ namespace BoxOptions.Public.Processors
 
         private void InsertInAzure(List<AssetQuote> buffer)
         {
-
             List<AssetItem> exportVector = (from q in buffer
                                             select new AssetItem
                                             {
@@ -67,13 +66,9 @@ namespace BoxOptions.Public.Processors
                                                 Date = q.Timestamp,
                                                 IsBuy = q.IsBuy,
                                                 Price = q.Price
-                                            }).ToList();
-            Console.WriteLine("Run Task");
-            Task t = assetRep.InsertManyAsync(exportVector);            
+                                            }).ToList();            
+            Task t = assetRep.InsertManyAsync(exportVector);
             t.Wait();
-            Console.WriteLine("Run Finished");
-
-
         }
 
         private async Task<IAssetItem> InsertInAzure(AssetQuote quote)
@@ -110,6 +105,20 @@ namespace BoxOptions.Public.Processors
             isDisposing = true;
 
             // Flush Asset Catch to Azure
+            foreach (var key in assetCache.Keys)
+            {
+                if (assetCache[key].Count > 0)
+                {
+                    List<AssetQuote> buffer = assetCache[key].ToList();
+                    assetCache[key].Clear();
+                    lock (InsertLock)
+                    {
+                        InsertInAzure(buffer);
+                    }
+
+                }
+            }
+           
 
 
         }

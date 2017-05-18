@@ -102,7 +102,7 @@ namespace BoxOptions.Services
                         
                         
             // Filter Asset (must be allowed)
-            if (!Common.AllowedAssets.Contains(assetQuote.AssetPair))
+            if (!Statics.AllowedAssets.Contains(assetQuote.AssetPair))
             {
                 // Not in allowed assets list, discard entry
                 return Task.FromResult(0);
@@ -121,7 +121,7 @@ namespace BoxOptions.Services
                     return Task.FromResult(0);
                 }
                 else
-                {
+                {                    
                     // Add to Asset History
                     history?.AddToAssetHistory(assetQuote);
 
@@ -141,8 +141,8 @@ namespace BoxOptions.Services
                         {
                             Instrument = assetQuote.AssetPair,
                             Date = assetQuote.Timestamp,
-                            Ask = assetQuote.IsBuy == Common.ASK ? assetQuote.Price : 0,
-                            Bid = assetQuote.IsBuy == Common.ASK ? 0 : assetQuote.Price
+                            Ask = assetQuote.IsBuy == Statics.ASK ? assetQuote.Price : 0,
+                            Bid = assetQuote.IsBuy == Statics.ASK ? 0 : assetQuote.Price
                         };
                         assetCache.Add(assetbid);
                     }
@@ -150,7 +150,7 @@ namespace BoxOptions.Services
                     {
                         // AssetPair is in cache
                         // Update Bid Quote
-                        if (assetQuote.IsBuy == Common.ASK)
+                        if (assetQuote.IsBuy == Statics.ASK)
                             assetbid.Ask = assetQuote.Price;
                         else
                             assetbid.Bid = assetQuote.Price;
@@ -175,8 +175,7 @@ namespace BoxOptions.Services
 
             DateTime currentdate = DateTime.UtcNow;
             double SecondsSinceLastMessage = (currentdate - lastMessageTimeStamp).TotalSeconds;
-            Console.WriteLine("{0} > SecondsSinceLastMessage: {1:F2}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), SecondsSinceLastMessage);
-
+            
             // Last message receive longer than allowed in IncomingDataCheckInterval
             if (SecondsSinceLastMessage > settings.BoxOptionsApi.PricesSettingsBoxOptions.IncomingDataCheckInterval)
             {

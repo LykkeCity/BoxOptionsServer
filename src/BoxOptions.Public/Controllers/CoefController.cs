@@ -70,9 +70,10 @@ namespace BoxOptions.Public.Controllers
             {
                 Core.AssetQuote[] res = null;
                 var his = await history.GetAssetHistory(dtFrom,dtTo, assetPair);
-                res = new Core.AssetQuote[his.Count];
-                his.CopyTo(res, 0);                
-                return Ok(res);
+                res = new Core.AssetQuote[his.Count];                
+                his.CopyTo(res, 0);
+                var bidhistory =  AssetBidProcessor.CreateBidHistory(assetPair, res);
+                return Ok(bidhistory);
             }
             else
                 return StatusCode(500, "History Not Available");
