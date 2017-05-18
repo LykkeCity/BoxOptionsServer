@@ -1,14 +1,11 @@
-﻿using System;
-using System.Linq;
-using System.Reactive.Subjects;
-using System.Threading.Tasks;
-using Autofac;
+﻿using Autofac;
 using BoxOptions.Common;
 using BoxOptions.Core;
-using Common.Log;
-using Lykke.RabbitMqBroker.Subscriber;
+using BoxOptions.Core.Interfaces;
+using System;
+using System.Reactive.Subjects;
+using System.Threading.Tasks;
 using WampSharp.V2.Realm;
-using System.Collections.Generic;
 
 namespace BoxOptions.Services
 {
@@ -22,7 +19,7 @@ namespace BoxOptions.Services
         /// <summary>
         /// Wamp Subject Publisher
         /// </summary>
-        private readonly ISubject<InstrumentBidAskPair> subject;
+        private readonly ISubject<InstrumentPrice> subject;
         /// <summary>
         /// Asset Quote Subscriber
         /// </summary>
@@ -36,7 +33,7 @@ namespace BoxOptions.Services
             this.settings = settings;            
             this.subscriber = subscriber;
 
-            subject = realm.Services.GetSubject<InstrumentBidAskPair>(this.settings.BoxOptionsApi.PricesSettingsBoxOptions.PricesTopicName);         
+            subject = realm.Services.GetSubject<InstrumentPrice>(this.settings.BoxOptionsApi.PricesSettingsBoxOptions.PricesTopicName);         
         }
 
         /// <summary>
@@ -59,7 +56,7 @@ namespace BoxOptions.Services
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private async void Subscriber_MessageReceived(object sender, AssetPairBid e)
+        private async void Subscriber_MessageReceived(object sender, InstrumentPrice e)
         {
             await ProcessPrice(e);
         }
@@ -69,13 +66,13 @@ namespace BoxOptions.Services
         /// </summary>
         /// <param name="assetQuote"></param>
         /// <returns></returns>
-        private Task ProcessPrice(AssetPairBid assetBid)
+        private Task ProcessPrice(InstrumentPrice assetBid)
         {
             //Console.WriteLine("{4}>> PriceFeedService: {0} > {1} | {2}/{3}", assetBid.Id, assetBid.Date, assetBid.Bid, assetBid.Ask,DateTime.Now.ToString("HH:mm:ss.fff"));
 
             // Parameter validation
             if (assetBid == null ||
-                string.IsNullOrEmpty(assetBid.Id) ||
+                string.IsNullOrEmpty(assetBid.Instrument) ||
                 assetBid.Ask <= 0 ||
                 assetBid.Bid <= 0)
             {
@@ -85,17 +82,8 @@ namespace BoxOptions.Services
             // If assetbid has Ask and Bid prices, publish to Wamp Topic
             if (assetBid.Ask > 0 && assetBid.Bid > 0)
             {
-                // Create WAMP topic object
-                InstrumentBidAskPair wampEntry = new InstrumentBidAskPair()
-                {
-                    Instrument = assetBid.Id,
-                    Ask = assetBid.Ask,
-                    Bid = assetBid.Bid,
-                    Date = assetBid.Date
-                };
-
                 // Publish object to WAMP topic
-                PublishInstrumentPair(wampEntry);
+                PublishInstrumentPair(assetBid);
             }
 
             return Task.FromResult(0);
@@ -106,7 +94,7 @@ namespace BoxOptions.Services
         /// </summary>
         /// <param name="instrumentBidAskPair"></param>
         /// <returns></returns>
-        private Task PublishInstrumentPair(InstrumentBidAskPair instrumentBidAskPair)
+        private Task PublishInstrumentPair(InstrumentPrice instrumentBidAskPair)
         {
             subject.OnNext(instrumentBidAskPair);
             return Task.FromResult(0);

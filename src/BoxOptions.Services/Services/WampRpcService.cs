@@ -15,7 +15,7 @@ namespace BoxOptions.Services
             _micrographCacheService = micrographCacheService;
         }
 
-        public Dictionary<string, GraphBidAskPair[]> InitChartData()
+        public Dictionary<string, Price[]> InitChartData()
         {
             // Request data from RabbitMq and forward it.
             return _micrographCacheService.GetGraphData();

@@ -1,11 +1,9 @@
 ﻿using Autofac;
 using BoxOptions.Common;
 using BoxOptions.Core;
-using Common.Log;
-using Lykke.RabbitMqBroker.Subscriber;
+using BoxOptions.Core.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace BoxOptions.Services
@@ -23,7 +21,7 @@ namespace BoxOptions.Services
         /// <summary>
         /// Asset Graphic data
         /// </summary>
-        private readonly Dictionary<string, List<GraphBidAskPair>> graphData;
+        private readonly Dictionary<string, List<Price>> graphData;
        
         /// <summary>
         /// Static thread lock mutex for Graph Operations
@@ -35,7 +33,7 @@ namespace BoxOptions.Services
             this.settings = settings;
             
             this.subscriber = subscriber;
-            graphData = new Dictionary<string, List<GraphBidAskPair>>();
+            graphData = new Dictionary<string, List<Price>>();
         }
         
         /// <summary>
@@ -60,7 +58,7 @@ namespace BoxOptions.Services
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private async void Subscriber_MessageReceived(object sender, AssetPairBid e)
+        private async void Subscriber_MessageReceived(object sender, InstrumentPrice e)
         {
             try { await ProcessPrice(e); }
             catch
@@ -75,13 +73,13 @@ namespace BoxOptions.Services
         /// </summary>
         /// <param name="assetQuote"></param>
         /// <returns></returns>
-        private Task ProcessPrice(AssetPairBid assetBid)
+        private Task ProcessPrice(InstrumentPrice assetBid)
         {
             //Console.WriteLine("{4}>> MicrographCacheService: {0} > {1} | {2}/{3}", assetBid.Id, assetBid.Date, assetBid.Bid, assetBid.Ask,DateTime.Now.ToString("HH:mm:ss.fff"));
 
             // Parameter validation
             if (assetBid == null ||
-                string.IsNullOrEmpty(assetBid.Id) ||
+                string.IsNullOrEmpty(assetBid.Instrument) ||
                 assetBid.Ask <= 0 ||
                 assetBid.Bid <= 0)
             {
@@ -95,13 +93,13 @@ namespace BoxOptions.Services
                 if (assetBid.Ask > 0 && assetBid.Bid > 0)
                 {
                     // Add AssetPair to graph;
-                    if (!graphData.ContainsKey(assetBid.Id))
+                    if (!graphData.ContainsKey(assetBid.Instrument))
                     {
-                        graphData.Add(assetBid.Id, new List<GraphBidAskPair>());
+                        graphData.Add(assetBid.Instrument, new List<Price>());
                     }
 
                     // Add Quote Data
-                    graphData[assetBid.Id].Add(new GraphBidAskPair
+                    graphData[assetBid.Instrument].Add(new Price
                     {
                         Bid = assetBid.Bid,
                         Ask = assetBid.Ask,
@@ -109,10 +107,10 @@ namespace BoxOptions.Services
                     });
 
                     // If quote data array is to big, resize it.
-                    if (graphData[assetBid.Id].Count > settings.BoxOptionsApi.PricesSettingsBoxOptions.GraphPointsCount)
+                    if (graphData[assetBid.Instrument].Count > settings.BoxOptionsApi.PricesSettingsBoxOptions.GraphPointsCount)
                     {
-                        graphData[assetBid.Id] = graphData[assetBid.Id]
-                            .GetRange(1, graphData[assetBid.Id].Count - 1);
+                        graphData[assetBid.Instrument] = graphData[assetBid.Instrument]
+                            .GetRange(1, graphData[assetBid.Instrument].Count - 1);
                     }
                 }
             }
@@ -123,22 +121,22 @@ namespace BoxOptions.Services
         /// <summary>
         /// Return clone of graph data dictionary
         /// <returns></returns>
-        public Dictionary<string, GraphBidAskPair[]> GetGraphData()
+        public Dictionary<string, Price[]> GetGraphData()
         {
             // Mutex lock Graph Data manipulation
             lock (GraphQueueLock)
             {
                 // Create clone array
-                var copy = new Dictionary<string, GraphBidAskPair[]>();
+                var copy = new Dictionary<string, Price[]>();
 
                 // Copy existing data to clone array
                 foreach (var pair in graphData)
                 {
-                    var pairs = new List<GraphBidAskPair>();
+                    var pairs = new List<Price>();
 
                     foreach (var bidAsk in pair.Value)
                     {
-                        pairs.Add(new GraphBidAskPair
+                        pairs.Add(new Price
                         {
                             Ask = bidAsk.Ask,
                             Bid = bidAsk.Bid,

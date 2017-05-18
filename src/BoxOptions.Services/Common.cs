@@ -13,6 +13,6 @@ namespace BoxOptions.Services
         /// Assets Allowed
         /// </summary>
         /// <returns></returns>
-        public static string[] AllowedAssets { get { return new[] { "EURUSD", "EURAUD", "EURCHF", "EURGBP", "EURJPY", "USDCHF" }; } }
+        public static string[] AllowedAssets { get { return new[] { "EURUSD", "EURAUD", "EURCHF", "EURGBP", "EURJPY", "USDCHF", "BTCUSD" }; } }
     }
 }

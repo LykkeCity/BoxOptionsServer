@@ -11,7 +11,7 @@ namespace BoxOptions.Services
         /// </summary>
         /// <returns></returns>
         [WampProcedure("init.chartdata")]
-        Dictionary<string, GraphBidAskPair[]> InitChartData();
+        Dictionary<string, Price[]> InitChartData();
 
         /// <summary>
         /// Client calls init.assets RPC method to get list of asset pairs

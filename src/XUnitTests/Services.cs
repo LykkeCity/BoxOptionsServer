@@ -1,4 +1,5 @@
-﻿using BoxOptions.Services;
+﻿using BoxOptions.Core;
+using BoxOptions.Services;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -70,9 +71,9 @@ namespace XUnitTests
 
         //[Fact] void PriceFeedService_
 
-        private class MockAssetQuoteSubscriber : IAssetQuoteSubscriber
+        private class MockAssetQuoteSubscriber : BoxOptions.Core.Interfaces.IAssetQuoteSubscriber
         {
-            public event EventHandler<AssetPairBid> MessageReceived;
+            public event EventHandler<InstrumentPrice> MessageReceived;
 
             public void Dispose()
             {                
@@ -82,8 +83,8 @@ namespace XUnitTests
             }
             public void SimMessageReceived()
             {
-                MessageReceived?.Invoke(this, new AssetPairBid() { Id = "EURUSD", Date = DateTime.UtcNow, Ask = 1.245d, Bid = 1.231 });
-                MessageReceived?.Invoke(this, new AssetPairBid() { Id = "EURUSD", Date = DateTime.UtcNow, Ask = 1.243d, Bid = 1.235 });
+                MessageReceived?.Invoke(this, new InstrumentPrice() { Instrument = "EURUSD", Date = DateTime.UtcNow, Ask = 1.245d, Bid = 1.231 });
+                MessageReceived?.Invoke(this, new InstrumentPrice() { Instrument = "EURUSD", Date = DateTime.UtcNow, Ask = 1.243d, Bid = 1.235 });
             }
 
             public void SimNullMessageReceived()

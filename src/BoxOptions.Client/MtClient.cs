@@ -5,6 +5,8 @@ using BoxOptions.Core;
 using BoxOptions.Services;
 using WampSharp.V2;
 using WampSharp.V2.Client;
+using System.Net;
+using System.IO;
 
 namespace BoxOptions.Client
 {
@@ -29,7 +31,7 @@ namespace BoxOptions.Client
                     Console.WriteLine($"Trying to connect to server {_serverAddress}...");
                     channel.Open().Wait();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Console.WriteLine("Exception: {0}", ex);
                     Console.WriteLine("Retrying in 5 sec...");
@@ -60,6 +62,38 @@ namespace BoxOptions.Client
             }
         }
 
+        internal async void PostLog()
+        {
+            var httpWebRequest = (HttpWebRequest)WebRequest.Create("http://localhost:5000/api/Log");
+            httpWebRequest.ContentType = "application/json";
+            httpWebRequest.Method = "POST";
+
+            Stream httpstream = await httpWebRequest.GetRequestStreamAsync();
+            using (var streamWriter = new StreamWriter(httpstream))
+            {
+                string json = "{" +
+                    "\"ClientId\": \"SomeId\"," +
+                    "\"EventCode\": \"0\"," +
+                    "\"Message\": \"Test\"" +
+                    "}";
+
+
+                streamWriter.Write(json);
+                streamWriter.Flush();
+                streamWriter.Dispose();
+            }
+
+            WebResponse httpResponse = await httpWebRequest.GetResponseAsync();
+            using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+            {
+                var result = streamReader.ReadToEnd();
+                Console.WriteLine("Res: {0}", result);
+            }
+            
+        }
+
+    
+
         #region Rpc methods
 
         public AssetPair[] GetAssets()
@@ -68,7 +102,7 @@ namespace BoxOptions.Client
             return data;
         }
 
-        public Dictionary<string, GraphBidAskPair[]> GetChardData()
+        public Dictionary<string, Price[]> GetChardData()
         {
             var data = _service.InitChartData();
             return data;
@@ -76,7 +110,7 @@ namespace BoxOptions.Client
 
         public void Prices()
         {
-            subscription = _realmProxy.Services.GetSubject<InstrumentBidAskPair>("prices.update")
+            subscription = _realmProxy.Services.GetSubject<InstrumentPrice>("prices.update")
                 .Subscribe(info =>
                 {
                     Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > BidDate[{info.Date.ToString("yyyy-MM-dd HH:mm:ss")}] | {info.Instrument} {info.Bid}/{info.Ask}");

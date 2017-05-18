@@ -22,6 +22,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoxOptions.Client", "src\Bo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XUnitTests", "src\XUnitTests\XUnitTests.csproj", "{68BE4CBE-F78C-4BBB-89BC-3BF733EA710C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoxOptions.CoefficientCalculator", "src\BoxOptions.CoefficientCalculator\BoxOptions.CoefficientCalculator.csproj", "{FEBE419D-5FA9-4BB5-979D-12156013994D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -56,6 +58,10 @@ Global
 		{68BE4CBE-F78C-4BBB-89BC-3BF733EA710C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{68BE4CBE-F78C-4BBB-89BC-3BF733EA710C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{68BE4CBE-F78C-4BBB-89BC-3BF733EA710C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FEBE419D-5FA9-4BB5-979D-12156013994D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FEBE419D-5FA9-4BB5-979D-12156013994D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FEBE419D-5FA9-4BB5-979D-12156013994D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FEBE419D-5FA9-4BB5-979D-12156013994D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

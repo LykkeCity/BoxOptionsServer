@@ -37,9 +37,10 @@ namespace BoxOptions.Client
                             {
                                 Console.WriteLine("\t{0} > {1}/{2}", bid.Date.ToString("yyyy-MM-dd HH:mm:ss"), bid.Bid, bid.Ask);
                             }
-
-
                         }
+                        break;
+                    case "log":
+                        client.PostLog();
                         break;
                     default:
                         break;

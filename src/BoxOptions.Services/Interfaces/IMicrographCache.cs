@@ -15,6 +15,6 @@ namespace BoxOptions.Services
         /// Get Current Graph Data
         /// </summary>
         /// <returns></returns>
-        Dictionary<string, GraphBidAskPair[]> GetGraphData();
+        Dictionary<string, Price[]> GetGraphData();
     }
 }

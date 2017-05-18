@@ -11,6 +11,7 @@ using Lykke.SlackNotification.AzureQueue;
 using Microsoft.Extensions.DependencyInjection;
 using WampSharp.V2;
 using WampSharp.V2.Realm;
+using BoxOptions.Core.Interfaces;
 
 namespace BoxOptions.Public.Modules
 {
@@ -19,6 +20,7 @@ namespace BoxOptions.Public.Modules
         private readonly IServiceCollection _services;
         private readonly BoxOptionsSettings _settings;
         private readonly string _appName;
+                
 
         public PublicApiModule(IServiceCollection services, BoxOptionsSettings settings, string appName)
         {
@@ -26,6 +28,8 @@ namespace BoxOptions.Public.Modules
             _settings = settings;
             _appName = appName;
         }
+
+        
 
         protected override void Load(ContainerBuilder builder)
         {
@@ -43,6 +47,8 @@ namespace BoxOptions.Public.Modules
             builder.RegisterInstance(_settings)
                 .AsSelf()
                 .SingleInstance();
+
+            
 
             builder.RegisterType<AssetQuoteSubscriber>()
                 .As<IAssetQuoteSubscriber>()
@@ -77,6 +83,14 @@ namespace BoxOptions.Public.Modules
             builder.RegisterInstance(new LogRepository(new AzureTableStorage<AzureRepositories.LogEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage, 
                 "ClientEventLogs", log)))
                 .As<ILogRepository>();
+            builder.RegisterInstance(new AssetRepository(new AzureTableStorage<AzureRepositories.AssetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "QuoteFeed", log)))
+                .As<IAssetRepository>();
+
+            // TODO: Change to Azure Storage
+            builder.RegisterType<Processors.AzureQuoteFeed>()
+                .As<IBoxOptionsHistory>()
+                .SingleInstance();
         }
     }
 }

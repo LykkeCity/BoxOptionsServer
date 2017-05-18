@@ -1,5 +1,7 @@
-﻿using BoxOptions.Common;
+﻿using Autofac;
+using BoxOptions.Common;
 using BoxOptions.Core;
+using BoxOptions.Core.Interfaces;
 using Common.Log;
 using Lykke.RabbitMqBroker.Subscriber;
 using System;
@@ -11,7 +13,7 @@ using System.Threading.Tasks;
 namespace BoxOptions.Services
 {
     
-    public class AssetQuoteSubscriber : IAssetQuoteSubscriber
+    public class AssetQuoteSubscriber : IAssetQuoteSubscriber, IStartable, IDisposable
     {
         /// <summary>
         /// Settings Object
@@ -20,7 +22,7 @@ namespace BoxOptions.Services
         /// <summary>
         /// Incoming Asset Cache
         /// </summary>
-        private readonly List<AssetPairBid> assetCache;
+        private readonly List<InstrumentPrice> assetCache;
 
         /// <summary>
         /// RabbitMQ Subscriber
@@ -43,19 +45,23 @@ namespace BoxOptions.Services
         System.Threading.Timer checkConnectionTimer;
         
         bool isDisposing;
-        
+
+        IBoxOptionsHistory history;
+
         /// <summary>
         /// Thrown when a new message is received from RabbitMQ Queue
         /// </summary>
-        public event EventHandler<AssetPairBid> MessageReceived;
+        public event EventHandler<InstrumentPrice> MessageReceived;
 
-        public AssetQuoteSubscriber(BoxOptionsSettings settings, ILog log)
+        public AssetQuoteSubscriber(BoxOptionsSettings settings, ILog log, IBoxOptionsHistory history)
         {
             isDisposing = false;
             lastMessageTimeStamp = DateTime.UtcNow;
-            assetCache = new List<AssetPairBid>();
+            assetCache = new List<InstrumentPrice>();
             this.settings = settings;
             this.log = log;
+            this.history = history;
+
             checkConnectionTimer = new System.Threading.Timer(CheckConnectionTimerCallback, null, -1, -1);
             
         }
@@ -93,9 +99,9 @@ namespace BoxOptions.Services
         {
             //Message received, update timestamp.
             lastMessageTimeStamp = DateTime.UtcNow;
-
-            // TODO: update or clear asset filtering
-            // Filter Asset 
+                        
+                        
+            // Filter Asset (must be allowed)
             if (!Common.AllowedAssets.Contains(assetQuote.AssetPair))
             {
                 // Not in allowed assets list, discard entry
@@ -103,43 +109,61 @@ namespace BoxOptions.Services
             }
             else
             {
-                // Asset allowed, add it to cache and
-                // invoke MessageReceived event
-
-
-                // Get Asset from cache
-                AssetPairBid assetbid = (from a in assetCache
-                                         where a.Id == assetQuote.AssetPair
-                                         select a).FirstOrDefault();
-                if (assetbid == null)
+                // If Price is zero publish exception to support slack channel
+                if (assetQuote.Price <= 0)
                 {
-                    // AssetPair is not in cache
-                    // Add AssetQuote to cache
-                    assetbid = new AssetPairBid()
-                    {
-                        Id = assetQuote.AssetPair,
-                        Date = assetQuote.Timestamp,
-                        Ask = assetQuote.IsBuy == Common.ASK ? assetQuote.Price : 0,
-                        Bid = assetQuote.IsBuy == Common.ASK ? 0 : assetQuote.Price
-                    };
-                    assetCache.Add(assetbid);
+                    //log
+                    ArgumentException ex = new ArgumentException(
+                        string.Format("Received quote with price zero [0], quote discarded. Instrument:[{0}], IsBuy:[{1}], Timestamp:[{2}]", assetQuote.AssetPair, assetQuote.IsBuy, assetQuote.Timestamp),
+                        "Price");
+                    log.WriteErrorAsync("AssetQuoteSubscriber", "ProcessMessage", "" , ex, DateTime.UtcNow);
+                    
+                    return Task.FromResult(0);
                 }
                 else
                 {
-                    // AssetPair is in cache
-                    // Update Bid Quote
-                    if (assetQuote.IsBuy == Common.ASK)
-                        assetbid.Ask = assetQuote.Price;
+                    // Add to Asset History
+                    history?.AddToAssetHistory(assetQuote);
+
+                    // Asset allowed, add it to cache and
+                    // invoke MessageReceived event
+
+
+                    // Get Asset from cache
+                    InstrumentPrice assetbid = (from a in assetCache
+                                                where a.Instrument == assetQuote.AssetPair
+                                                select a).FirstOrDefault();
+                    if (assetbid == null)
+                    {
+                        // AssetPair is not in cache
+                        // Add AssetQuote to cache
+                        assetbid = new InstrumentPrice()
+                        {
+                            Instrument = assetQuote.AssetPair,
+                            Date = assetQuote.Timestamp,
+                            Ask = assetQuote.IsBuy == Common.ASK ? assetQuote.Price : 0,
+                            Bid = assetQuote.IsBuy == Common.ASK ? 0 : assetQuote.Price
+                        };
+                        assetCache.Add(assetbid);
+                    }
                     else
-                        assetbid.Bid = assetQuote.Price;
+                    {
+                        // AssetPair is in cache
+                        // Update Bid Quote
+                        if (assetQuote.IsBuy == Common.ASK)
+                            assetbid.Ask = assetQuote.Price;
+                        else
+                            assetbid.Bid = assetQuote.Price;
+                    }
+
+                    // TODO: clear date override
+                    // override asset bid with server UTC date.now
+                    assetbid.Date = DateTime.UtcNow;
+
+                    if (assetbid.Ask > 0 && assetbid.Bid > 0)
+                        MessageReceived?.Invoke(this, assetbid.Clone());
+                    return Task.FromResult(0);
                 }
-
-                // TODO: clear date override
-                // override asset bid with server UTC date.now
-                assetbid.Date = DateTime.UtcNow;
-
-                MessageReceived?.Invoke(this, assetbid);
-                return Task.FromResult(0);
             }
         }
 
@@ -151,7 +175,7 @@ namespace BoxOptions.Services
 
             DateTime currentdate = DateTime.UtcNow;
             double SecondsSinceLastMessage = (currentdate - lastMessageTimeStamp).TotalSeconds;
-            Console.WriteLine("SecondsSinceLastMessage: {0:F2}", SecondsSinceLastMessage);
+            Console.WriteLine("{0} > SecondsSinceLastMessage: {1:F2}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), SecondsSinceLastMessage);
 
             // Last message receive longer than allowed in IncomingDataCheckInterval
             if (SecondsSinceLastMessage > settings.BoxOptionsApi.PricesSettingsBoxOptions.IncomingDataCheckInterval)
@@ -160,9 +184,10 @@ namespace BoxOptions.Services
                 bool InExclusionInterval = CheckExclusionInterval(currentdate);
                 if (!InExclusionInterval)
                 {
-                    // Not in exclusion interval, report error.
-                    string logmessage = string.Format("BoxOptions Server: No Messages from RabbitMQ for {0}", currentdate - lastMessageTimeStamp);                    
-                    log.WriteWarningAsync("AssetQuoteSubscriber", "CheckConnectionTimerCallback", "", logmessage);                    
+                    // Not in exclusion interval, report error.                    
+                    TimeoutException ex = new TimeoutException(
+                        string.Format("BoxOptions Server: No Messages from RabbitMQ for {0}", currentdate - lastMessageTimeStamp));
+                    log.WriteErrorAsync("AssetQuoteSubscriber", "CheckConnectionTimerCallback", "", ex, DateTime.UtcNow);
                 }
             }
             
