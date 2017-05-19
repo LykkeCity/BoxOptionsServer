@@ -23,5 +23,7 @@ namespace BoxOptions.Core
     {
         Task InsertAsync(ILogItem olapEntity);
         Task<IEnumerable<LogItem>> GetRange(DateTime dateFrom, DateTime dateTo, string clientId);
+        Task<IEnumerable<string>> GetClients(DateTime dateFrom, DateTime dateTo);
+        Task<IEnumerable<LogItem>> GetAll(DateTime dateFrom, DateTime dateTo);
     }
 }
