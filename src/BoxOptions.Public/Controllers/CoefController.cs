@@ -31,16 +31,34 @@ namespace BoxOptions.Public.Controllers
         public async Task<IActionResult> ChangeAsync(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex, string userId="0")
         {
             try
-            {                
-                var result = await coefCalculator.ChangeAsync(pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex, userId);
-
-                await logRepository.InsertAsync(new LogItem
+            {
+                // Validate Parameters
+                bool ValidateParameters = coefCalculator.ValidateChange(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
+                if (ValidateParameters == false)
                 {
-                    ClientId = userId,
-                    EventCode = ((int)(BoxOptionEvent.BOEventCoefChange)).ToString(),
-                    Message = $"[{pair}];timeToFirstOption={timeToFirstOption};optionLen={optionLen};priceSize={priceSize};nPriceIndex={nPriceIndex};nTimeIndex={nTimeIndex};Result=[{result}]"
-                });
-                return Ok(result);
+                    // Invalid Parameters, report to logger
+                    return StatusCode(500, "Invalid Parameters");
+                }
+
+                var result = await coefCalculator.ChangeAsync(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
+
+                bool ValidateResult = coefCalculator.ValidateChangeResult(result);
+                if (ValidateResult == false)
+                {
+                    // Invalid result
+                    return StatusCode(500, "Invalid Result");
+                }
+                else
+                {
+
+                    await logRepository.InsertAsync(new LogItem
+                    {
+                        ClientId = userId,
+                        EventCode = ((int)(BoxOptionEvent.BOEventCoefChange)).ToString(),
+                        Message = $"[{pair}];timeToFirstOption={timeToFirstOption};optionLen={optionLen};priceSize={priceSize};nPriceIndex={nPriceIndex};nTimeIndex={nTimeIndex};Result=[{result}]"
+                    });
+                    return Ok(result);
+                }
             }
             catch (Exception ex) { return StatusCode(500, ex.Message); }
         }
@@ -50,10 +68,10 @@ namespace BoxOptions.Public.Controllers
         public async Task<IActionResult> RequestAsync(string pair, string userId = "0")
         {
             try
-            {   var result = await coefCalculator.RequestAsync(pair, userId);                
+            {   var result = await coefCalculator.RequestAsync(userId, pair);                
                 await logRepository.InsertAsync(new LogItem
                 {
-                    ClientId = userId,
+                    ClientId = userId.ToString(),
                     EventCode = ((int)(BoxOptionEvent.BOEventCoefRequest)).ToString(),
                     Message = $"[{pair}];Result=[{result}]"
                 });
@@ -68,12 +86,24 @@ namespace BoxOptions.Public.Controllers
         {
             if (history != null)
             {
-                Core.AssetQuote[] res = null;
-                var his = await history.GetAssetHistory(dtFrom,dtTo, assetPair);
-                res = new Core.AssetQuote[his.Count];                
-                his.CopyTo(res, 0);
-                var bidhistory =  AssetBidProcessor.CreateBidHistory(assetPair, res);
-                return Ok(bidhistory);
+                try
+                {
+                    Core.AssetQuote[] res = null;
+                    var his = await history.GetAssetHistory(dtFrom, dtTo, assetPair);
+                    res = new Core.AssetQuote[his.Count];
+                    if (res.Length > 0)
+                    {
+                        his.CopyTo(res, 0);
+                        var bidhistory = AssetBidProcessor.CreateBidHistory(assetPair, res);
+                        return Ok(bidhistory);
+                    }
+                    else
+                        return Ok("history is empty");
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, ex.Message);
+                }
             }
             else
                 return StatusCode(500, "History Not Available");
