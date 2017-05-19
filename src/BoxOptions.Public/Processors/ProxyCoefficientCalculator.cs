@@ -3,6 +3,7 @@ using Flurl;
 using Flurl.Http;
 using System.Threading.Tasks;
 using System;
+using System.Collections.Generic;
 
 namespace BoxOptions.Public.Processors
 {
@@ -87,12 +88,14 @@ namespace BoxOptions.Public.Processors
 
         public bool ValidateRequest(string userId, string pair)
         {
-            throw new NotImplementedException();
+            return true;
         }
 
         public bool ValidateRequestResult(string result)
         {
-            throw new NotImplementedException();
+            Models.CoefModels.CoefRequestResult res = Models.CoefModels.CoefRequestResult.Parse(result);
+            
+            return true;
         }
     }
 }

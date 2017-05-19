@@ -87,10 +87,20 @@ namespace BoxOptions.Public.Modules
                 "QuoteFeed", log)))
                 .As<IAssetRepository>();
 
-            // TODO: Change to Azure Storage
+
+            // TODO: Change to Azure Storage in prod env
+#if DEBUG
+            builder.RegisterType<LocalFSHistory>()
+                .As<IBoxOptionsHistory>()
+                .SingleInstance();
+#else
             builder.RegisterType<Processors.AzureQuoteFeed>()
                 .As<IBoxOptionsHistory>()
                 .SingleInstance();
+
+#endif
+
+
         }
     }
 }

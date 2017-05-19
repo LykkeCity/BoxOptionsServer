@@ -35,17 +35,21 @@ namespace BoxOptions.Services
 
                                     string assetEntry = textstream.ReadLine();
                                     string[] values = assetEntry.Split('|');
-
-                                    DateTime dt = DateTime.ParseExact(values[0], "yyyyMMdd_HHmmssff", Ci);
-                                    if (dt >= dateFrom && dt <= dateTo)
+                                    // Filter Asset Pair 
+                                    if (values[1] == assetPair)
                                     {
-                                        retval.AddLast(new AssetQuote()
+                                        // Filter Date
+                                        DateTime dt = DateTime.ParseExact(values[0], "yyyyMMdd_HHmmssff", Ci);
+                                        if (dt >= dateFrom && dt <= dateTo)
                                         {
-                                            Timestamp = dt,
-                                            AssetPair = values[1],
-                                            IsBuy = values[2] == "1" ? true : false,
-                                            Price = double.Parse(values[3], Ci)
-                                        });
+                                            retval.AddLast(new AssetQuote()
+                                            {
+                                                Timestamp = dt,
+                                                AssetPair = values[1],
+                                                IsBuy = values[2] == "1" ? true : false,
+                                                Price = double.Parse(values[3], Ci)
+                                            });
+                                        }
                                     }
                                 }
                             }
@@ -60,18 +64,7 @@ namespace BoxOptions.Services
             }
             return Task.FromResult(retval);
         }        
-        public async void AddToAssetHistory(AssetQuote quote)
-        {   
-            string line = string.Format("{0}|{1}|{2}|{3}", quote.Timestamp.ToString("yyyyMMdd_HHmmssff", Ci), quote.AssetPair, quote.IsBuy ? "1" : "0", quote.Price.ToString(Ci));
-            try
-            {
-                await AddToAssetFile(line);
-            }
-            catch
-            {
-                throw;
-            }
-        }
+       
         private Task AddToAssetFile(string line)
         {
             lock (AssetFileAccessLock)
@@ -99,7 +92,15 @@ namespace BoxOptions.Services
 
         Task IBoxOptionsHistory.AddToAssetHistory(AssetQuote quote)
         {
-            throw new NotImplementedException();
+            string line = string.Format("{0}|{1}|{2}|{3}", quote.Timestamp.ToString("yyyyMMdd_HHmmssff", Ci), quote.AssetPair, quote.IsBuy ? "1" : "0", quote.Price.ToString(Ci));
+            try
+            {
+                return AddToAssetFile(line);
+            }
+            catch
+            {
+                throw;
+            }
         }
     }
 }

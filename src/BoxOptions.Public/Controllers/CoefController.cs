@@ -36,7 +36,7 @@ namespace BoxOptions.Public.Controllers
                 bool ValidateParameters = coefCalculator.ValidateChange(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
                 if (ValidateParameters == false)
                 {
-                    // Invalid Parameters, report to logger
+                    // Invalid Parameters, report to logger and return Internal Server Error Code
                     return StatusCode(500, "Invalid Parameters");
                 }
 
@@ -62,20 +62,40 @@ namespace BoxOptions.Public.Controllers
             }
             catch (Exception ex) { return StatusCode(500, ex.Message); }
         }
-        
+
         [HttpGet]
         [Route("request")]
         public async Task<IActionResult> RequestAsync(string pair, string userId = "0")
         {
             try
-            {   var result = await coefCalculator.RequestAsync(userId, pair);                
-                await logRepository.InsertAsync(new LogItem
+            {
+                // Validate parameters
+                bool parOk = coefCalculator.ValidateRequest(userId, pair);
+                if (!parOk)
                 {
-                    ClientId = userId.ToString(),
-                    EventCode = ((int)(BoxOptionEvent.BOEventCoefRequest)).ToString(),
-                    Message = $"[{pair}];Result=[{result}]"
-                });
-                return Ok(result);
+                    // Invalid Parameters, report to logger and return Internal Server Error Code
+                    return StatusCode(500, "Invalid Parameters");
+                }
+                else
+                {
+                    string result = await coefCalculator.RequestAsync(userId, pair);
+                    bool resOk = coefCalculator.ValidateRequestResult(result);
+                    if (!resOk)
+                    {
+                        // Invalid result
+                        return StatusCode(500, "Invalid Result");
+                    }
+                    else
+                    {
+                        await logRepository.InsertAsync(new LogItem
+                        {
+                            ClientId = userId.ToString(),
+                            EventCode = ((int)(BoxOptionEvent.BOEventCoefRequest)).ToString(),
+                            Message = $"[{pair}];Result=[{result}]"
+                        });
+                        return Ok(result);
+                    }
+                }
             }
             catch (Exception ex) { return StatusCode(500, ex.Message); }
         }
