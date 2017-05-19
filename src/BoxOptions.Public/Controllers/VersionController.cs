@@ -30,7 +30,7 @@ namespace BoxOptions.Public.Controllers
             {                
                 // CoefAPI test for slack logging
                 // TODO: remove API test
-                var result = await coefCalculator.RequestAsync("EURUSD", "123456");
+                var result = await coefCalculator.RequestAsync("123456", "EURUSD");
 
                 var answer = new VersionModel
                 {
