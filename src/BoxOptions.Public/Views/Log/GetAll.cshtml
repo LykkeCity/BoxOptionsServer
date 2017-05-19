@@ -1,0 +1,43 @@
+﻿
+@model IEnumerable<BoxOptions.Public.Models.LogModel>
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+<html>
+    <body>
+        <table class="table">
+            <tr>
+                <th>
+                    Timestamp
+                </th>
+                <th>
+                    ClientId
+                </th>
+                <th>
+                    Event
+                </th>
+                <th>
+                    Message
+                </th>
+                <th></th>
+            </tr>
+            @foreach (var item in Model)
+            {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Timestamp)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ClientId) 
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.EventCode) - @item.EventDesc
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Message)
+                </td>
+            </tr>
+            }
+        </table>
+    </body>
+</html>
