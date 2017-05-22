@@ -94,7 +94,26 @@ namespace BoxOptions.Public.Processors
         public bool ValidateRequestResult(string result)
         {
             Models.CoefModels.CoefRequestResult res = Models.CoefModels.CoefRequestResult.Parse(result);
+
+            // Test if all coefs are equal to 1
+            bool AllEqualOne = true;
+            foreach (var block in res.CoefBlocks)
+            {
+                foreach (var coef in block.Coeffs)
+                {
+                    if (coef.HitCoeff != 1.0m || coef.MissCoeff != 1.0m)
+                    {
+                        AllEqualOne = false;
+                        break;
+                    }                    
+                }
+                if (AllEqualOne != false)
+                    break;
+            }
+            if (AllEqualOne == true)
+                throw new ArgumentException("All coefficients are equal to 1.0");
             
+
             return true;
         }
     }

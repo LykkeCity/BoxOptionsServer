@@ -60,12 +60,12 @@ namespace BoxOptions.Public.Models
                             if (valuePair[0] == "\"hitCoeff\"")
                             {
                                 newItem.HitCoeff = decimal.Parse(valuePair[1], ci);
-                                Console.WriteLine("HitCoeff:\n\t{0}\n\t{1:F16}", valuePair[1], newItem.HitCoeff);
+                                //Console.WriteLine("HitCoeff:\n\t{0}\n\t{1:F16}", valuePair[1], newItem.HitCoeff);
                             }
                             else if (valuePair[0] == "\"missCoeff\"")
                             {
                                 newItem.MissCoeff = decimal.Parse(valuePair[1], ci);
-                                Console.WriteLine("MissCoeff :\n\t{0}\n\t{1:F16}", valuePair[1], newItem.MissCoeff);
+                                //Console.WriteLine("MissCoeff :\n\t{0}\n\t{1:F16}", valuePair[1], newItem.MissCoeff);
                             }
                         }
                         coefBlockList.Add(newItem);

@@ -1,6 +1,7 @@
 ﻿using BoxOptions.Common;
 using BoxOptions.Core;
 using BoxOptions.Core.Interfaces;
+using Common.Log;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -13,13 +14,15 @@ namespace BoxOptions.Public.Controllers
         private readonly BoxOptionsSettings _settings;
         Processors.ICoefficientCalculator coefCalculator;
         private readonly ILogRepository logRepository;
+        private readonly ILog log;
         private readonly IBoxOptionsHistory history;
 
-        public CoefController(BoxOptionsSettings settings, IBoxOptionsHistory history, ILogRepository logRepository)
+        public CoefController(BoxOptionsSettings settings, IBoxOptionsHistory history, ILogRepository logRepository, ILog log)
         {
             _settings = settings;
             this.logRepository = logRepository;
             this.history = history;
+            this.log = log;
             if (_settings.BoxOptionsApi.CoefApiUrl.ToLower() == "mock")
                 coefCalculator = new Processors.MockCoefficientCalculator();            
             else
@@ -79,7 +82,14 @@ namespace BoxOptions.Public.Controllers
                 else
                 {
                     string result = await coefCalculator.RequestAsync(userId, pair);
-                    bool resOk = coefCalculator.ValidateRequestResult(result);
+                    bool resOk = true; ;
+                    try { resOk = coefCalculator.ValidateRequestResult(result); }
+                    catch (Exception ex)
+                    {
+                        //TODO return values or return error?
+                        resOk = false;
+                        await log.WriteErrorAsync("Coef/Request", $"pair={pair}&userId={userId}", "", ex);
+                    }
                     if (!resOk)
                     {
                         // Invalid result
@@ -100,34 +110,34 @@ namespace BoxOptions.Public.Controllers
             catch (Exception ex) { return StatusCode(500, ex.Message); }
         }
 
-        [HttpGet]
-        [Route("history")]
-        public async Task<IActionResult> History(DateTime dtFrom, DateTime dtTo, string assetPair)
-        {
-            if (history != null)
-            {
-                try
-                {
-                    Core.AssetQuote[] res = null;
-                    var his = await history.GetAssetHistory(dtFrom, dtTo, assetPair);
-                    res = new Core.AssetQuote[his.Count];
-                    if (res.Length > 0)
-                    {
-                        his.CopyTo(res, 0);
-                        var bidhistory = AssetBidProcessor.CreateBidHistory(assetPair, res);
-                        return Ok(bidhistory);
-                    }
-                    else
-                        return Ok("history is empty");
-                }
-                catch (Exception ex)
-                {
-                    return StatusCode(500, ex.Message);
-                }
-            }
-            else
-                return StatusCode(500, "History Not Available");
+        //[HttpGet]
+        //[Route("history")]
+        //public async Task<IActionResult> History(DateTime dtFrom, DateTime dtTo, string assetPair)
+        //{
+        //    if (history != null)
+        //    {
+        //        try
+        //        {
+        //            Core.AssetQuote[] res = null;
+        //            var his = await history.GetAssetHistory(dtFrom, dtTo, assetPair);
+        //            res = new Core.AssetQuote[his.Count];
+        //            if (res.Length > 0)
+        //            {
+        //                his.CopyTo(res, 0);
+        //                var bidhistory = AssetBidProcessor.CreateBidHistory(assetPair, res);
+        //                return Ok(bidhistory);
+        //            }
+        //            else
+        //                return Ok("history is empty");
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            return StatusCode(500, ex.Message);
+        //        }
+        //    }
+        //    else
+        //        return StatusCode(500, "History Not Available");
 
-        }
+        //}
     }
 }
