@@ -17,14 +17,15 @@ namespace BoxOptions.Public.Models
 
             internal static CoefRequestResult Parse(string result)
             {
+                // Culture info for decimal value conversion.
                 System.Globalization.CultureInfo ci = new System.Globalization.CultureInfo("en-us");
 
+                // return value
                 CoefRequestResult retval = new CoefRequestResult();
 
 
-
                 List<CoefBlock> blockList = new List<CoefBlock>();
-
+                // Invalid json format
                 if (result.Length<2 || !result.StartsWith("[")|| !result.EndsWith("]"))
                     throw new FormatException("Invalid format");
                 string objectstring = result.Substring(1, result.Length - 2);

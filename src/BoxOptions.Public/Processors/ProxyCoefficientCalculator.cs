@@ -93,25 +93,58 @@ namespace BoxOptions.Public.Processors
 
         public bool ValidateRequestResult(string result)
         {
+            // Parse result from coefficient API into objects
             Models.CoefModels.CoefRequestResult res = Models.CoefModels.CoefRequestResult.Parse(result);
 
-            // Test if all coefs are equal to 1
+            ////Test: Force all to 1:
+            //foreach (var block in res.CoefBlocks)
+            //{
+            //    foreach (var coef in block.Coeffs)
+            //    {
+            //        coef.HitCoeff = 1.0m;
+            //        coef.MissCoeff = 1.0m;
+            //    }
+            //}
+
+            ////Test: Force negative
+            //foreach (var block in res.CoefBlocks)
+            //{
+            //    foreach (var coef in block.Coeffs)
+            //    {
+            //        coef.HitCoeff = -1.0m;
+            //        break;
+            //    }
+            //    break;
+            //}
+
+
+            // Teste if all values are 1.0
             bool AllEqualOne = true;
+            
+            // Test if there are negative 
+            bool NegativeCoef = false;
             foreach (var block in res.CoefBlocks)
             {
                 foreach (var coef in block.Coeffs)
                 {
                     if (coef.HitCoeff != 1.0m || coef.MissCoeff != 1.0m)
                     {
-                        AllEqualOne = false;
-                        break;
-                    }                    
-                }
-                if (AllEqualOne != false)
-                    break;
+                        AllEqualOne = false;                        
+                    }
+
+                    if (coef.HitCoeff < 0 || coef.MissCoeff < 0)
+                    {
+                        NegativeCoef = true;
+                    }
+                }                
             }
-            if (AllEqualOne == true)
+            if (AllEqualOne == true) // All coefficients are 1.0 thow exception with information.
                 throw new ArgumentException("All coefficients are equal to 1.0");
+
+
+            if (NegativeCoef == true) // Negative coefficiente
+                throw new ArgumentException("Negative coefficients");
+
             
 
             return true;

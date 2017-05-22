@@ -86,8 +86,17 @@ namespace BoxOptions.Public.Controllers
                     try { resOk = coefCalculator.ValidateRequestResult(result); }
                     catch (Exception ex)
                     {
-                        //TODO return values or return error?
-                        resOk = false;
+                        // If all coefficients are equal to 1.0
+                        // return answer to client.
+                        // https://lykkex.atlassian.net/browse/BOXOPT-12?focusedCommentId=26511&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-26511
+                        if (ex.Message == "All coefficients are equal to 1.0")
+                            resOk = true;
+                        // If there are negative coefficients
+                        // return Error
+                        else if (ex.Message == "Negative coefficients")
+                            resOk = false;
+                        else
+                            resOk = false;
                         await log.WriteErrorAsync("Coef/Request", $"pair={pair}&userId={userId}", "", ex);
                     }
                     if (!resOk)
