@@ -92,7 +92,6 @@ namespace BoxOptions.Client
             
         }
 
-    
 
         #region Rpc methods
 
@@ -113,7 +112,8 @@ namespace BoxOptions.Client
             subscription = _realmProxy.Services.GetSubject<InstrumentPrice>("prices.update")
                 .Subscribe(info =>
                 {
-                    Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > BidDate[{info.Date.ToString("yyyy-MM-dd HH:mm:ss")}] | {info.Instrument} {info.Bid}/{info.Ask}");
+                    if (Program.ShowFeed)
+                        Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > BidDate[{info.Date.ToString("yyyy-MM-dd HH:mm:ss")}] | {info.Instrument} {info.Bid}/{info.Ask}");
                 });
 
 
@@ -123,6 +123,55 @@ namespace BoxOptions.Client
         {
             subscription.Dispose();
         }
+
+        internal void Launch(string userId)
+        {
+            string result = _service.Launch(userId);
+            Console.WriteLine("{0}> Game Launch({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
+        }
+
+        internal void Wake(string userId)
+        {
+            string result = _service.Wake(userId);
+            Console.WriteLine("{0}> Wake({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
+        }
+
+        internal void Sleep(string userId)
+        {
+            string result = _service.Sleep(userId);
+            Console.WriteLine("{0}> Sleep({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
+        }
+
+        internal void GameStart(string userId, string assetPair)
+        {
+            string result = _service.GameStart(userId, assetPair);
+            Console.WriteLine("{0}> GameStart({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, assetPair, result);
+        }
+
+        internal void GameClose(string userId)
+        {
+            string result = _service.GameClose(userId);
+            Console.WriteLine("{0}> GameClose({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
+        }
+
+        internal void PlaceBet(string userId, string box, decimal betAmount)
+        {
+            string result = _service.PlaceBet(userId, box, betAmount);
+            Console.WriteLine("{0}> PlaceBet({1},{2},{3}) = {4}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, betAmount, result);
+        }
+
+        internal void ChangeBet(string userId, string box, decimal betAmount)
+        {
+            string result = _service.ChangeBet(userId, box, betAmount);
+            Console.WriteLine("{0}> ChangeBet({1},{2},{3}) = {4}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, betAmount, result);
+        }
+
+        internal void ChangeScale(string userId, decimal scale)
+        {
+            string result = _service.ChangeScale(userId, scale);
+            Console.WriteLine("{0}> ChangeBet({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, scale, result);
+        }
+
 
         #endregion
     }

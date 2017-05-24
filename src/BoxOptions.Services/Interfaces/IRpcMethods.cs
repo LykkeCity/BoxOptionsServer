@@ -19,5 +19,29 @@ namespace BoxOptions.Services
         /// <returns></returns>
         [WampProcedure("init.assets")]
         AssetPair[] InitAssets();
+                
+        [WampProcedure("game.launch")]
+        string Launch(string userId);
+                
+        [WampProcedure("game.wake")]
+        string Wake(string userId);
+
+        [WampProcedure("game.sleep")]
+        string Sleep(string userId);
+
+        [WampProcedure("game.start")]
+        string GameStart(string userId, string assetPair);
+
+        [WampProcedure("game.close")]
+        string GameClose(string userId);
+
+        [WampProcedure("game.placebet")]
+        string PlaceBet(string userId, string box, decimal betAmount);
+
+        [WampProcedure("game.changebet")]
+        string ChangeBet(string userId, string box, decimal betAmount);
+
+        [WampProcedure("game.changescale")]
+        string ChangeScale(string userId, decimal scale);
     }
 }

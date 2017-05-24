@@ -60,6 +60,10 @@ namespace BoxOptions.Public.Modules
               .As<IStartable>()
               .SingleInstance();
 
+            builder.RegisterType<GameManager>()
+              .As<Services.Interfaces.IGameManager>()              
+              .SingleInstance();
+
             builder.RegisterType<PriceFeedService>()
                 .As<IStartable>()
                 .SingleInstance();

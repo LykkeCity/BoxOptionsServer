@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using BoxOptions.Core;
+using BoxOptions.Services.Interfaces;
 
 namespace BoxOptions.Services
 {
@@ -9,10 +11,12 @@ namespace BoxOptions.Services
     public class WampRpcService : IRpcMethods
     {
         private readonly IMicrographCache _micrographCacheService;
+        private readonly IGameManager _gameManager;
 
-        public WampRpcService(IMicrographCache micrographCacheService)
+        public WampRpcService(IMicrographCache micrographCacheService, IGameManager gameManager)
         {
             _micrographCacheService = micrographCacheService;
+            _gameManager = gameManager;
         }
 
         public Dictionary<string, Price[]> InitChartData()
@@ -360,6 +364,46 @@ namespace BoxOptions.Services
                 },
             };
 
+        }
+
+        public string Launch(string userId)
+        {
+            return _gameManager.Launch(userId);
+        }
+
+        public string Wake(string userId)
+        {
+            return _gameManager.Wake(userId);
+        }
+
+        public string Sleep(string userId)
+        {
+            return _gameManager.Sleep(userId);
+        }
+
+        public string GameStart(string userId, string assetPair)
+        {
+            return _gameManager.GameStart(userId, assetPair);
+        }
+
+        public string GameClose(string userId)
+        {
+            return _gameManager.GameClose(userId);
+        }
+
+        public string PlaceBet(string userId, string box, decimal betAmount)
+        {
+            return _gameManager.PlaceBet(userId, box, betAmount);
+        }
+
+        public string ChangeBet(string userId, string box, decimal betAmount)
+        {
+            return _gameManager.ChangeBet(userId, box, betAmount);
+        }
+
+        public string ChangeScale(string userId, decimal scale)
+        {
+            return _gameManager.ChangeScale(userId, scale);
         }
     }
 }

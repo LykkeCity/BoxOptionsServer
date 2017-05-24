@@ -4,8 +4,13 @@ namespace BoxOptions.Client
 {
     class Program
     {
+        const string UserId = "204af161-50c5-477b-8375-89bfc715c2cc";
+        internal static bool ShowFeed;
         static void Main(string[] args)
         {
+
+            ShowFeed = true;
+
             Console.WriteLine("Connect to WAMP: prod[P] or dev[D] connection.");
             string input = Console.ReadLine();
             ClientEnv env = ClientEnv.Local;
@@ -27,6 +32,23 @@ namespace BoxOptions.Client
                 input = Console.ReadLine();
                 switch (input)
                 {
+                    case "help":
+                        Console.WriteLine(" <===HELP===>");
+                        Console.WriteLine(" > help - show this help");
+                        Console.WriteLine(" > feed - toggles feed output to console.");
+                        Console.WriteLine(" > graph - micrograph cached data");
+                        Console.WriteLine(" > log - perform log event");
+                        Console.WriteLine(" > launch - launch new game");
+                        Console.WriteLine(" > wake - game.wake");
+                        Console.WriteLine(" > start");
+                        break;
+                    case "feed":
+                        ShowFeed = !ShowFeed;
+                        if (ShowFeed)
+                            Console.WriteLine("Feed output is ON");
+                        else
+                            Console.WriteLine("Feed output is OFF");
+                        break;
                     case "graph":
                         chart = client.GetChardData();
                         int i = 0;
@@ -43,6 +65,19 @@ namespace BoxOptions.Client
                         client.PostLog();
                         break;
                     default:
+                    case "launch":
+                        client.Launch(UserId);
+                        break;
+                    case "wake":
+                        client.Wake(UserId);
+                        break;
+                    case "sleep":
+                        client.Wake(UserId);
+                        break;
+                    case "start":
+                        Console.Write("\tAssetPair>");
+                        string s_pair = Console.ReadLine();
+                        client.GameStart(UserId, s_pair);
                         break;
                 }
             } while (input != "exit");
