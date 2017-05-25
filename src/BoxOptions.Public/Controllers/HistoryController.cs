@@ -1,5 +1,5 @@
 ﻿using BoxOptions.Common;
-using BoxOptions.Core.Interfaces;
+using BoxOptions.Common.Interfaces;
 using BoxOptions.Core.Models;
 using Microsoft.AspNetCore.Mvc;
 using System;

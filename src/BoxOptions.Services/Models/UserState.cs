@@ -18,6 +18,7 @@ namespace BoxOptions.Services.Models
         {
             this.userId = userId;
             statusHistory = new List<StateHistory>();
+            currentGame = null;
         }
 
 
@@ -25,7 +26,9 @@ namespace BoxOptions.Services.Models
         public decimal Balance { get => balance; set => balance = value; }
         public StateHistory[] StatusHistory { get => statusHistory.ToArray(); }
         public int CurrentState { get => currentState; }
+
         public Game CurrentGame { get => currentGame; }
+        public string CurrentGameId { get; set; }
 
         internal void SetStatus(int status)
         {
@@ -40,14 +43,33 @@ namespace BoxOptions.Services.Models
         internal void SetGame(Game game)
         {
             if (currentGame == null)
+            {
                 currentGame = game;
+                CurrentGameId = game.GameId;
+            }
             else
                 throw new InvalidOperationException("Current game not null");
+        }
+
+        internal void RemoveGame()
+        {
+            if (currentGame != null)
+            {
+                currentGame = null;
+                CurrentGameId = null;
+            }
+            else
+                throw new InvalidOperationException("User has no game ongoing.");
         }
     }
     public class StateHistory
     {
         public DateTime Timestamp { get; set; }
         public int Status { get; set; }
+
+        public override string ToString()
+        {
+            return string.Format("{0} > {1}-{2}", this.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff"), Status, (GameManager.GameStatus)Status);
+        }
     }
 }

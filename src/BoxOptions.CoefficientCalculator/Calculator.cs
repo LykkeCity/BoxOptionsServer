@@ -1,4 +1,5 @@
 ﻿using BoxOptions.CoefficientCalculator.Daos;
+using BoxOptions.Common.Interfaces;
 using BoxOptions.Core.Models;
 using System;
 using System.Collections.Generic;
@@ -11,8 +12,8 @@ namespace BoxOptions.CoefficientCalculator
         private bool initialized ;
         private bool isDisposing ;
         private bool isSubscriberRunning;
-        private Core.Interfaces.IAssetQuoteSubscriber quoteSubscriber;
-        private Core.Interfaces.IBoxOptionsHistory historyRep;
+        private IAssetQuoteSubscriber quoteSubscriber;
+        private IBoxOptionsHistory historyRep;
 
         // TODO: configuration
         private int numDaysHistory;
@@ -33,7 +34,7 @@ namespace BoxOptions.CoefficientCalculator
             lastPricesCache = new List<InstrumentPrice>();
         }
 
-        public void Init(Core.Interfaces.IAssetQuoteSubscriber quoteSubscriber, Core.Interfaces.IBoxOptionsHistory historyRep)
+        public void Init(IAssetQuoteSubscriber quoteSubscriber, IBoxOptionsHistory historyRep)
         {
             this.quoteSubscriber = quoteSubscriber;
             this.historyRep = historyRep;

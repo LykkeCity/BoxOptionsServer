@@ -1,10 +1,11 @@
-﻿using BoxOptions.Core.Interfaces;
+﻿using BoxOptions.Common.Interfaces;
+using BoxOptions.Core;
+using BoxOptions.Core.Interfaces;
+using BoxOptions.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using BoxOptions.Core;
-using BoxOptions.Core.Models;
 
 namespace BoxOptions.Public.Processors
 {

@@ -15,7 +15,9 @@ namespace BoxOptions.Services.Models
         {
             id = Guid.NewGuid().ToString();
         }
-
+        public string Id => id;
         public decimal Coeff { get => coeff; set => coeff = value; }
+
+        
     }
 }

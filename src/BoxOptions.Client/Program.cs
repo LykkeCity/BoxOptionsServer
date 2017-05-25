@@ -6,6 +6,8 @@ namespace BoxOptions.Client
     {
         const string UserId = "204af161-50c5-477b-8375-89bfc715c2cc";
         internal static bool ShowFeed;
+        private static System.Globalization.CultureInfo CI = new System.Globalization.CultureInfo("en-us");
+
         static void Main(string[] args)
         {
 
@@ -41,9 +43,12 @@ namespace BoxOptions.Client
                         Console.WriteLine(" > feed - toggles feed output to console.");
                         Console.WriteLine(" > graph - micrograph cached data");
                         Console.WriteLine(" > log - perform log event");
-                        Console.WriteLine(" > launch - launch new game");
-                        Console.WriteLine(" > wake - game.wake");
-                        Console.WriteLine(" > start");
+                        Console.WriteLine(" > launch - app launched");
+                        Console.WriteLine(" > wake - app wake");
+                        Console.WriteLine(" > sleep - app sleep");
+                        Console.WriteLine(" > start - Start new game");
+                        Console.WriteLine(" > close - Close ongoing game");
+                        Console.WriteLine(" > placebet - place a new bet on a box");
                         break;
                     case "feed":
                         ShowFeed = !ShowFeed;
@@ -75,13 +80,29 @@ namespace BoxOptions.Client
                         client.Wake(UserId);
                         break;
                     case "sleep":
-                        client.Wake(UserId);
+                        client.Sleep(UserId);
                         break;
                     case "start":
                         Console.Write("\tAssetPair>");
                         string s_pair = Console.ReadLine();
                         client.GameStart(UserId, s_pair);
                         break;
+                    case "close":                        
+                        client.GameClose(UserId);
+                        break;
+                    case "placebet":
+                        Console.Write("\tBox>");
+                        string pb_box = Console.ReadLine();
+                        Console.Write("\tBet>");
+                        string pb_bet = Console.ReadLine();
+                        decimal pb_bet_val = 0;
+                        decimal.TryParse(pb_bet, System.Globalization.NumberStyles.AllowDecimalPoint, CI, out pb_bet_val);
+                        if (pb_bet_val > 0)
+                            client.PlaceBet(UserId, pb_box, pb_bet_val);
+                        else
+                            Console.WriteLine("Invalid Bet Value");
+                        break;
+
                 }
             } while (input != "exit");
             client.Stop();

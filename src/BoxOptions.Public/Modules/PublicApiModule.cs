@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using WampSharp.V2;
 using WampSharp.V2.Realm;
 using BoxOptions.Core.Interfaces;
+using BoxOptions.Common.Interfaces;
 
 namespace BoxOptions.Public.Modules
 {
@@ -47,9 +48,7 @@ namespace BoxOptions.Public.Modules
             builder.RegisterInstance(_settings)
                 .AsSelf()
                 .SingleInstance();
-
             
-
             builder.RegisterType<AssetQuoteSubscriber>()
                 .As<IAssetQuoteSubscriber>()
                 .As<IStartable>()
@@ -99,6 +98,17 @@ namespace BoxOptions.Public.Modules
                 .SingleInstance();
 
 #endif
+            // Coefficient calculator
+            ICoefficientCalculator coefCalculator;
+            if (_settings.BoxOptionsApi.CoefApiUrl.ToLower() == "mock")
+                coefCalculator = new Processors.MockCoefficientCalculator();
+            else
+                coefCalculator = new Processors.ProxyCoefficientCalculator(_settings);
+
+            builder.RegisterInstance(coefCalculator)
+                .As<ICoefficientCalculator>()
+                .SingleInstance();
+
             // Game Database
             builder.RegisterType<MockGameDatabase>()
               .As<Services.Interfaces.IGameDatabase>()

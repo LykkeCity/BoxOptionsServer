@@ -1,19 +1,18 @@
 ﻿using Autofac;
 using BoxOptions.Common;
+using BoxOptions.Common.Interfaces;
 using BoxOptions.Core;
-using BoxOptions.Core.Interfaces;
 using BoxOptions.Core.Models;
 using Common.Log;
 using Lykke.RabbitMqBroker.Subscriber;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace BoxOptions.Services
 {
-    
+
     public class AssetQuoteSubscriber : IAssetQuoteSubscriber, IStartable, IDisposable
     {
         /// <summary>

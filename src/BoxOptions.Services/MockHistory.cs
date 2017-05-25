@@ -1,4 +1,4 @@
-﻿using BoxOptions.Core.Interfaces;
+﻿using BoxOptions.Common.Interfaces;
 using BoxOptions.Core.Models;
 using System;
 using System.Collections.Generic;

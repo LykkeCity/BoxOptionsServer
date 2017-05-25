@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace BoxOptions.Core.Interfaces
+namespace BoxOptions.Common.Interfaces
 {
     public interface IBoxOptionsHistory
     {

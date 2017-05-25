@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using BoxOptions.Common.Interfaces;
+using System;
 using System.Threading.Tasks;
 
 namespace BoxOptions.CoefficientCalculator
@@ -11,7 +10,7 @@ namespace BoxOptions.CoefficientCalculator
     public interface ICoefficientCalculator: IDisposable
     {
 
-        void Init(Core.Interfaces.IAssetQuoteSubscriber quoteSubscriber, Core.Interfaces.IBoxOptionsHistory historyRep);
+        void Init(IAssetQuoteSubscriber quoteSubscriber, IBoxOptionsHistory historyRep);
 
         void StartSubscriber();
         void StopSubscriber();

@@ -1,4 +1,5 @@
 ﻿using BoxOptions.Common;
+using BoxOptions.Common.Interfaces;
 using BoxOptions.Public.Models;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -10,7 +11,7 @@ namespace BoxOptions.Public.Controllers
     public class VersionController : Controller
     {
         private readonly BoxOptionsSettings _settings;
-        Processors.ICoefficientCalculator coefCalculator;
+        ICoefficientCalculator coefCalculator;
 
         public VersionController(BoxOptionsSettings settings)
         {

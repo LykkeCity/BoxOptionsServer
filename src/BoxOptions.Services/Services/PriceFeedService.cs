@@ -1,5 +1,6 @@
 ﻿using Autofac;
 using BoxOptions.Common;
+using BoxOptions.Common.Interfaces;
 using BoxOptions.Core.Interfaces;
 using BoxOptions.Core.Models;
 using System;

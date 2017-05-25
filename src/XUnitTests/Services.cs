@@ -1,14 +1,13 @@
-﻿using BoxOptions.Core;
+﻿using BoxOptions.Common.Interfaces;
 using BoxOptions.Core.Models;
 using BoxOptions.Services;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using Xunit;
 
 namespace XUnitTests
 {
-    
+
     public class Services
     {
        
@@ -72,7 +71,7 @@ namespace XUnitTests
 
         //[Fact] void PriceFeedService_
 
-        private class MockAssetQuoteSubscriber : BoxOptions.Core.Interfaces.IAssetQuoteSubscriber
+        private class MockAssetQuoteSubscriber : IAssetQuoteSubscriber
         {
             public event EventHandler<InstrumentPrice> MessageReceived;
 

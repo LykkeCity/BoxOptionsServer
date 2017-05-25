@@ -1,6 +1,6 @@
 ﻿using BoxOptions.Common;
+using BoxOptions.Common.Interfaces;
 using BoxOptions.Core;
-using BoxOptions.Core.Interfaces;
 using BoxOptions.Core.Models;
 using Common.Log;
 using Microsoft.AspNetCore.Mvc;
@@ -13,21 +13,19 @@ namespace BoxOptions.Public.Controllers
     public class CoefController : Controller
     {
         private readonly BoxOptionsSettings _settings;
-        Processors.ICoefficientCalculator coefCalculator;
+        ICoefficientCalculator coefCalculator;
         private readonly ILogRepository logRepository;
         private readonly ILog log;
         private readonly IBoxOptionsHistory history;
 
-        public CoefController(BoxOptionsSettings settings, IBoxOptionsHistory history, ILogRepository logRepository, ILog log)
+        public CoefController(BoxOptionsSettings settings, IBoxOptionsHistory history, ILogRepository logRepository, ILog log, ICoefficientCalculator coefCalculator)
         {
             _settings = settings;
             this.logRepository = logRepository;
             this.history = history;
             this.log = log;
-            if (_settings.BoxOptionsApi.CoefApiUrl.ToLower() == "mock")
-                coefCalculator = new Processors.MockCoefficientCalculator();            
-            else
-                coefCalculator = new Processors.ProxyCoefficientCalculator(_settings);
+            this.coefCalculator = coefCalculator;
+            
         }
       
         [HttpGet]

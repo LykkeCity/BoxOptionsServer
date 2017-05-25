@@ -7,5 +7,8 @@ namespace BoxOptions.Services.Interfaces
     {
         Task SaveUserState(UserState userState);
         Task<UserState> LoadUserState(string userId);
+
+        Task SaveGame(Game game);
+        Task<Game> LoadGame(string gameId);
     }
 }

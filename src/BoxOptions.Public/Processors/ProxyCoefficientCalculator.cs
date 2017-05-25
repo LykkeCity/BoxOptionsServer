@@ -1,9 +1,9 @@
 ﻿using BoxOptions.Common;
+using BoxOptions.Common.Interfaces;
 using Flurl;
 using Flurl.Http;
-using System.Threading.Tasks;
 using System;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace BoxOptions.Public.Processors
 {

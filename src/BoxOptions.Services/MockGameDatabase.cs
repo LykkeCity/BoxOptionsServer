@@ -9,9 +9,19 @@ namespace BoxOptions.Services
 {
     public class MockGameDatabase : IGameDatabase
     {
+        public Task<Game> LoadGame(string gameId)
+        {
+            return Task.FromResult<Game>(null);
+        }
+
         public Task<UserState> LoadUserState(string userId)
         {
             return Task.FromResult<UserState>(null);
+        }
+
+        public Task SaveGame(Game game)
+        {
+            return Task.FromResult(0);
         }
 
         public Task SaveUserState(UserState userState)
