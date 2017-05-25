@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using BoxOptions.Core;
 using BoxOptions.Public.Models;
 using Microsoft.AspNetCore.Mvc;
+using BoxOptions.Core.Models;
 
 namespace BoxOptions.Public.Controllers
 {

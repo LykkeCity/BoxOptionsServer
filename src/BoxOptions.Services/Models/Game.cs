@@ -6,17 +6,24 @@ namespace BoxOptions.Services.Models
 {
     public class Game
     {
+        readonly string assetPair;
+
         int currentStatus;
         DateTime creationDate;
-        string assetPair;
+        
 
         GameParameters parameters;
 
         List<GameParametersHistory> parameterHistory;
-        List<int> statusHistory;
+        
         Dictionary<Box, decimal> betList;
 
+        public Game(string assetPair)
+        {
+            this.assetPair = assetPair;
+        }
 
-
+        public string AssetPair { get => assetPair;  }
     }
+    
 }

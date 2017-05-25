@@ -32,6 +32,9 @@ namespace BoxOptions.Client
                 input = Console.ReadLine();
                 switch (input)
                 {
+                    default:
+                        Console.WriteLine("Unknown command: [{0}]", input);
+                        break;
                     case "help":
                         Console.WriteLine(" <===HELP===>");
                         Console.WriteLine(" > help - show this help");
@@ -64,7 +67,7 @@ namespace BoxOptions.Client
                     case "log":
                         client.PostLog();
                         break;
-                    default:
+                    
                     case "launch":
                         client.Launch(UserId);
                         break;

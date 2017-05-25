@@ -1,6 +1,6 @@
 ﻿using BoxOptions.Common;
-using BoxOptions.Core;
 using BoxOptions.Core.Interfaces;
+using BoxOptions.Core.Models;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -26,9 +26,9 @@ namespace BoxOptions.Public.Controllers
             {
                 try
                 {
-                    Core.AssetQuote[] res = null;
+                    AssetQuote[] res = null;
                     var his = await history.GetAssetHistory(dtFrom, dtTo, assetPair);
-                    res = new Core.AssetQuote[his.Count];
+                    res = new AssetQuote[his.Count];
                     if (res.Length > 0)
                     {
                         his.CopyTo(res, 0);

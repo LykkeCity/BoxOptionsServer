@@ -1,8 +1,7 @@
 ﻿using BoxOptions.CoefficientCalculator.Daos;
-using BoxOptions.Core;
+using BoxOptions.Core.Models;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace BoxOptions.CoefficientCalculator

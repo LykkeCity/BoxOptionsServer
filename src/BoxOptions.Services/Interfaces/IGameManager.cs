@@ -7,7 +7,7 @@ namespace BoxOptions.Services.Interfaces
 {
     public interface IGameManager
     {
-
+       
         string Launch(string userId);
 
         string Wake(string userId);

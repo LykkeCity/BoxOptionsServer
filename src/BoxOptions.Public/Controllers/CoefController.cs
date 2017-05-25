@@ -1,6 +1,7 @@
 ﻿using BoxOptions.Common;
 using BoxOptions.Core;
 using BoxOptions.Core.Interfaces;
+using BoxOptions.Core.Models;
 using Common.Log;
 using Microsoft.AspNetCore.Mvc;
 using System;

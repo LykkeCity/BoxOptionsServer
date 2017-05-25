@@ -60,10 +60,6 @@ namespace BoxOptions.Public.Modules
               .As<IStartable>()
               .SingleInstance();
 
-            builder.RegisterType<GameManager>()
-              .As<Services.Interfaces.IGameManager>()              
-              .SingleInstance();
-
             builder.RegisterType<PriceFeedService>()
                 .As<IStartable>()
                 .SingleInstance();
@@ -103,7 +99,15 @@ namespace BoxOptions.Public.Modules
                 .SingleInstance();
 
 #endif
+            // Game Database
+            builder.RegisterType<MockGameDatabase>()
+              .As<Services.Interfaces.IGameDatabase>()
+              .SingleInstance();
 
+            // Game Manager
+            builder.RegisterType<GameManager>()
+              .As<Services.Interfaces.IGameManager>()
+              .SingleInstance();
 
         }
     }

@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using BoxOptions.Core;
+﻿using BoxOptions.Core.Models;
 using BoxOptions.Services.Interfaces;
+using System.Collections.Generic;
 
 namespace BoxOptions.Services
 {

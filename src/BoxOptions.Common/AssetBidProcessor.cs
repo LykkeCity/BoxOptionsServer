@@ -1,7 +1,6 @@
 ﻿using BoxOptions.Core;
-using System;
+using BoxOptions.Core.Models;
 using System.Collections.Generic;
-using System.Text;
 using System.Linq;
 
 namespace BoxOptions.Common

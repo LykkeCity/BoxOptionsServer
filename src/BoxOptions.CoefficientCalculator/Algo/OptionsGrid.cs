@@ -1,4 +1,4 @@
-﻿using BoxOptions.Core;
+﻿using BoxOptions.Core.Models;
 using System.Collections.Generic;
 
 namespace BoxOptions.CoefficientCalculator.Algo

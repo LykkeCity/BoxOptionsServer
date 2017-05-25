@@ -7,6 +7,7 @@ using WampSharp.V2;
 using WampSharp.V2.Client;
 using System.Net;
 using System.IO;
+using BoxOptions.Core.Models;
 
 namespace BoxOptions.Client
 {

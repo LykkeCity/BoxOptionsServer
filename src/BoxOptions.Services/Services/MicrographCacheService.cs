@@ -1,7 +1,7 @@
 ﻿using Autofac;
 using BoxOptions.Common;
-using BoxOptions.Core;
 using BoxOptions.Core.Interfaces;
+using BoxOptions.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

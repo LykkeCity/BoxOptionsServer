@@ -1,12 +1,14 @@
-﻿using System;
+﻿using AzureStorage;
+using AzureStorage.Tables;
+using BoxOptions.Core;
+using BoxOptions.Core.Interfaces;
+using BoxOptions.Core.Models;
+using Microsoft.WindowsAzure.Storage.Table;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using AzureStorage;
-using AzureStorage.Tables;
-using BoxOptions.Core;
-using Microsoft.WindowsAzure.Storage.Table;
 
 namespace BoxOptions.AzureRepositories
 {

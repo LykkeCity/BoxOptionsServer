@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace BoxOptions.Core
+﻿namespace BoxOptions.Core.Models
 {
     public class AssetPair
     {
