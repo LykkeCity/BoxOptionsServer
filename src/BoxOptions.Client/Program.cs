@@ -13,11 +13,13 @@ namespace BoxOptions.Client
 
             ShowFeed = true;
 
-            Console.WriteLine("Connect to WAMP: prod[P] or dev[D] connection.");
+            Console.WriteLine("Connect to WAMP: prod[P], dev[D] or local[L] connection.");
             string input = Console.ReadLine();
             ClientEnv env = ClientEnv.Local;
             if (input.ToLower() == "p")
                 env = ClientEnv.Prod;
+            else if (input.ToLower() == "d")
+                env = ClientEnv.Dev;
 
             var client = new MtClient();
             client.Connect(env);

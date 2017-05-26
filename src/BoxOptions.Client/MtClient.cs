@@ -55,6 +55,10 @@ namespace BoxOptions.Client
                     // IIS Port from launchSettings.json
                     //_serverAddress = "ws://127.0.0.1:59136/ws";
                     break;
+                case ClientEnv.Dev:
+                    // kestrel Port
+                    _serverAddress = "ws://13.93.116.252:5050/ws";
+                    break;
                 case ClientEnv.Prod:
                     _serverAddress = "ws://boxoptions-api.lykke.com:5000/ws";
                     break;
