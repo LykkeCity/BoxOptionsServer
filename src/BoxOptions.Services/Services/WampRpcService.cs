@@ -463,9 +463,9 @@ namespace BoxOptions.Services
             {
                 return _gameManager.GetUserBalance(userId);
             }
-            catch (Exception ex)
+            catch 
             {
-                return ex.HResult;
+                return -1;
             }
         }
 
