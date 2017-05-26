@@ -102,6 +102,9 @@ namespace BoxOptions.Client
                         else
                             Console.WriteLine("Invalid Bet Value");
                         break;
+                    case "getbalance":
+                        client.GetBalance(UserId);
+                        break;
 
                 }
             } while (input != "exit");

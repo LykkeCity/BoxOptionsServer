@@ -11,11 +11,9 @@ namespace BoxOptions.Services.Models
 
         int currentStatus;
         DateTime creationDate;
-        
+               
 
-        GameParameters parameters;
-
-        List<GameParametersHistory> parameterHistory;
+        //List<GameParametersHistory> parameterHistory;
 
         /// <summary>
         /// Key = boxId
@@ -29,7 +27,7 @@ namespace BoxOptions.Services.Models
             this.assetPair = assetPair;
             creationDate = DateTime.UtcNow;
             betList = new Dictionary<string, List<BoxBet>>();
-            parameterHistory = new List<GameParametersHistory>();
+            //parameterHistory = new List<GameParametersHistory>();
 
         }
         public string GameId => gameId;

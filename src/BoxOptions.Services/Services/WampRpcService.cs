@@ -1,6 +1,7 @@
 ﻿using BoxOptions.Core.Models;
 using BoxOptions.Services.Interfaces;
 using System.Collections.Generic;
+using System;
 
 namespace BoxOptions.Services
 {
@@ -367,42 +368,134 @@ namespace BoxOptions.Services
 
         public string Launch(string userId)
         {
-            return _gameManager.Launch(userId);
+            try
+            {
+                _gameManager.Launch(userId);
+                return "OK";
+            }
+            catch (Exception ex) { return ex.Message; }
         }
 
         public string Wake(string userId)
         {
-            return _gameManager.Wake(userId);
+            try
+            {
+                _gameManager.Wake(userId);
+                return "OK";
+            }
+            catch (Exception ex) { return ex.Message; }
         }
 
         public string Sleep(string userId)
         {
-            return _gameManager.Sleep(userId);
+            try
+            {
+                _gameManager.Sleep(userId);
+                return "OK";
+            }
+            catch (Exception ex) { return ex.Message; }
         }
 
         public string GameStart(string userId, string assetPair)
         {
-            return _gameManager.GameStart(userId, assetPair);
+            try
+            {
+                return _gameManager.GameStart(userId, assetPair);
+            }
+            catch (Exception ex) { return ex.Message; }
         }
 
         public string GameClose(string userId)
         {
-            return _gameManager.GameClose(userId);
+            try
+            {
+                _gameManager.GameClose(userId);
+                return "OK";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
         }
 
         public string PlaceBet(string userId, string box, decimal betAmount)
         {
-            return _gameManager.PlaceBet(userId, box, betAmount);
-        }
+            try
+            {
+                _gameManager.PlaceBet(userId, box, betAmount);
+                return "OK";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+}
 
         public string ChangeBet(string userId, string box, decimal betAmount)
         {
-            return _gameManager.ChangeBet(userId, box, betAmount);
+            try
+            {
+                _gameManager.ChangeBet(userId, box, betAmount);
+                return "OK";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
         }
 
         public string ChangeScale(string userId, decimal scale)
         {
-            return _gameManager.ChangeScale(userId, scale);
+            try
+            {
+                _gameManager.ChangeScale(userId, scale);
+                return "OK";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
+        public decimal GetBalance(string userId)
+        {
+            try
+            {
+                return _gameManager.GetUserBalance(userId);
+            }
+            catch (Exception ex)
+            {
+                return ex.HResult;
+            }
+        }
+
+        public string SetBalance(string userId, decimal balance)
+        {
+            try
+            {
+                _gameManager.SetUserBalance(userId, balance);
+                return "OK";
+            }
+            catch (Exception ex) { return ex.Message; }
+        }
+
+        public string ChangeParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
+        {
+            try
+            {
+                _gameManager.SetUserParameters(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
+                return "OK";
+            }
+            catch (Exception ex) { return ex.Message; }
+        }
+
+        public string RequestCoeff(string userId, string pair)
+        {
+            try
+            {
+                return _gameManager.RequestUserCoeff(userId, pair);
+            }
+            catch (Exception ex) { return ex.Message; }
         }
     }
 }

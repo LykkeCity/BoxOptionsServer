@@ -19,29 +19,117 @@ namespace BoxOptions.Services
         /// <returns></returns>
         [WampProcedure("init.assets")]
         AssetPair[] InitAssets();
-                
+
+        /// <summary>
+        /// Get current user's balance
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <returns>User's balance</returns>
+        [WampProcedure("user.getbalance")]
+        decimal GetBalance(string userId);
+
+        /// <summary>
+        /// Set User Balance
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <param name="balance">New Balance</param>
+        /// <returns>'OK' or error string</returns>
+        [WampProcedure("user.setbalance")]
+        string SetBalance(string userId, decimal balance);
+
+        /// <summary>
+        /// Application Launch
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <returns>'OK' or error string</returns>
         [WampProcedure("game.launch")]
         string Launch(string userId);
-                
+
+        /// <summary>
+        /// Application Wake Up
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <returns>'OK' or error string</returns>
         [WampProcedure("game.wake")]
         string Wake(string userId);
 
+        /// <summary>
+        /// Application Sleep
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <returns>'OK' or error string</returns>
         [WampProcedure("game.sleep")]
         string Sleep(string userId);
 
+        /// <summary>
+        /// Game Started
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <param name="assetPair">AssetPair of the new game</param>
+        /// <returns>'OK' or error string</returns>
         [WampProcedure("game.start")]
         string GameStart(string userId, string assetPair);
 
+
+        /// <summary>
+        /// Game Closed
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <returns>'OK' or error string</returns>
         [WampProcedure("game.close")]
         string GameClose(string userId);
 
+        /// <summary>
+        /// Bet Placed
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <param name="box">Box Details(json)</param>
+        /// <param name="betValue">Bet Value</param>
+        /// <returns>'OK' or error string</returns>
         [WampProcedure("game.placebet")]
-        string PlaceBet(string userId, string box, decimal betAmount);
+        string PlaceBet(string userId, string box, decimal betValue);
 
+        /// <summary>
+        /// Bet Changed
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <param name="box">Box Details(json)</param>
+        /// <param name="betValue">Bet Value</param>
+        /// <returns>'OK' or error string</returns>
         [WampProcedure("game.changebet")]
-        string ChangeBet(string userId, string box, decimal betAmount);
+        string ChangeBet(string userId, string box, decimal betValue);
 
+        /// <summary>
+        /// Scale Changed
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <param name="scale">Scale</param>
+        /// <returns>'OK' or error string</returns>
         [WampProcedure("game.changescale")]
         string ChangeScale(string userId, decimal scale);
+
+        /// <summary>
+        /// Coefficient Api Change Parameters
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <param name="pair">Instrument</param>
+        /// <param name="timeToFirstOption">timeToFirstOption</param>
+        /// <param name="optionLen">optionLen</param>
+        /// <param name="priceSize">priceSize</param>
+        /// <param name="nPriceIndex">nPriceIndex</param>
+        /// <param name="nTimeIndex">nTimeIndex</param>
+        /// <returns>'OK' or error string</returns>
+        [WampProcedure("coeffapi.changeparameters")]
+        string ChangeParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex);
+
+        /// <summary>
+        /// Coefficient Api Request Coefficients
+        /// </summary>
+        /// <param name="userId">User If</param>
+        /// <param name="pair">Instrument</param>
+        /// <returns>Coefficient array(json) or error string</returns>
+        [WampProcedure("coeffapi.requestcoeff")]
+        string RequestCoeff(string userId, string pair);
+                
     }
 }

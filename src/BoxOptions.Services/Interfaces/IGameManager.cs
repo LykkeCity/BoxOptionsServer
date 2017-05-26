@@ -2,16 +2,17 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace BoxOptions.Services.Interfaces
 {
     public interface IGameManager
     {
        
-        string Launch(string userId);
+        void Launch(string userId);
 
-        string Wake(string userId);
-        string Sleep(string userId);
+        void Wake(string userId);
+        void Sleep(string userId);
 
         /// <summary>
         /// Starts a game for the given user with the given assetpair.
@@ -28,7 +29,7 @@ namespace BoxOptions.Services.Interfaces
         /// </summary>
         /// <param name="userId">User Id</param>
         /// <returns>"OK" or error message</returns>
-        string GameClose(string userId);
+        void GameClose(string userId);
 
         /// <summary>
         /// Place a bet on a box.
@@ -37,11 +38,19 @@ namespace BoxOptions.Services.Interfaces
         /// <param name="box">Box in which to bet</param>
         /// <param name="bet">Bet ammount</param>
         /// <returns></returns>
-        string PlaceBet(string userId, string box, decimal betAmount);
-        
-        string ChangeBet(string userId, string box, decimal betAmount);
+        void PlaceBet(string userId, string box, decimal betAmount);
 
-        string ChangeScale(string userId, decimal scale);
+        void ChangeBet(string userId, string box, decimal betAmount);
+
+        void ChangeScale(string userId, decimal scale);
+
+        decimal SetUserBalance(string userId, decimal newBalance);
+
+        decimal GetUserBalance(string userId);
+
+        void SetUserParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex);
+        string RequestUserCoeff(string userId, string pair);
+
 
         event EventHandler<BoxEventArgs> BetWin;
 

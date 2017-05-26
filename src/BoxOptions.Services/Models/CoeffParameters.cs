@@ -4,7 +4,7 @@ using System.Text;
 
 namespace BoxOptions.Services.Models
 {
-    public class GameParameters
+    public class CoeffParameters
     {
         public int TimeToFirstOption { get; set; }
         public int OptionLen { get; set; }

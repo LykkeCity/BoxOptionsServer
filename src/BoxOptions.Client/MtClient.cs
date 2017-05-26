@@ -173,6 +173,13 @@ namespace BoxOptions.Client
             Console.WriteLine("{0}> ChangeBet({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, scale, result);
         }
 
+        internal void GetBalance(string userId)
+        {
+            decimal result = _service.GetBalance(userId);
+            Console.WriteLine("{0}> GetBalance({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
+        }
+
+
 
         #endregion
     }

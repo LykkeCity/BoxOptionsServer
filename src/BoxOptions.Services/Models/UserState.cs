@@ -6,29 +6,67 @@ namespace BoxOptions.Services.Models
 {
     public class UserState
     {
-
-        readonly string  userId;
+        readonly string userId;
         decimal balance;
 
         List<StateHistory> statusHistory;
         int currentState;
         Game currentGame;
 
+        // Coefficient Calculator parameters
+        Dictionary<string, CoeffParameters> userCoeffParameters;
+
         public UserState(string userId)
         {
             this.userId = userId;
             statusHistory = new List<StateHistory>();
             currentGame = null;
+            userCoeffParameters = new Dictionary<string, CoeffParameters>();
         }
 
-
+        /// <summary>
+        /// Unique User Id
+        /// </summary>
         public string UserId { get => userId; }
-        public decimal Balance { get => balance; set => balance = value; }
+        /// <summary>
+        /// User Balance
+        /// </summary>
+        public decimal Balance { get => balance; }
+
+        
+        
+
         public StateHistory[] StatusHistory { get => statusHistory.ToArray(); }
         public int CurrentState { get => currentState; }
-
         public Game CurrentGame { get => currentGame; }
         public string CurrentGameId { get; set; }
+
+        public void SetParameters(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
+        {
+            if (!userCoeffParameters.ContainsKey(pair))
+                userCoeffParameters.Add(pair, new CoeffParameters());
+
+            CoeffParameters pairParameters = userCoeffParameters[pair];
+            pairParameters.TimeToFirstOption = timeToFirstOption;
+            pairParameters.OptionLen = optionLen;
+            pairParameters.PriceSize = priceSize;
+            pairParameters.NPriceIndex = nPriceIndex;
+            pairParameters.NTimeIndex = nTimeIndex;
+        }
+
+        public CoeffParameters GetParameters(string pair)
+        {
+            if (!userCoeffParameters.ContainsKey(pair))
+                userCoeffParameters.Add(pair, new CoeffParameters());
+
+            CoeffParameters pairParameters = userCoeffParameters[pair];
+            return pairParameters;
+        }
+        
+        public void SetBalance(decimal newBalance)
+        {
+            balance = newBalance;
+        }
 
         internal void SetStatus(int status)
         {
