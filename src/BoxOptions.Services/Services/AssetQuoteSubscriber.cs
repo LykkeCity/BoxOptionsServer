@@ -46,14 +46,14 @@ namespace BoxOptions.Services
         
         bool isDisposing;
 
-        IBoxOptionsHistory history;
+        IAssetDatabase history;
 
         /// <summary>
         /// Thrown when a new message is received from RabbitMQ Queue
         /// </summary>
         public event EventHandler<InstrumentPrice> MessageReceived;
 
-        public AssetQuoteSubscriber(BoxOptionsSettings settings, ILog log, IBoxOptionsHistory history)
+        public AssetQuoteSubscriber(BoxOptionsSettings settings, ILog log, IAssetDatabase history)
         {
             isDisposing = false;
             lastMessageTimeStamp = DateTime.UtcNow;

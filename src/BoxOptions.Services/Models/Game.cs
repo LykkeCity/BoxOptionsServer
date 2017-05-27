@@ -9,7 +9,7 @@ namespace BoxOptions.Services.Models
         readonly string assetPair;
         readonly string gameId;
 
-        int currentStatus;
+        //int currentStatus;
         DateTime creationDate;
                
 
@@ -19,14 +19,14 @@ namespace BoxOptions.Services.Models
         /// Key = boxId
         /// Valeu = BoxBet List
         /// </summary>
-        Dictionary<string, List<BoxBet>> betList;
+        List<BoxBet> betList;
 
         public Game(string assetPair, string gameId)
         {
             this.gameId = gameId;
             this.assetPair = assetPair;
             creationDate = DateTime.UtcNow;
-            betList = new Dictionary<string, List<BoxBet>>();
+            betList = new List<BoxBet>();
             //parameterHistory = new List<GameParametersHistory>();
 
         }
@@ -35,24 +35,15 @@ namespace BoxOptions.Services.Models
 
 
 
-        internal void PlaceBet(Box box, decimal bet)
+        internal void PlaceBet(Box box, decimal betAmount)
         {
-            if (!betList.ContainsKey(box.Id))
-                betList.Add(box.Id, new List<BoxBet>());
-
-            betList[box.Id].Add(new BoxBet() { Timestamp = DateTime.UtcNow, BetValue = bet });
-
-        }
-
-        class BoxBet
-        {
-            public decimal BetValue { get; set; }
-            public DateTime Timestamp { get; set; }
-
-            public override string ToString()
+            BoxBet newBet = new BoxBet()
             {
-                return string.Format("{0} > {1:f4}", this.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff"), BetValue);
-            }
+                Timestamp = DateTime.UtcNow,
+                Box = box,
+                BetAmount = betAmount
+            };
+            betList.Add(newBet);
         }
     }
     

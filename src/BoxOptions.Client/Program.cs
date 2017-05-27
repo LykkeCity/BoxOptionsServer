@@ -4,14 +4,19 @@ namespace BoxOptions.Client
 {
     class Program
     {
-        const string UserId = "204af161-50c5-477b-8375-89bfc715c2cc";
+        const string UserId1 = "204af161-50c5-477b-8375-89bfc715c2cc";
+        const string UserId2 = "404af161-50c5-477b-8375-89bfc7150001";
+        const string UserId3 = "604af161-50c5-477b-8375-89bfc7150001";
+
         internal static bool ShowFeed;
+        static string UserId;
         private static System.Globalization.CultureInfo CI = new System.Globalization.CultureInfo("en-us");
 
         static void Main(string[] args)
         {
 
             ShowFeed = true;
+            UserId = UserId1;
 
             Console.WriteLine("Connect to WAMP: prod[P], dev[D] or local[L] connection.");
             string input = Console.ReadLine();
@@ -51,6 +56,20 @@ namespace BoxOptions.Client
                         Console.WriteLine(" > start - Start new game");
                         Console.WriteLine(" > close - Close ongoing game");
                         Console.WriteLine(" > placebet - place a new bet on a box");
+                        Console.WriteLine(" > getbalance - gets user balance");
+                        Console.WriteLine(" > setbalance - sets user balance");
+
+                        break;
+                    case "user":
+                        Console.Write("\tUser Number 1/2>");
+                        string s_user = Console.ReadLine();
+                        if (s_user == "2")
+                            UserId = UserId2;
+                        else if (s_user == "3")
+                            UserId = UserId3;
+                        else
+                            UserId = UserId1;
+                        Console.WriteLine("User set to: [{0}]", UserId);                        
                         break;
                     case "feed":
                         ShowFeed = !ShowFeed;
@@ -106,6 +125,14 @@ namespace BoxOptions.Client
                         break;
                     case "getbalance":
                         client.GetBalance(UserId);
+                        break;
+                    case "setbalance":
+                        Console.Write("\tNew Balance>");
+                        string newbal = Console.ReadLine();
+                        decimal newbal_val = 0;
+                        decimal.TryParse(newbal, System.Globalization.NumberStyles.AllowDecimalPoint, CI, out newbal_val);
+                        if (newbal_val >= 0)
+                            client.SetBalance(UserId, newbal_val);
                         break;
 
                 }

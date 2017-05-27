@@ -16,9 +16,9 @@ namespace BoxOptions.Public.Controllers
         ICoefficientCalculator coefCalculator;
         private readonly ILogRepository logRepository;
         private readonly ILog log;
-        private readonly IBoxOptionsHistory history;
+        private readonly IAssetDatabase history;
 
-        public CoefController(BoxOptionsSettings settings, IBoxOptionsHistory history, ILogRepository logRepository, ILog log, ICoefficientCalculator coefCalculator)
+        public CoefController(BoxOptionsSettings settings, IAssetDatabase history, ILogRepository logRepository, ILog log, ICoefficientCalculator coefCalculator)
         {
             _settings = settings;
             this.logRepository = logRepository;

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace BoxOptions.Common.Interfaces
 {
-    public interface IBoxOptionsHistory
+    public interface IAssetDatabase
     {
         Task<LinkedList<AssetQuote>> GetAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair);
         Task AddToAssetHistory(AssetQuote quote);

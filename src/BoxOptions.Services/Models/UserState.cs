@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
+
 
 namespace BoxOptions.Services.Models
 {
@@ -14,16 +16,23 @@ namespace BoxOptions.Services.Models
         Game currentGame;
 
         // Coefficient Calculator parameters
-        Dictionary<string, CoeffParameters> userCoeffParameters;
+        List<CoeffParameters> userCoeffParameters;
 
         public UserState(string userId)
         {
             this.userId = userId;
             statusHistory = new List<StateHistory>();
             currentGame = null;
-            userCoeffParameters = new Dictionary<string, CoeffParameters>();
+            userCoeffParameters = new List<CoeffParameters>();
+            LastChange = DateTime.UtcNow;
         }
-
+        public UserState(string userId, decimal balance, int currentState):this(userId)
+        {
+            this.balance = balance;            
+            this.currentState = currentState;
+        }
+                
+                
         /// <summary>
         /// Unique User Id
         /// </summary>
@@ -33,39 +42,71 @@ namespace BoxOptions.Services.Models
         /// </summary>
         public decimal Balance { get => balance; }
 
-        
-        
 
-        public StateHistory[] StatusHistory { get => statusHistory.ToArray(); }
+
+
+        
         public int CurrentState { get => currentState; }
         public Game CurrentGame { get => currentGame; }
         public string CurrentGameId { get; set; }
+        public DateTime LastChange { get; set; }
+
+        public CoeffParameters[] UserCoeffParameters => userCoeffParameters.ToArray();
+        public StateHistory[] StatusHistory => statusHistory.ToArray();
+
 
         public void SetParameters(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
         {
-            if (!userCoeffParameters.ContainsKey(pair))
-                userCoeffParameters.Add(pair, new CoeffParameters());
 
-            CoeffParameters pairParameters = userCoeffParameters[pair];
-            pairParameters.TimeToFirstOption = timeToFirstOption;
-            pairParameters.OptionLen = optionLen;
-            pairParameters.PriceSize = priceSize;
-            pairParameters.NPriceIndex = nPriceIndex;
-            pairParameters.NTimeIndex = nTimeIndex;
+            CoeffParameters selectedPair = (from c in userCoeffParameters
+                                           where c.AssetPair == pair
+                                           select c).FirstOrDefault();
+            // Pair does not exist on parameter list, Add It
+            if (selectedPair == null)
+            {
+                selectedPair = new CoeffParameters() { AssetPair = pair };
+                userCoeffParameters.Add(selectedPair);
+            }
+            // Set parameters
+            selectedPair.TimeToFirstOption = timeToFirstOption;
+            selectedPair.OptionLen = optionLen;
+            selectedPair.PriceSize = priceSize;
+            selectedPair.NPriceIndex = nPriceIndex;
+            selectedPair.NTimeIndex = nTimeIndex;
+            
+            LastChange = DateTime.UtcNow;
+        }
+        public void LoadParameters(IEnumerable<CoeffParameters> pars)
+        {
+            // Ensure no duplicates
+            var distictPairs = (from p in pars
+                                select p.AssetPair).Distinct();
+            if (distictPairs.Count() != pars.Count())
+                throw new ArgumentException("Duplicate Assets found");
+
+
+                userCoeffParameters = new List<CoeffParameters>(pars);
         }
 
         public CoeffParameters GetParameters(string pair)
         {
-            if (!userCoeffParameters.ContainsKey(pair))
-                userCoeffParameters.Add(pair, new CoeffParameters());
+            CoeffParameters selectedPair = (from c in userCoeffParameters
+                                            where c.AssetPair == pair
+                                            select c).FirstOrDefault();
+            // Pair does not exist on parameter list, Add It
+            if (selectedPair == null)
+            {
+                selectedPair = new CoeffParameters() { AssetPair = pair };
+                userCoeffParameters.Add(selectedPair);
+            }
 
-            CoeffParameters pairParameters = userCoeffParameters[pair];
-            return pairParameters;
+            return selectedPair;
         }
         
         public void SetBalance(decimal newBalance)
         {
             balance = newBalance;
+            LastChange = DateTime.UtcNow;
         }
 
         internal void SetStatus(int status)
@@ -76,6 +117,7 @@ namespace BoxOptions.Services.Models
                 Status = status
             });
             currentState = status;
+            LastChange = DateTime.UtcNow;
         }
 
         internal void SetGame(Game game)
@@ -87,6 +129,8 @@ namespace BoxOptions.Services.Models
             }
             else
                 throw new InvalidOperationException("Current game not null");
+
+            LastChange = DateTime.UtcNow;
         }
 
         internal void RemoveGame()
@@ -98,7 +142,11 @@ namespace BoxOptions.Services.Models
             }
             else
                 throw new InvalidOperationException("User has no game ongoing.");
+
+            LastChange = DateTime.UtcNow;
         }
+
+        
     }
     public class StateHistory
     {

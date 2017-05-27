@@ -7,17 +7,24 @@ namespace BoxOptions.Services.Models
     public class Box
     {
         readonly string id;
-
-        // TODO: box props
-        decimal coeff;
-
-        public Box()
+        decimal minPrice;
+        decimal maxPrice;
+        int timeToGraph; // (in seconds), 
+        int timeLength;//(in seconds), 
+        decimal coefficient;
+        //decimal betAmount;
+        
+        public Box(string id)
         {
-            id = Guid.NewGuid().ToString();
+            this.id = id;
         }
         public string Id => id;
-        public decimal Coeff { get => coeff; set => coeff = value; }
 
-        
+        public decimal MinPrice { get => minPrice; set => minPrice = value; }
+        public decimal MaxPrice { get => maxPrice; set => maxPrice = value; }
+        public int TimeToGraph { get => timeToGraph; set => timeToGraph = value; }
+        public int TimeLength { get => timeLength; set => timeLength = value; }
+        public decimal Coefficient { get => coefficient; set => coefficient = value; }
+        //public decimal BetAmount { get => betAmount; set => betAmount = value; }
     }
 }

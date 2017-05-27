@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BoxOptions.Services
 {
-    public class LocalFSHistory : IBoxOptionsHistory
+    public class LocalFSHistory : IAssetDatabase
     {                           
         static System.Globalization.CultureInfo Ci = new System.Globalization.CultureInfo("en-us");
         static object AssetFileAccessLock = new object();
@@ -88,7 +88,7 @@ namespace BoxOptions.Services
             return LoadAssetHistory(dateFrom, dateTo, assetPair);
         }
 
-        Task IBoxOptionsHistory.AddToAssetHistory(AssetQuote quote)
+        Task IAssetDatabase.AddToAssetHistory(AssetQuote quote)
         {
             string line = string.Format("{0}|{1}|{2}|{3}", quote.Timestamp.ToString("yyyyMMdd_HHmmssff", Ci), quote.AssetPair, quote.IsBuy ? "1" : "0", quote.Price.ToString(Ci));
             try

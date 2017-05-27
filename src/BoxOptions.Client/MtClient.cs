@@ -182,6 +182,11 @@ namespace BoxOptions.Client
             decimal result = _service.GetBalance(userId);
             Console.WriteLine("{0}> GetBalance({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
         }
+        internal void SetBalance(string userId, decimal newBalance)
+        {
+            string result = _service.SetBalance(userId, newBalance);
+            Console.WriteLine("{0}> SetBalance({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, newBalance, result);
+        }
 
 
 

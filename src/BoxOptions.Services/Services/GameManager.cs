@@ -1,4 +1,5 @@
-﻿using BoxOptions.Common.Interfaces;
+﻿using BoxOptions.Common;
+using BoxOptions.Common.Interfaces;
 using BoxOptions.Services.Interfaces;
 using BoxOptions.Services.Models;
 using System;
@@ -27,6 +28,7 @@ namespace BoxOptions.Services
         }
                 
         static System.Threading.SemaphoreSlim coeffCalculatorSemaphoreSlim = new System.Threading.SemaphoreSlim(1, 1);
+        static int MaxUserBuffer = 128;
 
         public event EventHandler<BoxEventArgs> BetWin;
         public event EventHandler<BoxEventArgs> BetLose;
@@ -37,13 +39,18 @@ namespace BoxOptions.Services
         IGameDatabase database;
         ICoefficientCalculator calculator;
         IMicrographCache graphCache;
+        BoxOptionsSettings settings;
 
-        public GameManager(IGameDatabase database, ICoefficientCalculator calculator, IMicrographCache graphCache)
+        public GameManager(BoxOptionsSettings settings, IGameDatabase database, ICoefficientCalculator calculator, IMicrographCache graphCache )
         {
             this.database = database;
             this.calculator = calculator;
             this.graphCache = graphCache;
-            userList = new List<UserState>();
+            this.settings = settings;
+            if (this.settings != null && this.settings.BoxOptionsApi != null && this.settings.BoxOptionsApi.GameManager != null)
+                MaxUserBuffer = this.settings.BoxOptionsApi.GameManager.MaxUserBuffer;
+
+                userList = new List<UserState>();
         }
 
 
@@ -63,6 +70,17 @@ namespace BoxOptions.Services
                 Task<UserState> t = LoadUserStateFromDb(userId);
                 t.Wait();
                 current = t.Result;
+
+                // keep list size to maxbuffer
+                if (userList.Count >= MaxUserBuffer)
+                {
+                    var OlderUser = (from u in userList
+                                     orderby u.LastChange
+                                     select u).FirstOrDefault();
+                    if (OlderUser != null)
+                        userList.Remove(OlderUser);
+                }
+
 
                 // add it to cache
                 userList.Add(current);
@@ -86,12 +104,26 @@ namespace BoxOptions.Services
                 // UserState not in database
                 // Create new
                 retval = new UserState(userId);
-
+                //retval.SetBalance(40.50m);
                 // Save it to Database
                 await database.SaveUserState(retval);
+
+                //TODO: remove test                
+                //await database.SaveUserParameters(userId, new CoeffParameters[] 
+                //{
+                //   new CoeffParameters{ AssetPair = "EURUSD",TimeToFirstOption = 30000,  OptionLen=30000, PriceSize = 0.0002d, NPriceIndex=15, NTimeIndex= 15 },
+                //   new CoeffParameters{ AssetPair = "EURCHF",TimeToFirstOption = 30000,  OptionLen=30000, PriceSize = 0.0002d, NPriceIndex=15, NTimeIndex= 15 },
+                //});
+
+
             }
             else
             {
+                // Load User Parameters
+                var userParameters = await database.LoadUserParameters(userId);
+
+                retval.LoadParameters(userParameters);
+                5
                 // Load Current game if CurrentGameId is filled
                 if (!string.IsNullOrEmpty(retval.CurrentGameId))
                 {
@@ -102,9 +134,7 @@ namespace BoxOptions.Services
 
             return retval;
         }
-
         
-
         private async Task<string> CoeffCalculatorRequest(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
         {
             Guid fid = Guid.NewGuid();
@@ -135,12 +165,12 @@ namespace BoxOptions.Services
 
         }
 
-        //public void SetUserBalance(string userId, decimal newBalance)
-        //{
-        //    UserState userState = GetUserState(userId);
-        //    userState.SetBalance(newBalance);
-        //}
-        
+        private void SetUserStatus(UserState user, GameStatus status)
+        {
+            user.SetStatus((int)status);
+            // Save status to Database
+            database.SaveUserState(user);
+        }
 
         #region IGameManager
         public void Launch(string userId)
@@ -148,21 +178,22 @@ namespace BoxOptions.Services
             Console.WriteLine("{0}> Launch({1})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId);
 
             UserState userState = GetUserState(userId);
-            userState.SetStatus((int)GameStatus.Launch);            
+            SetUserStatus(userState, GameStatus.Launch);            
         }
         
         public void Sleep(string userId)
         {
             Console.WriteLine("{0}> Sleep({1})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId);
-            UserState userState = GetUserState(userId);
-            userState.SetStatus((int)GameStatus.Sleep);            
-        }        
+            UserState userState = GetUserState(userId);            
+            SetUserStatus(userState, GameStatus.Sleep);
+        }
+                
 
         public void Wake(string userId)
         {
             Console.WriteLine("{0}> Wake({1})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId);
-            UserState userState = GetUserState(userId);
-            userState.SetStatus((int)GameStatus.Wake);
+            UserState userState = GetUserState(userId);            
+            SetUserStatus(userState, GameStatus.Wake);
         }
 
         public string GameStart(string userId, string assetPair)
@@ -192,13 +223,9 @@ namespace BoxOptions.Services
 
             // Save gave to database
             database.SaveGame(newgame);
-
-
-            // Save userState to database
-            database.SaveUserState(userState);
-
-            // Set Status
-            userState.SetStatus((int)GameStatus.GameStarted);
+            
+            // Set Status, saves User to DB
+            SetUserStatus(userState, GameStatus.GameStarted);            
             return "OK";
         }
 
@@ -218,8 +245,8 @@ namespace BoxOptions.Services
             // Remove game from user
             userState.RemoveGame();
 
-            // Set status
-            userState.SetStatus((int)GameStatus.GameClosed);
+            // Set Status, saves User to DB
+            SetUserStatus(userState, GameStatus.GameClosed);
         }
 
         public void PlaceBet(string userId, string box, decimal bet)
@@ -240,13 +267,15 @@ namespace BoxOptions.Services
                 throw new InvalidOperationException("User has no balance for the bet.");
 
             // TODO: Get Box from... somewhere
-            Box boxObject = new Box(); // TODO: Get the Box object from received string
+            throw new NotImplementedException();
+            Box boxObject = new Box(box); // TODO: Get the Box object from received string
 
             // TODO: Place Bet
             userState.CurrentGame.PlaceBet(boxObject, bet);
 
-            // Set status
-            userState.SetStatus((int)GameStatus.BetPlaced);
+            // Set Status, saves User to DB            
+            SetUserStatus(userState, GameStatus.BetPlaced);
+
         }
 
         public void ChangeBet(string userId, string box, decimal betAmount)
@@ -264,6 +293,9 @@ namespace BoxOptions.Services
         {
             UserState userState = GetUserState(userId);
             userState.SetBalance(newBalance);
+            
+            // Save User to DB            
+            database.SaveUserState(userState);
             return newBalance;
         }
                 
@@ -277,6 +309,7 @@ namespace BoxOptions.Services
         {
             UserState userState = GetUserState(userId);
             userState.SetParameters(pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
+            database.SaveUserParameters(userId, userState.UserCoeffParameters);
         }
 
         public string RequestUserCoeff(string userId, string pair)

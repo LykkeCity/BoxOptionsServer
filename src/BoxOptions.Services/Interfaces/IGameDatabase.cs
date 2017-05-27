@@ -1,4 +1,5 @@
 ﻿using BoxOptions.Services.Models;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace BoxOptions.Services.Interfaces
@@ -10,5 +11,8 @@ namespace BoxOptions.Services.Interfaces
 
         Task SaveGame(Game game);
         Task<Game> LoadGame(string gameId);
+
+        Task SaveUserParameters(string userId, IEnumerable<CoeffParameters> parameters);
+        Task<IEnumerable<CoeffParameters>> LoadUserParameters(string userId);
     }
 }

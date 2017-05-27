@@ -14,6 +14,11 @@ namespace BoxOptions.Services
             return Task.FromResult<Game>(null);
         }
 
+        public Task<IEnumerable<CoeffParameters>> LoadUserParameters(string userId)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<UserState> LoadUserState(string userId)
         {
             return Task.FromResult<UserState>(null);
@@ -22,6 +27,11 @@ namespace BoxOptions.Services
         public Task SaveGame(Game game)
         {
             return Task.FromResult(0);
+        }
+
+        public Task SaveUserParameters(string userId, IEnumerable<CoeffParameters> parameters)
+        {
+            throw new NotImplementedException();
         }
 
         public Task SaveUserState(UserState userState)

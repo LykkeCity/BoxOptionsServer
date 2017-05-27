@@ -1,16 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace BoxOptions.Services.Models
+﻿namespace BoxOptions.Core.Models
 {
-    public class CoeffParameters
+    public class UserParameterItem : Interfaces.IUserParameterItem
     {
+        public string UserId { get; set; }
         public string AssetPair { get; set; }
         public int TimeToFirstOption { get; set; }
         public int OptionLen { get; set; }
         public double PriceSize { get; set; }
-        public int NPriceIndex { get; set; }
+        public int NPriceIndex { get; set; } 
         public int NTimeIndex { get; set; }
+        public string ServerTimestamp { get; set; }
     }
 }
