@@ -14,6 +14,21 @@ namespace BoxOptions.Services
             return Task.FromResult<Game>(null);
         }
 
+        public Task<Game> LoadGame(string userId, string gameId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<GameBet>> LoadGameBets(string userId, string gameId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<UserHistory>> LoadUserHistory(string userId, int numEntries)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<IEnumerable<CoeffParameters>> LoadUserParameters(string userId)
         {
             throw new NotImplementedException();
@@ -27,6 +42,21 @@ namespace BoxOptions.Services
         public Task SaveGame(Game game)
         {
             return Task.FromResult(0);
+        }
+
+        public Task SaveGame(string userId, Game game)
+        {
+            throw new NotImplementedException();
+        }
+              
+        public Task SaveGameBet(string userId, Game game, GameBet bet)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task SaveUserHistory(string userId, UserHistory history)
+        {
+            throw new NotImplementedException();
         }
 
         public Task SaveUserParameters(string userId, IEnumerable<CoeffParameters> parameters)

@@ -36,31 +36,7 @@ namespace BoxOptions.Services
         /// <returns>'OK' or error string</returns>
         [WampProcedure("user.setbalance")]
         string SetBalance(string userId, decimal balance);
-
-        /// <summary>
-        /// Application Launch
-        /// </summary>
-        /// <param name="userId">User Id</param>
-        /// <returns>'OK' or error string</returns>
-        [WampProcedure("game.launch")]
-        string Launch(string userId);
-
-        /// <summary>
-        /// Application Wake Up
-        /// </summary>
-        /// <param name="userId">User Id</param>
-        /// <returns>'OK' or error string</returns>
-        [WampProcedure("game.wake")]
-        string Wake(string userId);
-
-        /// <summary>
-        /// Application Sleep
-        /// </summary>
-        /// <param name="userId">User Id</param>
-        /// <returns>'OK' or error string</returns>
-        [WampProcedure("game.sleep")]
-        string Sleep(string userId);
-
+              
         /// <summary>
         /// Game Started
         /// </summary>
@@ -90,24 +66,16 @@ namespace BoxOptions.Services
         string PlaceBet(string userId, string box, decimal betValue);
 
         /// <summary>
-        /// Bet Changed
+        /// Saves log to database
         /// </summary>
-        /// <param name="userId">User Id</param>
-        /// <param name="box">Box Details(json)</param>
-        /// <param name="betValue">Bet Value</param>
-        /// <returns>'OK' or error string</returns>
-        [WampProcedure("game.changebet")]
-        string ChangeBet(string userId, string box, decimal betValue);
+        /// <param name="userId"></param>
+        /// <param name="eventCode"></param>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        [WampProcedure("game.savelog")]
+        string SaveLog(string userId, string eventCode, string message);
 
-        /// <summary>
-        /// Scale Changed
-        /// </summary>
-        /// <param name="userId">User Id</param>
-        /// <param name="scale">Scale</param>
-        /// <returns>'OK' or error string</returns>
-        [WampProcedure("game.changescale")]
-        string ChangeScale(string userId, decimal scale);
-
+      
         /// <summary>
         /// Coefficient Api Change Parameters
         /// </summary>
@@ -123,6 +91,15 @@ namespace BoxOptions.Services
         string ChangeParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex);
 
         /// <summary>
+        /// Retrieve Coefficient Api Parameters
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <param name="pair">Asset Pair</param>
+        /// <returns></returns>
+        [WampProcedure("coeffapi.getparameters")]
+        Models.CoeffParameters GetParameters(string userId, string pair);
+
+        /// <summary>
         /// Coefficient Api Request Coefficients
         /// </summary>
         /// <param name="userId">User If</param>
@@ -131,13 +108,50 @@ namespace BoxOptions.Services
         [WampProcedure("coeffapi.requestcoeff")]
         string RequestCoeff(string userId, string pair);
 
+
+
         /// <summary>
-        /// Retrieve Coefficient Api Parameters
+        /// Application Launch
         /// </summary>
         /// <param name="userId">User Id</param>
-        /// <param name="pair">Asset Pair</param>
-        /// <returns></returns>
-        [WampProcedure("coeffapi.getparameters")]
-        Models.CoeffParameters GetParameters(string userId, string pair);
+        /// <returns>'OK' or error string</returns>
+        //[WampProcedure("game.launch")]
+        //string Launch(string userId);
+
+        /// <summary>
+        /// Application Wake Up
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <returns>'OK' or error string</returns>
+        //[WampProcedure("game.wake")]
+        //string Wake(string userId);
+
+        /// <summary>
+        /// Application Sleep
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <returns>'OK' or error string</returns>
+        //[WampProcedure("game.sleep")]
+        //string Sleep(string userId);
+
+        /// <summary>
+        /// Bet Changed
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <param name="box">Box Details(json)</param>
+        /// <param name="betValue">Bet Value</param>
+        /// <returns>'OK' or error string</returns>
+        //[WampProcedure("game.changebet")]
+        //string ChangeBet(string userId, string box, decimal betValue);
+
+        /// <summary>
+        /// Scale Changed
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <param name="scale">Scale</param>
+        /// <returns>'OK' or error string</returns>
+        //[WampProcedure("game.changescale")]
+        //string ChangeScale(string userId, decimal scale);
+
     }
 }

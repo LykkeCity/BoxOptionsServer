@@ -1,5 +1,4 @@
-﻿using AzureStorage;
-using AzureStorage.Tables;
+﻿using AzureStorage.Tables;
 using BoxOptions.Core;
 using BoxOptions.Core.Interfaces;
 using BoxOptions.Core.Models;
@@ -12,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace BoxOptions.AzureRepositories
 {
-    
+
     public class UserEntity : TableEntity, IUserItem
     {
         public string UserId { get; set; }        
@@ -56,6 +55,7 @@ namespace BoxOptions.AzureRepositories
             };
         }
     }
+
     public class UserParameterEntity : TableEntity, IUserParameterItem
     {
         public string UserId { get; set; }
@@ -113,7 +113,7 @@ namespace BoxOptions.AzureRepositories
     public class UserHistoryEntity : TableEntity, IUserHistoryItem
     {
         public string UserId { get; set; }
-        public int Status { get; set; }
+        public string Status { get; set; }
         public DateTime Date { get; set; }
         public string Message { get; set; }
 
@@ -154,16 +154,18 @@ namespace BoxOptions.AzureRepositories
             };
         }
     }
-
+    
     public class UserRepository : IUserRepository
     {
         private readonly AzureTableStorage<UserEntity> _storage;
         private readonly AzureTableStorage<UserParameterEntity> _pstorage;
+        private readonly AzureTableStorage<UserHistoryEntity> _hstorage;
 
-        public UserRepository(AzureTableStorage<UserEntity> storage, AzureTableStorage<UserParameterEntity> pstorage)
+        public UserRepository(AzureTableStorage<UserEntity> storage, AzureTableStorage<UserParameterEntity> pstorage, AzureTableStorage<UserHistoryEntity> hstorage)
         {
             _storage = storage;
             _pstorage = pstorage;
+            _hstorage = hstorage;
         }
 
         public async Task InsertUserAsync(IUserItem olapEntity)
@@ -181,21 +183,21 @@ namespace BoxOptions.AzureRepositories
         }
 
 
-        bool inserting = false;
+        bool insertingParams = false;
         public async Task InsertManyParametersAsync(IEnumerable<IUserParameterItem> olapEntities)
         {
-            if (inserting)
+            if (insertingParams)
             {
                 Console.WriteLine("{0}>Packet Lost: {1}", DateTime.UtcNow.ToString("HH:mm:ss"), olapEntities.Count());
                 return;
             }
-            inserting = true;
+            insertingParams = true;
 
             var total = olapEntities.Select(UserParameterEntity.Create);
 
             await _pstorage.InsertOrMergeBatchAsync(total);
         
-            inserting = false;
+            insertingParams = false;
         }
 
         public async Task<IEnumerable<UserParameterItem>> GetUserParameters(string userId)
@@ -205,6 +207,20 @@ namespace BoxOptions.AzureRepositories
                 .OrderByDescending(item => item.Timestamp);
 
             return entities.Select(UserParameterEntity.CreateUserParameterItem);
+        }
+                
+        public async Task InsertHistoryAsync(IUserHistoryItem olapEntitiy)
+        {            
+            await _hstorage.InsertAsync(UserHistoryEntity.Create(olapEntitiy));
+        }
+
+        public async Task<IEnumerable<UserHistoryItem>> GetUserHistory(string userId, int numEntries)
+        {
+            var entities = (await _hstorage.GetDataAsync(new[] { userId }, numEntries,
+                    entity => entity.RowKey.StartsWith("userhist_")))
+                .OrderByDescending(item => item.Timestamp).Take(numEntries);
+
+            return entities.Select(UserHistoryEntity.CreateUserHistoryItem);
         }
     }
 }

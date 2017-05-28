@@ -87,10 +87,18 @@ namespace BoxOptions.Public.Modules
                 .As<IAssetRepository>();
             builder.RegisterInstance(new UserRepository(
                 new AzureTableStorage<AzureRepositories.UserEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "UserRepo", log), 
+                "UserRepo", log),                
                 new AzureTableStorage<AzureRepositories.UserParameterEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "UserRepo", log)))
+                "UserRepo", log),
+                new AzureTableStorage<AzureRepositories.UserHistoryEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "UserHistory", log)))
                 .As<IUserRepository>();
+            builder.RegisterInstance(new GameRepository(
+                new AzureTableStorage<AzureRepositories.GameEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "GameRepo", log),
+                new AzureTableStorage<AzureRepositories.GameBetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "GameRepo", log)))
+                .As<IGameRepository>();
 
 
             // TODO: Change to Azure Storage in prod env

@@ -7,7 +7,7 @@ namespace BoxOptions.Core.Interfaces
     public interface IUserHistoryItem
     {
         string UserId { get; }
-        int Status { get; }
+        string Status { get; }
         DateTime Date { get; }
         string Message { get; }
     }

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace BoxOptions.Core
@@ -13,7 +11,7 @@ namespace BoxOptions.Core
         Task InsertManyParametersAsync(IEnumerable<Interfaces.IUserParameterItem> olapEntities);
         Task<IEnumerable<Models.UserParameterItem>> GetUserParameters(string userId);
 
-        Task InsertManyHistoryAsync(IEnumerable<Interfaces.IUserHistoryItem> olapEntities);
+        Task InsertHistoryAsync(Interfaces.IUserHistoryItem olapEntity);
         Task<IEnumerable<Models.UserHistoryItem>> GetUserHistory(string userId, int numEntries);
 
     }

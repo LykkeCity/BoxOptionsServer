@@ -6,24 +6,38 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Common;
 
 namespace BoxOptions.Public.Processors
 {
     public class AzureGameDatabase : IGameDatabase
     {
         IUserRepository userRep;
+        IGameRepository gameRep;
         static System.Globalization.CultureInfo CI = new System.Globalization.CultureInfo("en-us");
-        public AzureGameDatabase(IUserRepository userRep)
+        public AzureGameDatabase(IUserRepository userRep, IGameRepository gameRep)
         {
             this.userRep = userRep;
+            this.gameRep = gameRep;
         }
 
-
-        public Task<Game> LoadGame(string gameId)
+                
+        public Task SaveUserState(UserState userState)
         {
-            throw new NotImplementedException();
-        }
+            if (userState == null)
+                throw new ArgumentNullException();
 
+            UserItem user = new UserItem()
+            {
+                UserId = userState.UserId,
+                Balance = userState.Balance.ToString(CI),
+                CurrentGameId = userState.CurrentGameId,
+                CurrentState = userState.CurrentState,
+                LastChange = userState.LastChange
+            };
+
+            return userRep.InsertUserAsync(user);
+        }
         public async Task<UserState> LoadUserState(string userId)
         {
             var res = await userRep.GetUser(userId);
@@ -44,29 +58,7 @@ namespace BoxOptions.Public.Processors
             return retval;
 
         }
-
-        public Task SaveGame(Game game)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task SaveUserState(UserState userState)
-        {
-            if (userState == null)
-                throw new ArgumentNullException();
-
-            UserItem user = new UserItem()
-            {
-                UserId = userState.UserId,
-                Balance = userState.Balance.ToString(CI),
-                CurrentGameId = userState.CurrentGameId,
-                CurrentState = userState.CurrentState,
-                LastChange = userState.LastChange
-            };
-
-            return userRep.InsertUserAsync(user);
-        }
-
+        
         public Task SaveUserParameters(string userId, IEnumerable<CoeffParameters> parameters)
         {
             if (parameters == null )
@@ -92,7 +84,6 @@ namespace BoxOptions.Public.Processors
 
             return userRep.InsertManyParametersAsync(parlist);
         }
-
         public async Task<IEnumerable<CoeffParameters>> LoadUserParameters(string userId)
         {
 
@@ -107,6 +98,105 @@ namespace BoxOptions.Public.Processors
                                 OptionLen = p.OptionLen,
                                 PriceSize = p.PriceSize,
                                 TimeToFirstOption = p.TimeToFirstOption
+                            };
+            return converted;
+        }
+
+
+        public Task SaveUserHistory(string userId, UserHistory history)
+        {
+            if (string.IsNullOrEmpty(userId) || history == null)
+                throw new ArgumentNullException();
+
+            UserHistoryItem hitem = new UserHistoryItem()
+            {
+                UserId = userId,
+                Date = history.Timestamp,
+                Status = history.Status.ToString(),
+                Message = history.Message
+            };
+
+            return userRep.InsertHistoryAsync(hitem);
+        }
+        public async Task<IEnumerable<UserHistory>> LoadUserHistory(string userId, int numEntries)
+        {
+            var userHist = await userRep.GetUserHistory(userId, numEntries);
+
+            var converted = from p in userHist
+                            select new UserHistory()
+                            {
+                                Timestamp = p.Date,
+                                Status = int.Parse(p.Status),
+                                Message = p.Message
+                            };
+            return converted;
+        }
+
+
+        public Task SaveGame(string userId, Game game)
+        {
+            GameItem newgame = new GameItem()
+            {
+                UserId = userId,
+                GameId = game.GameId,
+                AssetPair = game.AssetPair,
+                CreationDate = game.CreationDate,
+                FinishDate = game.FinishDate
+            };
+            return gameRep.InsertGameAsync(newgame);
+        }
+        public async Task<Game> LoadGame(string userId, string gameId)
+        {
+            var g = await gameRep.GetGame(userId, gameId);
+            if (g == null)
+                return null;
+
+            Game retval = new Game(g.AssetPair, g.GameId)
+            {
+                CreationDate = g.CreationDate,
+                FinishDate = g.FinishDate
+            };
+            return retval;
+        }
+
+        public Task SaveGameBet(string userId, Game game, GameBet bet)
+        {
+            
+            UserParameterItem betpars = new UserParameterItem()
+            {
+                AssetPair = bet.CurrentParameters.AssetPair,
+                NPriceIndex = bet.CurrentParameters.NPriceIndex,
+                NTimeIndex = bet.CurrentParameters.NTimeIndex,
+                OptionLen = bet.CurrentParameters.OptionLen,
+                PriceSize = bet.CurrentParameters.PriceSize,
+                TimeToFirstOption = bet.CurrentParameters.TimeToFirstOption,
+                UserId = userId
+            };
+
+            GameBetItem newbet = new GameBetItem()
+            {
+                UserId = userId,
+                GameId = game.GameId,
+                BetAmount = bet.BetAmount.ToString(CI),
+                Box = bet.Box.ToJson(),
+                Date = bet.Timestamp,
+                Parameters = betpars.ToJson(),
+
+            };
+            return gameRep.InsertGameBetAsync(newbet);
+        }
+
+        public async Task<IEnumerable<GameBet>> LoadGameBets(string userId, string gameId)
+        {
+            var gameBets = await gameRep.GetGameBetsByUser(userId, gameId);
+
+            var converted = from p in gameBets
+                            select new GameBet()
+                            {
+                                BetAmount = decimal.Parse(p.BetAmount, CI),
+                                Box = Box.FromJson(p.Box),
+                                Timestamp = p.Date,
+                                CurrentParameters = CoeffParameters.FromJson(p.Parameters)
                             };
             return converted;
         }

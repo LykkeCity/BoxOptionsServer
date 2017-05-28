@@ -8,12 +8,7 @@ namespace BoxOptions.Services.Interfaces
 {
     public interface IGameManager
     {
-       
-        void Launch(string userId);
-
-        void Wake(string userId);
-        void Sleep(string userId);
-
+      
         /// <summary>
         /// Starts a game for the given user with the given assetpair.
         /// Returns gameId string
@@ -40,10 +35,6 @@ namespace BoxOptions.Services.Interfaces
         /// <returns></returns>
         void PlaceBet(string userId, string box, decimal betAmount);
 
-        void ChangeBet(string userId, string box, decimal betAmount);
-
-        void ChangeScale(string userId, decimal scale);
-
         decimal SetUserBalance(string userId, decimal newBalance);
 
         decimal GetUserBalance(string userId);
@@ -52,9 +43,9 @@ namespace BoxOptions.Services.Interfaces
         CoeffParameters GetUserParameters(string userId, string pair);
         string RequestUserCoeff(string userId, string pair);
 
-
+        void AddLog(string userId, string eventCode, string message);
+        
         event EventHandler<BoxEventArgs> BetWin;
-
         event EventHandler<BoxEventArgs> BetLose;
 
         

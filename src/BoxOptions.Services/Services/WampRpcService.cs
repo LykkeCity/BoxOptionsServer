@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System;
 using BoxOptions.Services.Models;
 using Common.Log;
+using BoxOptions.Core;
+using System.Threading.Tasks;
 
 namespace BoxOptions.Services
 {
@@ -15,12 +17,14 @@ namespace BoxOptions.Services
         private readonly IMicrographCache _micrographCacheService;
         private readonly IGameManager _gameManager;
         private readonly ILog _log;
+        private readonly ILogRepository _logRepository;
 
-        public WampRpcService(IMicrographCache micrographCacheService, IGameManager gameManager, ILog log)
+        public WampRpcService(IMicrographCache micrographCacheService, IGameManager gameManager, ILog log,ILogRepository logRepository )
         {
             _micrographCacheService = micrographCacheService;
             _gameManager = gameManager;
             _log = log;
+            _logRepository = logRepository;
 
             LogInfo("Wamp Rpc Service Started");
         }
@@ -381,48 +385,6 @@ namespace BoxOptions.Services
 
         }
 
-        public string Launch(string userId)
-        {
-            try
-            {
-                _gameManager.Launch(userId);
-                return "OK";
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "Launch");
-                return ex.Message;
-            }
-        }
-
-        public string Wake(string userId)
-        {
-            try
-            {
-                _gameManager.Wake(userId);
-                return "OK";
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "Wake");
-                return ex.Message;
-            }
-        }
-
-        public string Sleep(string userId)
-        {
-            try
-            {
-                _gameManager.Sleep(userId);
-                return "OK";
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "Sleep");
-                return ex.Message;
-            }
-        }
-
         public string GameStart(string userId, string assetPair)
         {
             try
@@ -463,35 +425,7 @@ namespace BoxOptions.Services
                 return ex.Message;
             }
 }
-
-        public string ChangeBet(string userId, string box, decimal betAmount)
-        {
-            try
-            {
-                _gameManager.ChangeBet(userId, box, betAmount);
-                return "OK";
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "ChangeBet");
-                return ex.Message;
-            }
-        }
-
-        public string ChangeScale(string userId, decimal scale)
-        {
-            try
-            {
-                _gameManager.ChangeScale(userId, scale);
-                return "OK";
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "ChangeScale");
-                return ex.Message;
-            }
-        }
-
+            
         public decimal GetBalance(string userId)
         {
             try
@@ -558,6 +492,28 @@ namespace BoxOptions.Services
             }
         }
 
+        public string SaveLog(string userId, string eventCode, string message)
+        {
+            try
+            {
+                Task t = _logRepository?.InsertAsync(new LogItem()
+                {
+                    ClientId = userId,
+                    EventCode = eventCode,
+                    Message = message
+                });
+                t.Wait();
+
+                _gameManager.AddLog(userId, eventCode, message);
+
+                return "OK";
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, "RequestCoeff");
+                return ex.Message;
+            }
+        }
 
         private void LogInfo(string message, string sender ="this")
         {
@@ -567,5 +523,7 @@ namespace BoxOptions.Services
         {
             _log?.WriteErrorAsync("WampRpcService", sender, "", ex);
         }
+
+        
     }
 }

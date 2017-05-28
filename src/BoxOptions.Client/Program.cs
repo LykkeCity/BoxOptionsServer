@@ -50,9 +50,9 @@ namespace BoxOptions.Client
                         Console.WriteLine(" > feed - toggles feed output to console.");
                         Console.WriteLine(" > graph - micrograph cached data");
                         Console.WriteLine(" > log - perform log event");
-                        Console.WriteLine(" > launch - app launched");
-                        Console.WriteLine(" > wake - app wake");
-                        Console.WriteLine(" > sleep - app sleep");
+                        //Console.WriteLine(" > launch - app launched");
+                        //Console.WriteLine(" > wake - app wake");
+                        //Console.WriteLine(" > sleep - app sleep");
                         Console.WriteLine(" > start - Start new game");
                         Console.WriteLine(" > close - Close ongoing game");
                         Console.WriteLine(" > placebet - place a new bet on a box");
@@ -96,15 +96,15 @@ namespace BoxOptions.Client
                         client.PostLog();
                         break;
                     
-                    case "launch":
-                        client.Launch(UserId);
-                        break;
-                    case "wake":
-                        client.Wake(UserId);
-                        break;
-                    case "sleep":
-                        client.Sleep(UserId);
-                        break;
+                    //case "launch":
+                    //    client.Launch(UserId);
+                    //    break;
+                    //case "wake":
+                    //    client.Wake(UserId);
+                    //    break;
+                    //case "sleep":
+                    //    client.Sleep(UserId);
+                        //break;
                     case "start":
                         Console.Write("\tAssetPair>");
                         string s_pair = Console.ReadLine();
@@ -114,8 +114,16 @@ namespace BoxOptions.Client
                         client.GameClose(UserId);
                         break;
                     case "placebet":
-                        Console.Write("\tBox>");
-                        string pb_box = Console.ReadLine();
+                        
+                        string pb_box = "{"+
+                            "\"Id\": \"james@example.com\"," +
+                            "\"MinPrice\": 0.0001," +
+                            "\"MaxPrice\": 0.0009," +
+                            "\"TimeToGraph\": 15," +
+                            "\"TimeLength\": 10," +
+                            "\"Coefficient\": 0.987654321" +
+                            "}";
+
                         Console.Write("\tBet>");
                         string pb_bet = Console.ReadLine();
                         decimal pb_bet_val = 0;

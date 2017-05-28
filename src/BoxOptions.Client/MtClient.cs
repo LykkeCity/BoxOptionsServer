@@ -129,23 +129,23 @@ namespace BoxOptions.Client
             subscription.Dispose();
         }
 
-        internal void Launch(string userId)
-        {
-            string result = _service.Launch(userId);
-            Console.WriteLine("{0}> Game Launch({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
-        }
+        //internal void Launch(string userId)
+        //{
+        //    string result = _service.Launch(userId);
+        //    Console.WriteLine("{0}> Game Launch({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
+        //}
 
-        internal void Wake(string userId)
-        {
-            string result = _service.Wake(userId);
-            Console.WriteLine("{0}> Wake({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
-        }
+        //internal void Wake(string userId)
+        //{
+        //    string result = _service.Wake(userId);
+        //    Console.WriteLine("{0}> Wake({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
+        //}
 
-        internal void Sleep(string userId)
-        {
-            string result = _service.Sleep(userId);
-            Console.WriteLine("{0}> Sleep({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
-        }
+        //internal void Sleep(string userId)
+        //{
+        //    string result = _service.Sleep(userId);
+        //    Console.WriteLine("{0}> Sleep({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
+        //}
 
         internal void GameStart(string userId, string assetPair)
         {
@@ -165,17 +165,17 @@ namespace BoxOptions.Client
             Console.WriteLine("{0}> PlaceBet({1},{2},{3}) = {4}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, betAmount, result);
         }
 
-        internal void ChangeBet(string userId, string box, decimal betAmount)
-        {
-            string result = _service.ChangeBet(userId, box, betAmount);
-            Console.WriteLine("{0}> ChangeBet({1},{2},{3}) = {4}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, betAmount, result);
-        }
+        //internal void ChangeBet(string userId, string box, decimal betAmount)
+        //{
+        //    string result = _service.ChangeBet(userId, box, betAmount);
+        //    Console.WriteLine("{0}> ChangeBet({1},{2},{3}) = {4}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, betAmount, result);
+        //}
 
-        internal void ChangeScale(string userId, decimal scale)
-        {
-            string result = _service.ChangeScale(userId, scale);
-            Console.WriteLine("{0}> ChangeBet({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, scale, result);
-        }
+        //internal void ChangeScale(string userId, decimal scale)
+        //{
+        //    string result = _service.ChangeScale(userId, scale);
+        //    Console.WriteLine("{0}> ChangeBet({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, scale, result);
+        //}
 
         internal void GetBalance(string userId)
         {

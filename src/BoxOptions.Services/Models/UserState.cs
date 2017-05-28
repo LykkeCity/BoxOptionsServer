@@ -11,7 +11,7 @@ namespace BoxOptions.Services.Models
         readonly string userId;
         decimal balance;
 
-        List<StateHistory> statusHistory;
+        List<UserHistory> statusHistory;
         int currentState;
         Game currentGame;
 
@@ -21,7 +21,7 @@ namespace BoxOptions.Services.Models
         public UserState(string userId)
         {
             this.userId = userId;
-            statusHistory = new List<StateHistory>();
+            statusHistory = new List<UserHistory>();
             currentGame = null;
             userCoeffParameters = new List<CoeffParameters>();
             LastChange = DateTime.UtcNow;
@@ -52,7 +52,7 @@ namespace BoxOptions.Services.Models
         public DateTime LastChange { get; set; }
 
         public CoeffParameters[] UserCoeffParameters => userCoeffParameters.ToArray();
-        public StateHistory[] StatusHistory => statusHistory.ToArray();
+        public UserHistory[] StatusHistory => statusHistory.ToArray();
 
 
         public void SetParameters(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
@@ -109,14 +109,15 @@ namespace BoxOptions.Services.Models
             LastChange = DateTime.UtcNow;
         }
 
-        internal void SetStatus(int status, string message)
+        internal UserHistory SetStatus(int status, string message)
         {
-            statusHistory.Add(new StateHistory()
+            UserHistory newEntry = new UserHistory()
             {
                 Timestamp = DateTime.UtcNow,
                 Status = status,
                 Message = message
-            });
+            };
+            statusHistory.Add(newEntry);
 
             // Keep load history buffer to 20 items
             if (statusHistory.Count > 20)
@@ -126,6 +127,7 @@ namespace BoxOptions.Services.Models
             
             currentState = status;
             LastChange = DateTime.UtcNow;
+            return newEntry;
         }
 
         internal void SetGame(Game game)
@@ -155,16 +157,5 @@ namespace BoxOptions.Services.Models
         }
 
         
-    }
-    public class StateHistory
-    {
-        public DateTime Timestamp { get; set; }
-        public int Status { get; set; }
-        public string Message { get; set; }
-
-        public override string ToString()
-        {
-            return string.Format("{0} > {1}-{2}", this.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff"), Status, (GameManager.GameStatus)Status);
-        }
     }
 }
