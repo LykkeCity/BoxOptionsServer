@@ -58,6 +58,8 @@ namespace BoxOptions.Client
                         Console.WriteLine(" > placebet - place a new bet on a box");
                         Console.WriteLine(" > getbalance - gets user balance");
                         Console.WriteLine(" > setbalance - sets user balance");
+                        Console.WriteLine(" > setpars - sets user parameters");
+                        Console.WriteLine(" > getpars - gets user parameters");
 
                         break;
                     case "user":
@@ -134,7 +136,17 @@ namespace BoxOptions.Client
                         if (newbal_val >= 0)
                             client.SetBalance(UserId, newbal_val);
                         break;
-
+                    case "setpars":
+                        Console.Write("\tAsset>");
+                        string sp_asset = Console.ReadLine();
+                        Random r = new Random();
+                        client.ChangeParameter(UserId, sp_asset, r.Next(50000), r.Next(8000), 0.0003d, 16, 17);
+                        break;
+                    case "getpars":
+                        Console.Write("\tAsset>");
+                        string gp_asset = Console.ReadLine();
+                        client.GetParameter(UserId, gp_asset);
+                        break;
                 }
             } while (input != "exit");
             client.Stop();

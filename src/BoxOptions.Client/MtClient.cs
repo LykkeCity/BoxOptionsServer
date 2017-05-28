@@ -94,7 +94,7 @@ namespace BoxOptions.Client
                 var result = streamReader.ReadToEnd();
                 Console.WriteLine("Res: {0}", result);
             }
-            
+
         }
 
 
@@ -188,7 +188,22 @@ namespace BoxOptions.Client
             Console.WriteLine("{0}> SetBalance({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, newBalance, result);
         }
 
+        internal void ChangeParameter(string userId, string assetPair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
+        {
+            string result = _service.ChangeParameters(userId, assetPair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
+            Console.WriteLine("{0}> ChangeParameter({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, assetPair, result);
+        }
+        internal void GetParameter(string userId, string assetPair)
+        {   
+            var res= _service.GetParameters(userId, assetPair);
+            Console.WriteLine("\tAssetPair:{0}", res.AssetPair);
+            Console.WriteLine("\tTimeToFirstOption:{0}", res.TimeToFirstOption);
+            Console.WriteLine("\tOptionLen:{0}", res.OptionLen);
+            Console.WriteLine("\tPriceSize:{0}", res.PriceSize);
+            Console.WriteLine("\tNPriceIndex:{0}", res.NPriceIndex);
+            Console.WriteLine("\tNTimeIndex:{0}", res.NTimeIndex);
 
+        }
 
         #endregion
     }

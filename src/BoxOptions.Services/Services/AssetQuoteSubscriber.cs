@@ -83,7 +83,7 @@ namespace BoxOptions.Services
 
             // Start Timer to check incoming dataconnection
             checkConnectionTimer.Change(settings.BoxOptionsApi.PricesSettingsBoxOptions.IncomingDataCheckInterval * 1000, -1);
-
+            log?.WriteInfoAsync("AssetQuoteSubscriber", "Start", null, $"AssetQuoteSubscriber Started Subscribing [{settings.BoxOptionsApi.PricesSettingsBoxOptions.RabbitMqBOConnectionString}]");
         }
         public void Dispose()
         {

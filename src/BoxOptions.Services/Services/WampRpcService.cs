@@ -2,6 +2,8 @@
 using BoxOptions.Services.Interfaces;
 using System.Collections.Generic;
 using System;
+using BoxOptions.Services.Models;
+using Common.Log;
 
 namespace BoxOptions.Services
 {
@@ -12,17 +14,30 @@ namespace BoxOptions.Services
     {
         private readonly IMicrographCache _micrographCacheService;
         private readonly IGameManager _gameManager;
+        private readonly ILog _log;
 
-        public WampRpcService(IMicrographCache micrographCacheService, IGameManager gameManager)
+        public WampRpcService(IMicrographCache micrographCacheService, IGameManager gameManager, ILog log)
         {
             _micrographCacheService = micrographCacheService;
             _gameManager = gameManager;
+            _log = log;
+
+            LogInfo("Wamp Rpc Service Started");
         }
 
         public Dictionary<string, Price[]> InitChartData()
         {
             // Request data from RabbitMq and forward it.
-            return _micrographCacheService.GetGraphData();
+            
+            try
+            {
+                return _micrographCacheService.GetGraphData();
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, "InitChartData");
+                return null;
+            }
         }
 
         /// <summary>
@@ -373,7 +388,11 @@ namespace BoxOptions.Services
                 _gameManager.Launch(userId);
                 return "OK";
             }
-            catch (Exception ex) { return ex.Message; }
+            catch (Exception ex)
+            {
+                LogError(ex, "Launch");
+                return ex.Message;
+            }
         }
 
         public string Wake(string userId)
@@ -383,7 +402,11 @@ namespace BoxOptions.Services
                 _gameManager.Wake(userId);
                 return "OK";
             }
-            catch (Exception ex) { return ex.Message; }
+            catch (Exception ex)
+            {
+                LogError(ex, "Wake");
+                return ex.Message;
+            }
         }
 
         public string Sleep(string userId)
@@ -393,7 +416,11 @@ namespace BoxOptions.Services
                 _gameManager.Sleep(userId);
                 return "OK";
             }
-            catch (Exception ex) { return ex.Message; }
+            catch (Exception ex)
+            {
+                LogError(ex, "Sleep");
+                return ex.Message;
+            }
         }
 
         public string GameStart(string userId, string assetPair)
@@ -402,7 +429,11 @@ namespace BoxOptions.Services
             {
                 return _gameManager.GameStart(userId, assetPair);
             }
-            catch (Exception ex) { return ex.Message; }
+            catch (Exception ex)
+            {
+                LogError(ex, "GameStart");
+                return ex.Message;
+            }
         }
 
         public string GameClose(string userId)
@@ -414,6 +445,7 @@ namespace BoxOptions.Services
             }
             catch (Exception ex)
             {
+                LogError(ex, "GameClose");
                 return ex.Message;
             }
         }
@@ -427,6 +459,7 @@ namespace BoxOptions.Services
             }
             catch (Exception ex)
             {
+                LogError(ex, "PlaceBet");
                 return ex.Message;
             }
 }
@@ -440,6 +473,7 @@ namespace BoxOptions.Services
             }
             catch (Exception ex)
             {
+                LogError(ex, "ChangeBet");
                 return ex.Message;
             }
         }
@@ -453,6 +487,7 @@ namespace BoxOptions.Services
             }
             catch (Exception ex)
             {
+                LogError(ex, "ChangeScale");
                 return ex.Message;
             }
         }
@@ -465,6 +500,7 @@ namespace BoxOptions.Services
             }
             catch (Exception ex)
             {
+                LogError(ex, "GetBalance");
                 return ex.HResult;
             }
         }
@@ -476,7 +512,11 @@ namespace BoxOptions.Services
                 _gameManager.SetUserBalance(userId, balance);
                 return "OK";
             }
-            catch (Exception ex) { return ex.Message; }
+            catch (Exception ex)
+            {
+                LogError(ex, "SetBalance");
+                return ex.Message;
+            }
         }
 
         public string ChangeParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
@@ -486,7 +526,23 @@ namespace BoxOptions.Services
                 _gameManager.SetUserParameters(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
                 return "OK";
             }
-            catch (Exception ex) { return ex.Message; }
+            catch (Exception ex)
+            {
+                LogError(ex, "ChangeParameters");
+                return ex.Message;
+            }
+        }
+        public CoeffParameters GetParameters(string userId, string pair)
+        {
+            try
+            {
+                return _gameManager.GetUserParameters(userId, pair);                
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, "GetParameters");
+                return null;
+            }
         }
 
         public string RequestCoeff(string userId, string pair)
@@ -495,7 +551,21 @@ namespace BoxOptions.Services
             {
                 return _gameManager.RequestUserCoeff(userId, pair);
             }
-            catch (Exception ex) { return ex.Message; }
+            catch (Exception ex)
+            {
+                LogError(ex, "RequestCoeff");
+                return ex.Message;
+            }
+        }
+
+
+        private void LogInfo(string message, string sender ="this")
+        {
+            _log?.WriteInfoAsync("WampRpcService", sender, "", message);
+        }
+        private void LogError(Exception ex, string sender ="this")
+        {
+            _log?.WriteErrorAsync("WampRpcService", sender, "", ex);
         }
     }
 }

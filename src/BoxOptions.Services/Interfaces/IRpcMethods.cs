@@ -130,6 +130,14 @@ namespace BoxOptions.Services
         /// <returns>Coefficient array(json) or error string</returns>
         [WampProcedure("coeffapi.requestcoeff")]
         string RequestCoeff(string userId, string pair);
-                
+
+        /// <summary>
+        /// Retrieve Coefficient Api Parameters
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <param name="pair">Asset Pair</param>
+        /// <returns></returns>
+        [WampProcedure("coeffapi.getparameters")]
+        Models.CoeffParameters GetParameters(string userId, string pair);
     }
 }

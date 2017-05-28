@@ -110,7 +110,50 @@ namespace BoxOptions.AzureRepositories
         }
     }
 
+    public class UserHistoryEntity : TableEntity, IUserHistoryItem
+    {
+        public string UserId { get; set; }
+        public int Status { get; set; }
+        public DateTime Date { get; set; }
+        public string Message { get; set; }
 
+        
+
+        public static string GetPartitionKey(string userId)
+        {
+            return userId;
+        }
+        public static string GetRowKey(DateTime histdate)
+        {
+            return $"userhist_{histdate.ToString("yyyy-MM-dd HH:mm:ss.fff")}";
+        }
+
+        public static UserHistoryEntity Create(IUserHistoryItem src)
+        {
+            return new UserHistoryEntity
+            {
+                PartitionKey = GetPartitionKey(src.UserId),
+                RowKey = GetRowKey(src.Date),
+                UserId = src.UserId,
+                Date = src.Date,
+                Status = src.Status,
+                Message = src.Message
+            };
+        }
+
+        public static UserHistoryItem CreateUserHistoryItem(UserHistoryEntity src)
+        {
+            if (src == null)
+                return null;
+            return new UserHistoryItem
+            {
+                UserId = src.UserId,
+                Date = src.Date,
+                Status = src.Status,
+                Message = src.Message
+            };
+        }
+    }
 
     public class UserRepository : IUserRepository
     {

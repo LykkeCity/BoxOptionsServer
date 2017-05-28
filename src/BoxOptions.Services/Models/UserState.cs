@@ -109,13 +109,21 @@ namespace BoxOptions.Services.Models
             LastChange = DateTime.UtcNow;
         }
 
-        internal void SetStatus(int status)
+        internal void SetStatus(int status, string message)
         {
             statusHistory.Add(new StateHistory()
             {
                 Timestamp = DateTime.UtcNow,
-                Status = status
+                Status = status,
+                Message = message
             });
+
+            // Keep load history buffer to 20 items
+            if (statusHistory.Count > 20)
+            {
+                statusHistory.RemoveAt(0);
+            }
+            
             currentState = status;
             LastChange = DateTime.UtcNow;
         }
@@ -152,6 +160,7 @@ namespace BoxOptions.Services.Models
     {
         public DateTime Timestamp { get; set; }
         public int Status { get; set; }
+        public string Message { get; set; }
 
         public override string ToString()
         {

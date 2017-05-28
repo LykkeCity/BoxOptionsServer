@@ -49,11 +49,14 @@ namespace BoxOptions.Services.Interfaces
         decimal GetUserBalance(string userId);
 
         void SetUserParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex);
+        CoeffParameters GetUserParameters(string userId, string pair);
         string RequestUserCoeff(string userId, string pair);
 
 
         event EventHandler<BoxEventArgs> BetWin;
 
         event EventHandler<BoxEventArgs> BetLose;
+
+        
     }
 }

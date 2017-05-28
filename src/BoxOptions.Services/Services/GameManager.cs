@@ -123,7 +123,7 @@ namespace BoxOptions.Services
                 var userParameters = await database.LoadUserParameters(userId);
 
                 retval.LoadParameters(userParameters);
-                5
+                
                 // Load Current game if CurrentGameId is filled
                 if (!string.IsNullOrEmpty(retval.CurrentGameId))
                 {
@@ -165,9 +165,11 @@ namespace BoxOptions.Services
 
         }
 
-        private void SetUserStatus(UserState user, GameStatus status)
+        private void SetUserStatus(UserState user, GameStatus status, string message = null)
         {
-            user.SetStatus((int)status);
+            user.SetStatus((int)status, message);
+            // TODO: Save history to database
+
             // Save status to Database
             database.SaveUserState(user);
         }
@@ -223,9 +225,9 @@ namespace BoxOptions.Services
 
             // Save gave to database
             database.SaveGame(newgame);
-            
+
             // Set Status, saves User to DB
-            SetUserStatus(userState, GameStatus.GameStarted);            
+            SetUserStatus(userState, GameStatus.GameStarted, $"Game Started[{assetPair}] Id={newgame.GameId}");            
             return "OK";
         }
 
@@ -274,7 +276,7 @@ namespace BoxOptions.Services
             userState.CurrentGame.PlaceBet(boxObject, bet);
 
             // Set Status, saves User to DB            
-            SetUserStatus(userState, GameStatus.BetPlaced);
+            SetUserStatus(userState, GameStatus.BetPlaced, $"BetPlaced[{box}]. Bet={bet}");
 
         }
 
@@ -311,7 +313,11 @@ namespace BoxOptions.Services
             userState.SetParameters(pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
             database.SaveUserParameters(userId, userState.UserCoeffParameters);
         }
-
+        public CoeffParameters GetUserParameters(string userId, string pair)
+        {
+            UserState userState = GetUserState(userId);
+            return userState.GetParameters(pair);
+        }
         public string RequestUserCoeff(string userId, string pair)
         {
             UserState userState = GetUserState(userId);
@@ -320,6 +326,8 @@ namespace BoxOptions.Services
             t.Wait();
             return t.Result;
         }
+
+        
         #endregion
 
 
