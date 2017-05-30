@@ -105,8 +105,8 @@ namespace BoxOptions.Public.Modules
                 .As<IAssetDatabase>()
                 .SingleInstance();
 #else
-            builder.RegisterType<Processors.AzureQuoteFeed>()
-                .As<IBoxOptionsHistory>()
+            builder.RegisterType<Processors.AzureQuoteDatabase>()
+                .As<IAssetDatabase>()
                 .SingleInstance();
 
 #endif
