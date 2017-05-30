@@ -12,6 +12,7 @@ namespace BoxOptions.Common
     {
         public ConnectionStringsSettings ConnectionStrings { get; set; } = new ConnectionStringsSettings();        
         public PricesSettingsBoxOptions PricesSettingsBoxOptions { get; set; }
+        public GameManagerSettings GameManager { get; set; } = new GameManagerSettings();
         public string CoefApiUrl { get; set; }        
     }
 
@@ -40,5 +41,11 @@ namespace BoxOptions.Common
     public class SlackNotificationsSettings
     {
         public AzureQueueSettings AzureQueue { get; set; } = new AzureQueueSettings();
+    }
+
+    public class GameManagerSettings
+    {
+        public int MaxUserBuffer { get; set; } = 256;
+        public string GameTopicName { get; set; } = "game.events";
     }
 }

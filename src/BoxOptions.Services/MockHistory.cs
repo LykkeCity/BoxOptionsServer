@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BoxOptions.Services
 {
-    public class MockHistory : IBoxOptionsHistory
+    public class MockHistory : IAssetDatabase
     {     
 
         public Task<LinkedList<AssetQuote>> GetAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair)
@@ -17,7 +17,7 @@ namespace BoxOptions.Services
             return  Task.FromResult(retval);
         }
 
-        Task IBoxOptionsHistory.AddToAssetHistory(AssetQuote quote)
+        Task IAssetDatabase.AddToAssetHistory(AssetQuote quote)
         {
             throw new NotImplementedException();
         }

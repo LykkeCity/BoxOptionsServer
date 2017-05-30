@@ -3,6 +3,7 @@
     public enum ClientEnv
     {
         Local,
+        Dev,
         Prod
     }
 }

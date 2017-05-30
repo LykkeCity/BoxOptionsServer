@@ -85,12 +85,24 @@ namespace BoxOptions.Public.Modules
             builder.RegisterInstance(new AssetRepository(new AzureTableStorage<AzureRepositories.AssetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
                 "QuoteFeed", log)))
                 .As<IAssetRepository>();
+            builder.RegisterInstance(new UserRepository(
+                new AzureTableStorage<AzureRepositories.UserEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "UserRepo", log),                
+                new AzureTableStorage<AzureRepositories.UserParameterEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "UserRepo", log),
+                new AzureTableStorage<AzureRepositories.UserHistoryEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "UserHistory", log)))
+                .As<IUserRepository>();
+            builder.RegisterInstance(new GameRepository(                
+                new AzureTableStorage<AzureRepositories.GameBetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "GameRepo", log)))
+                .As<IGameRepository>();
 
 
             // TODO: Change to Azure Storage in prod env
 #if DEBUG
             builder.RegisterType<LocalFSHistory>()
-                .As<IBoxOptionsHistory>()
+                .As<IAssetDatabase>()
                 .SingleInstance();
 #else
             builder.RegisterType<Processors.AzureQuoteFeed>()
@@ -110,9 +122,14 @@ namespace BoxOptions.Public.Modules
                 .SingleInstance();
 
             // Game Database
-            builder.RegisterType<MockGameDatabase>()
+            //builder.RegisterType<MockGameDatabase>()
+            //  .As<Services.Interfaces.IGameDatabase>()
+            //  .SingleInstance();
+
+            builder.RegisterType<Processors.AzureGameDatabase>()
               .As<Services.Interfaces.IGameDatabase>()
               .SingleInstance();
+
 
             // Game Manager
             builder.RegisterType<GameManager>()

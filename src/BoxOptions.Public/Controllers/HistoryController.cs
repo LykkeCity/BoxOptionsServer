@@ -11,9 +11,9 @@ namespace BoxOptions.Public.Controllers
     [Route("api/[controller]")]
     public class HistoryController: Controller
     {
-        IBoxOptionsHistory history;
+        IAssetDatabase history;
 
-        public HistoryController(IBoxOptionsHistory history)
+        public HistoryController(IAssetDatabase history)
         {
             this.history = history;
         }

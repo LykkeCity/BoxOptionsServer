@@ -3,6 +3,7 @@ using BoxOptions.Common;
 using BoxOptions.Common.Interfaces;
 using BoxOptions.Core.Interfaces;
 using BoxOptions.Core.Models;
+using Common;
 using System;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
@@ -97,6 +98,7 @@ namespace BoxOptions.Services
         /// <returns></returns>
         private Task PublishInstrumentPair(InstrumentPrice instrumentBidAskPair)
         {
+            //string json = instrumentBidAskPair.ToJson();
             subject.OnNext(instrumentBidAskPair);
             return Task.FromResult(0);
         }

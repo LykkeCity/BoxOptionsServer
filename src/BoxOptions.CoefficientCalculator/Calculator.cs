@@ -13,10 +13,10 @@ namespace BoxOptions.CoefficientCalculator
         private bool isDisposing ;
         private bool isSubscriberRunning;
         private IAssetQuoteSubscriber quoteSubscriber;
-        private IBoxOptionsHistory historyRep;
+        private IAssetDatabase historyRep;
 
         // TODO: configuration
-        private int numDaysHistory;
+        //private int numDaysHistory;
 
         private HistoryHolder historyHolder;
 
@@ -28,13 +28,13 @@ namespace BoxOptions.CoefficientCalculator
             initialized = false;
             isDisposing = false;
             isSubscriberRunning = false;
-            numDaysHistory = 7;
+            //numDaysHistory = 7;
 
             historyHolder = new HistoryHolder();
             lastPricesCache = new List<InstrumentPrice>();
         }
 
-        public void Init(IAssetQuoteSubscriber quoteSubscriber, IBoxOptionsHistory historyRep)
+        public void Init(IAssetQuoteSubscriber quoteSubscriber, IAssetDatabase historyRep)
         {
             this.quoteSubscriber = quoteSubscriber;
             this.historyRep = historyRep;

@@ -10,7 +10,7 @@ namespace BoxOptions.CoefficientCalculator
     public interface ICoefficientCalculator: IDisposable
     {
 
-        void Init(IAssetQuoteSubscriber quoteSubscriber, IBoxOptionsHistory historyRep);
+        void Init(IAssetQuoteSubscriber quoteSubscriber, IAssetDatabase historyRep);
 
         void StartSubscriber();
         void StopSubscriber();

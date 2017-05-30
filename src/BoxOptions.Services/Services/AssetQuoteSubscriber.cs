@@ -46,14 +46,14 @@ namespace BoxOptions.Services
         
         bool isDisposing;
 
-        IBoxOptionsHistory history;
+        IAssetDatabase history;
 
         /// <summary>
         /// Thrown when a new message is received from RabbitMQ Queue
         /// </summary>
         public event EventHandler<InstrumentPrice> MessageReceived;
 
-        public AssetQuoteSubscriber(BoxOptionsSettings settings, ILog log, IBoxOptionsHistory history)
+        public AssetQuoteSubscriber(BoxOptionsSettings settings, ILog log, IAssetDatabase history)
         {
             isDisposing = false;
             lastMessageTimeStamp = DateTime.UtcNow;
@@ -83,7 +83,7 @@ namespace BoxOptions.Services
 
             // Start Timer to check incoming dataconnection
             checkConnectionTimer.Change(settings.BoxOptionsApi.PricesSettingsBoxOptions.IncomingDataCheckInterval * 1000, -1);
-
+            log?.WriteInfoAsync("AssetQuoteSubscriber", "Start", null, $"AssetQuoteSubscriber Started Subscribing [{settings.BoxOptionsApi.PricesSettingsBoxOptions.RabbitMqBOConnectionString}]");
         }
         public void Dispose()
         {
@@ -159,6 +159,7 @@ namespace BoxOptions.Services
                     // TODO: clear date override
                     // override asset bid with server UTC date.now
                     assetbid.Date = DateTime.UtcNow;
+                    
 
                     if (assetbid.Ask > 0 && assetbid.Bid > 0)
                         MessageReceived?.Invoke(this, assetbid.Clone());

@@ -16,9 +16,9 @@ namespace BoxOptions.Public.Controllers
         ICoefficientCalculator coefCalculator;
         private readonly ILogRepository logRepository;
         private readonly ILog log;
-        private readonly IBoxOptionsHistory history;
+        private readonly IAssetDatabase history;
 
-        public CoefController(BoxOptionsSettings settings, IBoxOptionsHistory history, ILogRepository logRepository, ILog log, ICoefficientCalculator coefCalculator)
+        public CoefController(BoxOptionsSettings settings, IAssetDatabase history, ILogRepository logRepository, ILog log, ICoefficientCalculator coefCalculator)
         {
             _settings = settings;
             this.logRepository = logRepository;
@@ -28,7 +28,7 @@ namespace BoxOptions.Public.Controllers
             
         }
       
-        [HttpGet]
+        /*[HttpGet]
         [Route("change")]
         public async Task<IActionResult> ChangeAsync(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex, string userId="0")
         {
@@ -64,9 +64,9 @@ namespace BoxOptions.Public.Controllers
             //    }
             //}
             //catch (Exception ex) { return StatusCode(500, ex.Message); }
-        }
+        }*/
 
-        [HttpGet]
+        /*[HttpGet]
         [Route("request")]
         public async Task<IActionResult> RequestAsync(string pair, string userId = "0")
         {
@@ -118,7 +118,7 @@ namespace BoxOptions.Public.Controllers
             //    }
             //}
             //catch (Exception ex) { return StatusCode(500, ex.Message); }
-        }
+        }*/
 
         //[HttpGet]
         //[Route("history")]

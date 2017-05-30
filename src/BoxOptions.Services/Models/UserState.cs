@@ -1,29 +1,41 @@
-﻿using System;
+﻿using BoxOptions.Common.Interfaces;
+using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
+
 
 namespace BoxOptions.Services.Models
 {
     public class UserState
     {
-        readonly string userId;
+        readonly string userId;        
         decimal balance;
 
-        List<StateHistory> statusHistory;
+        List<UserHistory> statusHistory;
         int currentState;
-        Game currentGame;
-
+        
         // Coefficient Calculator parameters
-        Dictionary<string, CoeffParameters> userCoeffParameters;
+        List<CoeffParameters> userCoeffParameters;
+
+        List<GameBet> openBets;
 
         public UserState(string userId)
-        {
-            this.userId = userId;
-            statusHistory = new List<StateHistory>();
-            currentGame = null;
-            userCoeffParameters = new Dictionary<string, CoeffParameters>();
+        {            
+            this.userId = userId;            
+            statusHistory = new List<UserHistory>();            
+            userCoeffParameters = new List<CoeffParameters>();
+            openBets = new List<GameBet>();
+            LastChange = DateTime.UtcNow;
         }
-
+        public UserState(string userId, decimal balance, int currentState) 
+            :this(userId)
+        {
+            this.balance = balance;            
+            this.currentState = currentState;
+        }
+                
+                
         /// <summary>
         /// Unique User Id
         /// </summary>
@@ -31,83 +43,110 @@ namespace BoxOptions.Services.Models
         /// <summary>
         /// User Balance
         /// </summary>
-        public decimal Balance { get => balance; }
-
-        
-        
-
-        public StateHistory[] StatusHistory { get => statusHistory.ToArray(); }
+        public decimal Balance { get => balance; }                
         public int CurrentState { get => currentState; }
-        public Game CurrentGame { get => currentGame; }
-        public string CurrentGameId { get; set; }
+        public List<GameBet> OpenBets { get => openBets; }
+        public CoeffParameters[] UserCoeffParameters => userCoeffParameters.ToArray();
+        public UserHistory[] StatusHistory => statusHistory.ToArray();
+        public DateTime LastChange { get; set; }
+
 
         public void SetParameters(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
         {
-            if (!userCoeffParameters.ContainsKey(pair))
-                userCoeffParameters.Add(pair, new CoeffParameters());
 
-            CoeffParameters pairParameters = userCoeffParameters[pair];
-            pairParameters.TimeToFirstOption = timeToFirstOption;
-            pairParameters.OptionLen = optionLen;
-            pairParameters.PriceSize = priceSize;
-            pairParameters.NPriceIndex = nPriceIndex;
-            pairParameters.NTimeIndex = nTimeIndex;
+            CoeffParameters selectedPair = (from c in userCoeffParameters
+                                           where c.AssetPair == pair
+                                           select c).FirstOrDefault();
+            // Pair does not exist on parameter list, Add It
+            if (selectedPair == null)
+            {
+                selectedPair = new CoeffParameters() { AssetPair = pair };
+                userCoeffParameters.Add(selectedPair);
+            }
+            // Set parameters
+            selectedPair.TimeToFirstOption = timeToFirstOption;
+            selectedPair.OptionLen = optionLen;
+            selectedPair.PriceSize = priceSize;
+            selectedPair.NPriceIndex = nPriceIndex;
+            selectedPair.NTimeIndex = nTimeIndex;
+            
+            LastChange = DateTime.UtcNow;
+        }
+        public void LoadParameters(IEnumerable<CoeffParameters> pars)
+        {
+            // Ensure no duplicates
+            var distictPairs = (from p in pars
+                                select p.AssetPair).Distinct();
+            if (distictPairs.Count() != pars.Count())
+                throw new ArgumentException("Duplicate Assets found");
+
+
+                userCoeffParameters = new List<CoeffParameters>(pars);
         }
 
         public CoeffParameters GetParameters(string pair)
         {
-            if (!userCoeffParameters.ContainsKey(pair))
-                userCoeffParameters.Add(pair, new CoeffParameters());
+            CoeffParameters selectedPair = (from c in userCoeffParameters
+                                            where c.AssetPair == pair
+                                            select c).FirstOrDefault();
+            // Pair does not exist on parameter list, Add It
+            if (selectedPair == null)
+            {
+                selectedPair = new CoeffParameters() { AssetPair = pair };
+                userCoeffParameters.Add(selectedPair);
+            }
 
-            CoeffParameters pairParameters = userCoeffParameters[pair];
-            return pairParameters;
+            return selectedPair;
         }
         
         public void SetBalance(decimal newBalance)
         {
             balance = newBalance;
+            LastChange = DateTime.UtcNow;
         }
 
-        internal void SetStatus(int status)
+        internal UserHistory SetStatus(int status, string message)
         {
-            statusHistory.Add(new StateHistory()
+            UserHistory newEntry = new UserHistory()
             {
                 Timestamp = DateTime.UtcNow,
-                Status = status
-            });
+                Status = status,
+                Message = message
+            };
+            statusHistory.Add(newEntry);
+
+            // Keep load history buffer to 20 items
+            if (statusHistory.Count > 20)
+            {
+                statusHistory.RemoveAt(0);
+            }
+            
             currentState = status;
+            LastChange = DateTime.UtcNow;
+            return newEntry;
         }
+      
 
-        internal void SetGame(Game game)
+        internal GameBet PlaceBet(Box boxObject, string assetPair, decimal bet, CoeffParameters coefPars, IAssetQuoteSubscriber quoteFeed)
         {
-            if (currentGame == null)
+            GameBet retval = new GameBet(userId)
             {
-                currentGame = game;
-                CurrentGameId = game.GameId;
-            }
-            else
-                throw new InvalidOperationException("Current game not null");
+                AssetPair = assetPair,
+                BetAmount = bet,
+                BetStatus = GameBet.BetStates.Waiting,
+                Box = boxObject,
+                CurrentParameters = coefPars,
+                Timestamp = DateTime.UtcNow
+            };            
+            openBets.Add(retval);
+            return retval;
+        }
+        internal void LoadBets(IEnumerable<GameBet> bets)
+        {
+            openBets = new List<GameBet>(); ;
+            openBets.AddRange(bets);
         }
 
-        internal void RemoveGame()
-        {
-            if (currentGame != null)
-            {
-                currentGame = null;
-                CurrentGameId = null;
-            }
-            else
-                throw new InvalidOperationException("User has no game ongoing.");
-        }
-    }
-    public class StateHistory
-    {
-        public DateTime Timestamp { get; set; }
-        public int Status { get; set; }
-
-        public override string ToString()
-        {
-            return string.Format("{0} > {1}-{2}", this.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff"), Status, (GameManager.GameStatus)Status);
-        }
+       
     }
 }

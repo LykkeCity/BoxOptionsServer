@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace BoxOptions.Public.Processors
 {
-    public class AzureQuoteFeed : IBoxOptionsHistory, IDisposable
+    public class AzureQuoteDatabase : IAssetDatabase, IDisposable
     {
         IAssetRepository assetRep;
         bool isDisposing = false;
@@ -20,7 +20,7 @@ namespace BoxOptions.Public.Processors
         private static object InsertLock = new object();
 
 
-        public AzureQuoteFeed(IAssetRepository assetRep)
+        public AzureQuoteDatabase(IAssetRepository assetRep)
         {
             this.assetRep = assetRep;
             assetCache = new Dictionary<string, Queue<AssetQuote>>();

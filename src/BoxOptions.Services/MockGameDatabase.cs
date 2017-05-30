@@ -9,24 +9,44 @@ namespace BoxOptions.Services
 {
     public class MockGameDatabase : IGameDatabase
     {
-        public Task<Game> LoadGame(string gameId)
+        public Task<IEnumerable<GameBet>> LoadGameBets(string userId, int status)
         {
-            return Task.FromResult<Game>(null);
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<UserHistory>> LoadUserHistory(string userId, int numEntries)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<CoeffParameters>> LoadUserParameters(string userId)
+        {
+            throw new NotImplementedException();
         }
 
         public Task<UserState> LoadUserState(string userId)
         {
-            return Task.FromResult<UserState>(null);
+            throw new NotImplementedException();
         }
 
-        public Task SaveGame(Game game)
+        public Task SaveGameBet(string userId, GameBet bet)
         {
-            return Task.FromResult(0);
+            throw new NotImplementedException();
+        }
+
+        public Task SaveUserHistory(string userId, UserHistory history)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task SaveUserParameters(string userId, IEnumerable<CoeffParameters> parameters)
+        {
+            throw new NotImplementedException();
         }
 
         public Task SaveUserState(UserState userState)
         {
-            return Task.FromResult(0);
+            throw new NotImplementedException();
         }
     }
 }

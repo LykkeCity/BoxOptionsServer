@@ -56,7 +56,7 @@ namespace XUnitTests
             };
             MockAssetQuoteSubscriber subscriber = new MockAssetQuoteSubscriber();
             MicrographCacheService svc = new MicrographCacheService(settings, subscriber);
-            Exception ex= null;
+            //Exception ex= null;
             int res = 0;
             
             //Act
