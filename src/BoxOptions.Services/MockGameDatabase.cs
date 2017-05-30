@@ -36,7 +36,7 @@ namespace BoxOptions.Services
 
         public Task SaveUserHistory(string userId, UserHistory history)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(0);
         }
 
         public Task SaveUserParameters(string userId, IEnumerable<CoeffParameters> parameters)
