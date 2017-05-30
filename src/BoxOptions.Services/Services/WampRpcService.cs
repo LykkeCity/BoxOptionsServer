@@ -2,6 +2,10 @@
 using BoxOptions.Services.Interfaces;
 using System.Collections.Generic;
 using System;
+using BoxOptions.Services.Models;
+using Common.Log;
+using BoxOptions.Core;
+using System.Threading.Tasks;
 
 namespace BoxOptions.Services
 {
@@ -12,17 +16,32 @@ namespace BoxOptions.Services
     {
         private readonly IMicrographCache _micrographCacheService;
         private readonly IGameManager _gameManager;
+        private readonly ILog _log;
+        private readonly ILogRepository _logRepository;
 
-        public WampRpcService(IMicrographCache micrographCacheService, IGameManager gameManager)
+        public WampRpcService(IMicrographCache micrographCacheService, IGameManager gameManager, ILog log, ILogRepository logRepository)
         {
             _micrographCacheService = micrographCacheService;
             _gameManager = gameManager;
+            _log = log;
+            _logRepository = logRepository;
+
+            LogInfo("Wamp Rpc Service Started");
         }
 
         public Dictionary<string, Price[]> InitChartData()
         {
             // Request data from RabbitMq and forward it.
-            return _micrographCacheService.GetGraphData();
+
+            try
+            {
+                return _micrographCacheService.GetGraphData();
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, "InitChartData");
+                return null;
+            }
         }
 
         /// <summary>
@@ -366,93 +385,16 @@ namespace BoxOptions.Services
 
         }
 
-        public string Launch(string userId)
+        public string PlaceBet(string userId, string assetPair, string box, decimal betValue)
         {
             try
             {
-                _gameManager.Launch(userId);
-                return "OK";
-            }
-            catch (Exception ex) { return ex.Message; }
-        }
-
-        public string Wake(string userId)
-        {
-            try
-            {
-                _gameManager.Wake(userId);
-                return "OK";
-            }
-            catch (Exception ex) { return ex.Message; }
-        }
-
-        public string Sleep(string userId)
-        {
-            try
-            {
-                _gameManager.Sleep(userId);
-                return "OK";
-            }
-            catch (Exception ex) { return ex.Message; }
-        }
-
-        public string GameStart(string userId, string assetPair)
-        {
-            try
-            {
-                return _gameManager.GameStart(userId, assetPair);
-            }
-            catch (Exception ex) { return ex.Message; }
-        }
-
-        public string GameClose(string userId)
-        {
-            try
-            {
-                _gameManager.GameClose(userId);
+                _gameManager.PlaceBet(userId, assetPair, box, betValue);
                 return "OK";
             }
             catch (Exception ex)
             {
-                return ex.Message;
-            }
-        }
-
-        public string PlaceBet(string userId, string box, decimal betAmount)
-        {
-            try
-            {
-                _gameManager.PlaceBet(userId, box, betAmount);
-                return "OK";
-            }
-            catch (Exception ex)
-            {
-                return ex.Message;
-            }
-}
-
-        public string ChangeBet(string userId, string box, decimal betAmount)
-        {
-            try
-            {
-                _gameManager.ChangeBet(userId, box, betAmount);
-                return "OK";
-            }
-            catch (Exception ex)
-            {
-                return ex.Message;
-            }
-        }
-
-        public string ChangeScale(string userId, decimal scale)
-        {
-            try
-            {
-                _gameManager.ChangeScale(userId, scale);
-                return "OK";
-            }
-            catch (Exception ex)
-            {
+                LogError(ex, "PlaceBet");
                 return ex.Message;
             }
         }
@@ -463,8 +405,9 @@ namespace BoxOptions.Services
             {
                 return _gameManager.GetUserBalance(userId);
             }
-            catch 
+            catch (Exception ex)
             {
+                LogError(ex, "GetBalance");
                 return -1;
             }
         }
@@ -476,7 +419,11 @@ namespace BoxOptions.Services
                 _gameManager.SetUserBalance(userId, balance);
                 return "OK";
             }
-            catch (Exception ex) { return ex.Message; }
+            catch (Exception ex)
+            {
+                LogError(ex, "SetBalance");
+                return ex.Message;
+            }
         }
 
         public string ChangeParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
@@ -486,7 +433,23 @@ namespace BoxOptions.Services
                 _gameManager.SetUserParameters(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
                 return "OK";
             }
-            catch (Exception ex) { return ex.Message; }
+            catch (Exception ex)
+            {
+                LogError(ex, "ChangeParameters");
+                return ex.Message;
+            }
+        }
+        public CoeffParameters GetParameters(string userId, string pair)
+        {
+            try
+            {
+                return _gameManager.GetUserParameters(userId, pair);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, "GetParameters");
+                return null;
+            }
         }
 
         public string RequestCoeff(string userId, string pair)
@@ -495,7 +458,73 @@ namespace BoxOptions.Services
             {
                 return _gameManager.RequestUserCoeff(userId, pair);
             }
-            catch (Exception ex) { return ex.Message; }
+            catch (Exception ex)
+            {
+                LogError(ex, "RequestCoeff");
+                return ex.Message;
+            }
         }
+
+        public string SaveLog(string userId, string eventCode, string message)
+        {
+            try
+            {
+                Task t = _logRepository?.InsertAsync(new LogItem()
+                {
+                    ClientId = userId,
+                    EventCode = eventCode,
+                    Message = message
+                });
+                t.Wait();
+
+                _gameManager.AddLog(userId, eventCode, message);
+
+                return "OK";
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, "RequestCoeff");
+                return ex.Message;
+            }
+        }
+
+        private void LogInfo(string message, string sender = "this")
+        {
+            _log?.WriteInfoAsync("WampRpcService", sender, "", message);
+        }
+        private void LogError(Exception ex, string sender = "this")
+        {
+            _log?.WriteErrorAsync("WampRpcService", sender, "", ex);
+        }
+
+
+
+
+        //public string GameStart(string userId, string assetPair)
+        //{
+        //    try
+        //    {
+        //        return _gameManager.GameStart(userId, assetPair);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        LogError(ex, "GameStart");
+        //        return ex.Message;
+        //    }
+        //}
+
+        //public string GameClose(string userId)
+        //{
+        //    try
+        //    {
+        //        _gameManager.GameClose(userId);
+        //        return "OK";
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        LogError(ex, "GameClose");
+        //        return ex.Message;
+        //    }
+        //}
     }
 }
