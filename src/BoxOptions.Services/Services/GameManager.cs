@@ -203,12 +203,12 @@ namespace BoxOptions.Services
             });
         }
                 
-        private bool CheckBet(GameBet sdr, decimal currentPrice, decimal previousPrice)
+        private bool CheckBet(GameBet bet, decimal currentPrice, decimal previousPrice)
         {
 
-            if ((currentPrice > sdr.Box.MinPrice && currentPrice < sdr.Box.MaxPrice) ||       // currentPrice> minPrice and currentPrice<maxPrice
-                (previousPrice > sdr.Box.MaxPrice && currentPrice < sdr.Box.MinPrice) ||     // OR previousPrice > maxPrice and currentPrice < minPrice
-                (previousPrice < sdr.Box.MinPrice && currentPrice > sdr.Box.MaxPrice))      // OR previousPrice < minPrice and currentPrice > maxPrice
+            if ((currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice) ||       // currentPrice> minPrice and currentPrice<maxPrice
+                (previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice) ||     // OR previousPrice > maxPrice and currentPrice < minPrice
+                (previousPrice < bet.Box.MinPrice && currentPrice > bet.Box.MaxPrice))      // OR previousPrice < minPrice and currentPrice > maxPrice
                 return true;
             else
                 return false;
