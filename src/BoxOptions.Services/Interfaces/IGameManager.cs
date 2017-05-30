@@ -8,23 +8,7 @@ namespace BoxOptions.Services.Interfaces
 {
     public interface IGameManager
     {
-      
-        /// <summary>
-        /// Starts a game for the given user with the given assetpair.
-        /// Returns gameId string
-        /// </summary>
-        /// <param name="userId">User Id</param>
-        /// <param name="assetPair">Instrument</param>
-        /// <returns>GameId Unique Identification</returns>
-        string GameStart(string userId, string assetPair);
 
-        /// <summary>
-        /// Closes the running Game with given game id
-        /// return "OK" or error message
-        /// </summary>
-        /// <param name="userId">User Id</param>
-        /// <returns>"OK" or error message</returns>
-        void GameClose(string userId);
 
         /// <summary>
         /// Place a bet on a box.
@@ -33,7 +17,7 @@ namespace BoxOptions.Services.Interfaces
         /// <param name="box">Box in which to bet</param>
         /// <param name="bet">Bet ammount</param>
         /// <returns></returns>
-        void PlaceBet(string userId, string box, decimal betAmount);
+        void PlaceBet(string userId, string assetpair, string box, decimal betAmount);
 
         decimal SetUserBalance(string userId, decimal newBalance);
 
@@ -45,8 +29,8 @@ namespace BoxOptions.Services.Interfaces
 
         void AddLog(string userId, string eventCode, string message);
         
-        event EventHandler<BoxEventArgs> BetWin;
-        event EventHandler<BoxEventArgs> BetLose;
+        event EventHandler<BetEventArgs> BetWin;
+        event EventHandler<BetEventArgs> BetLose;
 
         
     }

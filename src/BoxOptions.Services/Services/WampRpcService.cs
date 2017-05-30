@@ -385,38 +385,11 @@ namespace BoxOptions.Services
 
         }
 
-        public string GameStart(string userId, string assetPair)
+        public string PlaceBet(string userId, string assetPair, string box, decimal betValue)
         {
             try
             {
-                return _gameManager.GameStart(userId, assetPair);
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "GameStart");
-                return ex.Message;
-            }
-        }
-
-        public string GameClose(string userId)
-        {
-            try
-            {
-                _gameManager.GameClose(userId);
-                return "OK";
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "GameClose");
-                return ex.Message;
-            }
-        }
-
-        public string PlaceBet(string userId, string box, decimal betAmount)
-        {
-            try
-            {
-                _gameManager.PlaceBet(userId, box, betAmount);
+                _gameManager.PlaceBet(userId, assetPair, box, betValue);
                 return "OK";
             }
             catch (Exception ex)
@@ -424,7 +397,7 @@ namespace BoxOptions.Services
                 LogError(ex, "PlaceBet");
                 return ex.Message;
             }
-}
+        }
             
         public decimal GetBalance(string userId)
         {
@@ -525,5 +498,33 @@ namespace BoxOptions.Services
         }
 
         
+
+
+        //public string GameStart(string userId, string assetPair)
+        //{
+        //    try
+        //    {
+        //        return _gameManager.GameStart(userId, assetPair);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        LogError(ex, "GameStart");
+        //        return ex.Message;
+        //    }
+        //}
+
+        //public string GameClose(string userId)
+        //{
+        //    try
+        //    {
+        //        _gameManager.GameClose(userId);
+        //        return "OK";
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        LogError(ex, "GameClose");
+        //        return ex.Message;
+        //    }
+        //}
     }
 }

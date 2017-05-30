@@ -8,6 +8,8 @@ using WampSharp.V2.Client;
 using System.Net;
 using System.IO;
 using BoxOptions.Core.Models;
+using Lykke.Common;
+using BoxOptions.Services.Models;
 
 namespace BoxOptions.Client
 {
@@ -17,7 +19,8 @@ namespace BoxOptions.Client
         private IWampRealmProxy _realmProxy;
         private IRpcMethods _service;
 
-        IDisposable subscription;
+        IDisposable subscription1;
+        IDisposable subscription2;
 
         public void Connect(ClientEnv env)
         {
@@ -114,19 +117,25 @@ namespace BoxOptions.Client
 
         public void Prices()
         {
-            subscription = _realmProxy.Services.GetSubject<InstrumentPrice>("prices.update")
+            subscription1 = _realmProxy.Services.GetSubject<InstrumentPrice>("prices.update")
                 .Subscribe(info =>
                 {
                     if (Program.ShowFeed)
                         Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > BidDate[{info.Date.ToString("yyyy-MM-dd HH:mm:ss")}] | {info.Instrument} {info.Bid}/{info.Ask}");
                 });
-
-
-            //Console.ReadLine();            
+        }
+        public void GameEvents()
+        {
+            subscription2 = _realmProxy.Services.GetSubject<BetResult>("game.events")
+                .Subscribe(info =>
+                {
+                    Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > INFO[{info.ToJson()}");
+                });
         }
         public void Stop()
         {
-            subscription.Dispose();
+            subscription1.Dispose();
+            subscription2.Dispose();
         }
 
         //internal void Launch(string userId)
@@ -147,21 +156,21 @@ namespace BoxOptions.Client
         //    Console.WriteLine("{0}> Sleep({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
         //}
 
-        internal void GameStart(string userId, string assetPair)
-        {
-            string result = _service.GameStart(userId, assetPair);
-            Console.WriteLine("{0}> GameStart({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, assetPair, result);
-        }
+        //internal void GameStart(string userId, string assetPair)
+        //{
+        //    string result = _service.GameStart(userId, assetPair);
+        //    Console.WriteLine("{0}> GameStart({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, assetPair, result);
+        //}
 
-        internal void GameClose(string userId)
-        {
-            string result = _service.GameClose(userId);
-            Console.WriteLine("{0}> GameClose({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
-        }
+        //internal void GameClose(string userId)
+        //{
+        //    string result = _service.GameClose(userId);
+        //    Console.WriteLine("{0}> GameClose({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
+        //}
 
-        internal void PlaceBet(string userId, string box, decimal betAmount)
+        internal void PlaceBet(string userId,string assetpair, string box, decimal betAmount)
         {
-            string result = _service.PlaceBet(userId, box, betAmount);
+            string result = _service.PlaceBet(userId, assetpair, box, betAmount);
             Console.WriteLine("{0}> PlaceBet({1},{2},{3}) = {4}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, betAmount, result);
         }
 

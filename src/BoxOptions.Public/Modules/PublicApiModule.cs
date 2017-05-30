@@ -93,9 +93,7 @@ namespace BoxOptions.Public.Modules
                 new AzureTableStorage<AzureRepositories.UserHistoryEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
                 "UserHistory", log)))
                 .As<IUserRepository>();
-            builder.RegisterInstance(new GameRepository(
-                new AzureTableStorage<AzureRepositories.GameEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "GameRepo", log),
+            builder.RegisterInstance(new GameRepository(                
                 new AzureTableStorage<AzureRepositories.GameBetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
                 "GameRepo", log)))
                 .As<IGameRepository>();

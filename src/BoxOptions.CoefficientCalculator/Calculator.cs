@@ -16,7 +16,7 @@ namespace BoxOptions.CoefficientCalculator
         private IAssetDatabase historyRep;
 
         // TODO: configuration
-        private int numDaysHistory;
+        //private int numDaysHistory;
 
         private HistoryHolder historyHolder;
 
@@ -28,7 +28,7 @@ namespace BoxOptions.CoefficientCalculator
             initialized = false;
             isDisposing = false;
             isSubscriberRunning = false;
-            numDaysHistory = 7;
+            //numDaysHistory = 7;
 
             historyHolder = new HistoryHolder();
             lastPricesCache = new List<InstrumentPrice>();

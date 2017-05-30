@@ -16,8 +16,7 @@ namespace BoxOptions.AzureRepositories
     {
         public string UserId { get; set; }        
         public string Balance { get; set; }
-        public int CurrentState { get; set; }
-        public string CurrentGameId { get; set; }
+        public int CurrentState { get; set; }        
         public DateTime LastChange { get; set; }
 
         public static string GetPartitionKey(string userId)
@@ -33,9 +32,8 @@ namespace BoxOptions.AzureRepositories
                 RowKey = "User",
                 UserId = src.UserId,
                 Balance = src.Balance,
-                CurrentGameId = src.CurrentGameId,
                 CurrentState = src.CurrentState,
-                LastChange = src.LastChange                
+                LastChange = src.LastChange
             };
         }
 
@@ -47,7 +45,6 @@ namespace BoxOptions.AzureRepositories
             {
                 UserId = src.UserId,
                 Balance = src.Balance,
-                CurrentGameId = src.CurrentGameId,
                 CurrentState = src.CurrentState,
                 LastChange = src.LastChange,
                 ServerTimestamp = src.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)                

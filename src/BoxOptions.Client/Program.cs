@@ -34,8 +34,10 @@ namespace BoxOptions.Client
             System.Console.WriteLine("Chart Entries: {0}", chart.Count);
 
             client.Prices();
+            client.GameEvents();
 
-            
+
+
             do
             {
                 input = Console.ReadLine();
@@ -53,8 +55,8 @@ namespace BoxOptions.Client
                         //Console.WriteLine(" > launch - app launched");
                         //Console.WriteLine(" > wake - app wake");
                         //Console.WriteLine(" > sleep - app sleep");
-                        Console.WriteLine(" > start - Start new game");
-                        Console.WriteLine(" > close - Close ongoing game");
+                        //Console.WriteLine(" > start - Start new game");
+                        //Console.WriteLine(" > close - Close ongoing game");
                         Console.WriteLine(" > placebet - place a new bet on a box");
                         Console.WriteLine(" > getbalance - gets user balance");
                         Console.WriteLine(" > setbalance - sets user balance");
@@ -105,14 +107,14 @@ namespace BoxOptions.Client
                     //case "sleep":
                     //    client.Sleep(UserId);
                         //break;
-                    case "start":
-                        Console.Write("\tAssetPair>");
-                        string s_pair = Console.ReadLine();
-                        client.GameStart(UserId, s_pair);
-                        break;
-                    case "close":                        
-                        client.GameClose(UserId);
-                        break;
+                    //case "start":
+                    //    Console.Write("\tAssetPair>");
+                    //    string s_pair = Console.ReadLine();
+                    //    client.GameStart(UserId, s_pair);
+                    //    break;
+                    //case "close":                        
+                    //    client.GameClose(UserId);
+                    //break;
                     case "placebet":
                         
                         string pb_box = "{"+
@@ -124,12 +126,14 @@ namespace BoxOptions.Client
                             "\"Coefficient\": 0.987654321" +
                             "}";
 
+                        Console.Write("\tAssetPair>");
+                        string s_pair = Console.ReadLine();
                         Console.Write("\tBet>");
                         string pb_bet = Console.ReadLine();
                         decimal pb_bet_val = 0;
                         decimal.TryParse(pb_bet, System.Globalization.NumberStyles.AllowDecimalPoint, CI, out pb_bet_val);
                         if (pb_bet_val > 0)
-                            client.PlaceBet(UserId, pb_box, pb_bet_val);
+                            client.PlaceBet(UserId, s_pair, pb_box, pb_bet_val);
                         else
                             Console.WriteLine("Invalid Bet Value");
                         break;

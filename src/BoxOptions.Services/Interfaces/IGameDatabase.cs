@@ -8,12 +8,9 @@ namespace BoxOptions.Services.Interfaces
     {
         Task SaveUserState(UserState userState);
         Task<UserState> LoadUserState(string userId);
-
-        Task SaveGame(string userId, Game game);
-        Task<Game> LoadGame(string userId, string gameId);
-
-        Task SaveGameBet(string userId, Game game, GameBet bet);
-        Task<IEnumerable<GameBet>> LoadGameBets(string userId, string gameId);
+                
+        Task SaveGameBet(string userId,  GameBet bet);
+        Task<IEnumerable<GameBet>> LoadGameBets(string userId, int betState);
 
         Task SaveUserParameters(string userId, IEnumerable<CoeffParameters> parameters);
         Task<IEnumerable<CoeffParameters>> LoadUserParameters(string userId);

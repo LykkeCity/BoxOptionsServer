@@ -159,6 +159,7 @@ namespace BoxOptions.Services
                     // TODO: clear date override
                     // override asset bid with server UTC date.now
                     assetbid.Date = DateTime.UtcNow;
+                    
 
                     if (assetbid.Ask > 0 && assetbid.Bid > 0)
                         MessageReceived?.Invoke(this, assetbid.Clone());

@@ -36,34 +36,19 @@ namespace BoxOptions.Services
         /// <returns>'OK' or error string</returns>
         [WampProcedure("user.setbalance")]
         string SetBalance(string userId, decimal balance);
-              
-        /// <summary>
-        /// Game Started
-        /// </summary>
-        /// <param name="userId">User Id</param>
-        /// <param name="assetPair">AssetPair of the new game</param>
-        /// <returns>'OK' or error string</returns>
-        [WampProcedure("game.start")]
-        string GameStart(string userId, string assetPair);
 
 
-        /// <summary>
-        /// Game Closed
-        /// </summary>
-        /// <param name="userId">User Id</param>
-        /// <returns>'OK' or error string</returns>
-        [WampProcedure("game.close")]
-        string GameClose(string userId);
 
         /// <summary>
         /// Bet Placed
         /// </summary>
         /// <param name="userId">User Id</param>
+        /// <param name="assetPair">Asset pair of the bet</param>
         /// <param name="box">Box Details(json)</param>
         /// <param name="betValue">Bet Value</param>
         /// <returns>'OK' or error string</returns>
         [WampProcedure("game.placebet")]
-        string PlaceBet(string userId, string box, decimal betValue);
+        string PlaceBet(string userId, string assetPair ,string box, decimal betValue);
 
         /// <summary>
         /// Saves log to database
@@ -109,6 +94,23 @@ namespace BoxOptions.Services
         string RequestCoeff(string userId, string pair);
 
 
+        /// <summary>
+        /// Game Started
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <param name="assetPair">AssetPair of the new game</param>
+        /// <returns>'OK' or error string</returns>
+        //[WampProcedure("game.start")]
+        //string GameStart(string userId, string assetPair);
+
+
+        /// <summary>
+        /// Game Closed
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <returns>'OK' or error string</returns>
+        //[WampProcedure("game.close")]
+        //string GameClose(string userId);
 
         /// <summary>
         /// Application Launch

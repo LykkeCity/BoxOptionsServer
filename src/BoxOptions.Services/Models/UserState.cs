@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BoxOptions.Common.Interfaces;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,25 +9,27 @@ namespace BoxOptions.Services.Models
 {
     public class UserState
     {
-        readonly string userId;
+        readonly string userId;        
         decimal balance;
 
         List<UserHistory> statusHistory;
         int currentState;
-        Game currentGame;
-
+        
         // Coefficient Calculator parameters
         List<CoeffParameters> userCoeffParameters;
 
+        List<GameBet> openBets;
+
         public UserState(string userId)
-        {
-            this.userId = userId;
-            statusHistory = new List<UserHistory>();
-            currentGame = null;
+        {            
+            this.userId = userId;            
+            statusHistory = new List<UserHistory>();            
             userCoeffParameters = new List<CoeffParameters>();
+            openBets = new List<GameBet>();
             LastChange = DateTime.UtcNow;
         }
-        public UserState(string userId, decimal balance, int currentState):this(userId)
+        public UserState(string userId, decimal balance, int currentState) 
+            :this(userId)
         {
             this.balance = balance;            
             this.currentState = currentState;
@@ -40,19 +43,12 @@ namespace BoxOptions.Services.Models
         /// <summary>
         /// User Balance
         /// </summary>
-        public decimal Balance { get => balance; }
-
-
-
-
-        
+        public decimal Balance { get => balance; }                
         public int CurrentState { get => currentState; }
-        public Game CurrentGame { get => currentGame; }
-        public string CurrentGameId { get; set; }
-        public DateTime LastChange { get; set; }
-
+        public List<GameBet> OpenBets { get => openBets; }
         public CoeffParameters[] UserCoeffParameters => userCoeffParameters.ToArray();
         public UserHistory[] StatusHistory => statusHistory.ToArray();
+        public DateTime LastChange { get; set; }
 
 
         public void SetParameters(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
@@ -129,33 +125,28 @@ namespace BoxOptions.Services.Models
             LastChange = DateTime.UtcNow;
             return newEntry;
         }
+      
 
-        internal void SetGame(Game game)
+        internal GameBet PlaceBet(Box boxObject, string assetPair, decimal bet, CoeffParameters coefPars, IAssetQuoteSubscriber quoteFeed)
         {
-            if (currentGame == null)
+            GameBet retval = new GameBet(userId)
             {
-                currentGame = game;
-                CurrentGameId = game.GameId;
-            }
-            else
-                throw new InvalidOperationException("Current game not null");
-
-            LastChange = DateTime.UtcNow;
+                AssetPair = assetPair,
+                BetAmount = bet,
+                BetStatus = GameBet.BetStates.Waiting,
+                Box = boxObject,
+                CurrentParameters = coefPars,
+                Timestamp = DateTime.UtcNow
+            };            
+            openBets.Add(retval);
+            return retval;
+        }
+        internal void LoadBets(IEnumerable<GameBet> bets)
+        {
+            openBets = new List<GameBet>(); ;
+            openBets.AddRange(bets);
         }
 
-        internal void RemoveGame()
-        {
-            if (currentGame != null)
-            {
-                currentGame = null;
-                CurrentGameId = null;
-            }
-            else
-                throw new InvalidOperationException("User has no game ongoing.");
-
-            LastChange = DateTime.UtcNow;
-        }
-
-        
+       
     }
 }

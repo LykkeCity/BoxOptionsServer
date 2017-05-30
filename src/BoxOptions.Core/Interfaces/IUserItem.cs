@@ -7,7 +7,6 @@ namespace BoxOptions.Core.Interfaces
         string UserId { get; }
         string Balance { get; }
         int CurrentState { get; }
-        string CurrentGameId { get; }
         DateTime LastChange { get; }
     }
 }

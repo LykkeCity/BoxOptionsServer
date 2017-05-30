@@ -31,7 +31,6 @@ namespace BoxOptions.Public.Processors
             {
                 UserId = userState.UserId,
                 Balance = userState.Balance.ToString(CI),
-                CurrentGameId = userState.CurrentGameId,
                 CurrentState = userState.CurrentState,
                 LastChange = userState.LastChange
             };
@@ -47,8 +46,7 @@ namespace BoxOptions.Public.Processors
             decimal balance = decimal.Parse(string.IsNullOrEmpty(res.Balance) ? "0" : res.Balance, CI);
             UserState retval = new UserState(res.UserId, balance, res.CurrentState)
             {
-                LastChange = res.LastChange,
-                CurrentGameId = res.CurrentGameId
+                LastChange = res.LastChange
             };
             
 
@@ -131,35 +129,8 @@ namespace BoxOptions.Public.Processors
                             };
             return converted;
         }
-
-
-        public Task SaveGame(string userId, Game game)
-        {
-            GameItem newgame = new GameItem()
-            {
-                UserId = userId,
-                GameId = game.GameId,
-                AssetPair = game.AssetPair,
-                CreationDate = game.CreationDate,
-                FinishDate = game.FinishDate
-            };
-            return gameRep.InsertGameAsync(newgame);
-        }
-        public async Task<Game> LoadGame(string userId, string gameId)
-        {
-            var g = await gameRep.GetGame(userId, gameId);
-            if (g == null)
-                return null;
-
-            Game retval = new Game(g.AssetPair, g.GameId)
-            {
-                CreationDate = g.CreationDate,
-                FinishDate = g.FinishDate
-            };
-            return retval;
-        }
-
-        public Task SaveGameBet(string userId, Game game, GameBet bet)
+                
+        public Task SaveGameBet(string userId, GameBet bet)
         {
             
             UserParameterItem betpars = new UserParameterItem()
@@ -175,28 +146,32 @@ namespace BoxOptions.Public.Processors
 
             GameBetItem newbet = new GameBetItem()
             {
-                UserId = userId,
-                GameId = game.GameId,
+                UserId = userId,                
                 BetAmount = bet.BetAmount.ToString(CI),
                 Box = bet.Box.ToJson(),
                 Date = bet.Timestamp,
                 Parameters = betpars.ToJson(),
+                AssetPair = bet.AssetPair,
+                BetStatus = (int)bet.BetStatus,
+                BoxId = bet.Box.Id
 
             };
             return gameRep.InsertGameBetAsync(newbet);
         }
 
-        public async Task<IEnumerable<GameBet>> LoadGameBets(string userId, string gameId)
+        public async Task<IEnumerable<GameBet>> LoadGameBets(string userId, int betState)
         {
-            var gameBets = await gameRep.GetGameBetsByUser(userId, gameId);
+            var gameBets = await gameRep.GetGameBetsByUser(userId, betState);
 
             var converted = from p in gameBets
-                            select new GameBet()
+                            select new GameBet(userId)
                             {
                                 BetAmount = decimal.Parse(p.BetAmount, CI),
                                 Box = Box.FromJson(p.Box),
                                 Timestamp = p.Date,
-                                CurrentParameters = CoeffParameters.FromJson(p.Parameters)
+                                CurrentParameters = CoeffParameters.FromJson(p.Parameters),
+                                AssetPair = p.AssetPair,
+                                BetStatus = (GameBet.BetStates)p.BetStatus                                
                             };
             return converted;
         }
