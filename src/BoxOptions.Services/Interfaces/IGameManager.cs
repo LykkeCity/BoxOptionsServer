@@ -9,7 +9,7 @@ namespace BoxOptions.Services.Interfaces
     public interface IGameManager
     {
 
-
+        void InitUser(string userId);
         /// <summary>
         /// Place a bet on a box.
         /// </summary>

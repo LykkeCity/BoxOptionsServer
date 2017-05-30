@@ -3,22 +3,20 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-
+using System.Reactive.Subjects;
+using WampSharp.V2.Realm;
 
 namespace BoxOptions.Services.Models
 {
-    public class UserState
+    public class UserState:IDisposable
     {
         readonly string userId;        
         decimal balance;
-
-        List<UserHistory> statusHistory;
         int currentState;
-        
-        // Coefficient Calculator parameters
-        List<CoeffParameters> userCoeffParameters;
-
-        List<GameBet> openBets;
+        List<UserHistory> statusHistory;
+        List<CoeffParameters> userCoeffParameters;  // Coefficient Calculator parameters
+        List<GameBet> openBets;                     // Bet cache
+        ISubject<BetResult> subject;                // WAMP Subject
 
         public UserState(string userId)
         {            
@@ -26,6 +24,7 @@ namespace BoxOptions.Services.Models
             statusHistory = new List<UserHistory>();            
             userCoeffParameters = new List<CoeffParameters>();
             openBets = new List<GameBet>();
+            subject = null;
             LastChange = DateTime.UtcNow;
         }
         public UserState(string userId, decimal balance, int currentState) 
@@ -44,13 +43,11 @@ namespace BoxOptions.Services.Models
         /// User Balance
         /// </summary>
         public decimal Balance { get => balance; }                
-        public int CurrentState { get => currentState; }
-        public List<GameBet> OpenBets { get => openBets; }
+        public int CurrentState { get => currentState; }        
         public CoeffParameters[] UserCoeffParameters => userCoeffParameters.ToArray();
         public UserHistory[] StatusHistory => statusHistory.ToArray();
         public DateTime LastChange { get; set; }
-
-
+        
         public void SetParameters(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
         {
 
@@ -97,14 +94,12 @@ namespace BoxOptions.Services.Models
             }
 
             return selectedPair;
-        }
-        
+        }        
         public void SetBalance(decimal newBalance)
         {
             balance = newBalance;
             LastChange = DateTime.UtcNow;
-        }
-
+        }                
         internal UserHistory SetStatus(int status, string message)
         {
             UserHistory newEntry = new UserHistory()
@@ -125,8 +120,7 @@ namespace BoxOptions.Services.Models
             LastChange = DateTime.UtcNow;
             return newEntry;
         }
-      
-
+        
         internal GameBet PlaceBet(Box boxObject, string assetPair, decimal bet, CoeffParameters coefPars, IAssetQuoteSubscriber quoteFeed)
         {
             GameBet retval = new GameBet(userId)
@@ -139,6 +133,10 @@ namespace BoxOptions.Services.Models
                 Timestamp = DateTime.UtcNow
             };            
             openBets.Add(retval);
+            // keep bet cache to 100
+            if (openBets.Count > 100)
+                openBets.RemoveAt(0);
+
             return retval;
         }
         internal void LoadBets(IEnumerable<GameBet> bets)
@@ -147,6 +145,26 @@ namespace BoxOptions.Services.Models
             openBets.AddRange(bets);
         }
 
-       
+        internal void StartWAMP(IWampHostedRealm wampRealm, string topicName)
+        {
+            subject = wampRealm.Services.GetSubject<BetResult>(topicName + "." + userId);
+        }
+        internal void PublishToWamp(BetResult betResult)
+        {
+            if (subject == null)
+                throw new InvalidOperationException("Wamp Subject not set");
+
+            subject.OnNext(betResult);
+        }
+
+        public void Dispose()
+        {
+            subject = null;
+
+            foreach (var bet in openBets)
+            {
+                bet.Dispose();
+            }
+        }
     }
 }

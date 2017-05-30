@@ -21,6 +21,14 @@ namespace BoxOptions.Services
         AssetPair[] InitAssets();
 
         /// <summary>
+        /// Initialize user WAMP topic if not already running
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <returns>OK or error message</returns>
+        [WampProcedure("user.init")]
+        string InitUser(string userId);
+
+        /// <summary>
         /// Get current user's balance
         /// </summary>
         /// <param name="userId">User Id</param>

@@ -385,6 +385,20 @@ namespace BoxOptions.Services
 
         }
 
+        public string InitUser(string userId)
+        {
+            try
+            {
+                _gameManager.InitUser(userId);
+                return "OK";
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, "InitUser");
+                return ex.Message;
+            }            
+        }
+
         public string PlaceBet(string userId, string assetPair, string box, decimal betValue)
         {
             try
@@ -496,7 +510,7 @@ namespace BoxOptions.Services
         {
             _log?.WriteErrorAsync("WampRpcService", sender, "", ex);
         }
-
+                
 
 
 

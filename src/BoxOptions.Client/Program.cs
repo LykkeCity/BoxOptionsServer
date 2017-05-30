@@ -9,7 +9,7 @@ namespace BoxOptions.Client
         const string UserId3 = "604af161-50c5-477b-8375-89bfc7150001";
 
         internal static bool ShowFeed;
-        static string UserId;
+        internal static string UserId;
         private static System.Globalization.CultureInfo CI = new System.Globalization.CultureInfo("en-us");
 
         static void Main(string[] args)
@@ -33,8 +33,11 @@ namespace BoxOptions.Client
             var chart = client.GetChardData();
             System.Console.WriteLine("Chart Entries: {0}", chart.Count);
 
+            string inituser = client.InitUser(UserId);
+            System.Console.WriteLine("Init User: {0}", inituser);
+
             client.Prices();
-            client.GameEvents();
+            client.SubscribeGameEvents();
 
 
 
@@ -65,7 +68,7 @@ namespace BoxOptions.Client
 
                         break;
                     case "user":
-                        Console.Write("\tUser Number 1/2>");
+                        Console.Write("\tUser Number 1/2/3>");
                         string s_user = Console.ReadLine();
                         if (s_user == "2")
                             UserId = UserId2;
@@ -73,6 +76,8 @@ namespace BoxOptions.Client
                             UserId = UserId3;
                         else
                             UserId = UserId1;
+                        client.InitUser(UserId);
+                        client.SubscribeGameEvents();                        
                         Console.WriteLine("User set to: [{0}]", UserId);                        
                         break;
                     case "feed":

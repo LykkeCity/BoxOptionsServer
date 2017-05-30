@@ -47,23 +47,23 @@ namespace BoxOptions.Services
         
         private readonly IGameDatabase database;
         private readonly ICoefficientCalculator calculator;
-        private readonly IAssetQuoteSubscriber quoteFeed;        
-        private readonly ISubject<BetResult> subject;
+        private readonly IAssetQuoteSubscriber quoteFeed;
+        private readonly IWampHostedRealm wampRealm;
         private readonly ILogRepository logRepository;
         private readonly BoxOptionsSettings settings;
 
         private Dictionary<string, PriceCache> assetCache;
 
         public GameManager(BoxOptionsSettings settings, IGameDatabase database, ICoefficientCalculator calculator, 
-            IAssetQuoteSubscriber quoteFeed, IWampHostedRealm realm, ILogRepository logRepository)
+            IAssetQuoteSubscriber quoteFeed, IWampHostedRealm wampRealm, ILogRepository logRepository)
         {
             this.database = database;
             this.calculator = calculator;
             this.quoteFeed = quoteFeed;
             this.settings = settings;            
             this.logRepository = logRepository;
-            this.subject = realm.Services.GetSubject<BetResult>(this.settings.BoxOptionsApi.GameManager.GameTopicName);
-
+            this.wampRealm = wampRealm;
+            
 
             if (this.settings != null && this.settings.BoxOptionsApi != null && this.settings.BoxOptionsApi.GameManager != null)
                 MaxUserBuffer = this.settings.BoxOptionsApi.GameManager.MaxUserBuffer;
@@ -83,10 +83,7 @@ namespace BoxOptions.Services
 
             foreach (var user in userList)
             {
-                foreach (var bet in user.OpenBets)
-                {
-                    bet.Dispose();
-                } 
+                user.Dispose();
             }
 
             userList = null;
@@ -106,9 +103,12 @@ namespace BoxOptions.Services
             {
                 // UserState not in current cache,
                 // download it from database
-                Task<UserState> t = LoadUserStateFromDb(userId);
+                Task<UserState> t = LoadUserStateFromDb(userId);                               
                 t.Wait();
                 current = t.Result;
+
+                // Assing WAMP realm to user
+                current.StartWAMP(wampRealm, this.settings.BoxOptionsApi.GameManager.GameTopicName);
 
                 // keep list size to maxbuffer
                 if (userList.Count >= MaxUserBuffer)
@@ -116,17 +116,29 @@ namespace BoxOptions.Services
                     var OlderUser = (from u in userList
                                      orderby u.LastChange
                                      select u).FirstOrDefault();
+
                     if (OlderUser != null)
-                        userList.Remove(OlderUser);
+                    {
+                        // Check if user does not have running bets
+                        var userOpenBets = from b in betCache
+                                           where b.UserId == OlderUser.UserId
+                                           select b;
+
+                        // No running bets. Kill user
+                        if (userOpenBets.Count() == 0)
+                        {
+                            // Remove user from cache
+                            userList.Remove(OlderUser);
+
+                            // Dispose user
+                            OlderUser.Dispose();
+                        }
+                    }
                 }
-
-
                 // add it to cache
                 userList.Add(current);
             }
-
             return current;
-
         }
 
         private async Task<UserState> LoadUserStateFromDb(string userId)
@@ -215,10 +227,16 @@ namespace BoxOptions.Services
         }
 
         private void ProcessBetWin(GameBet bet)
-        {            
+        {   
+            // Set bet to win
             bet.BetStatus = GameBet.BetStates.Win;
+            //Update user balance with prize
+            UserState user = GetUserState(bet.UserId);
+            decimal prize = bet.BetAmount * bet.Box.Coefficient;
+            user.SetBalance(user.Balance + prize);
+
             // Publish WIN to WAMP topic
-            PublishWinAsync(bet);
+            PublishWinAsync(user, bet);
             // Save to Database
             database.SaveGameBet(bet.UserId, bet);
         }
@@ -226,22 +244,20 @@ namespace BoxOptions.Services
         {
             // Remove bet from cache
             bool res = betCache.Remove(bet);
-            //Console.WriteLine("{0}> CacheSize:[{1}]Bet removed from cache {2}.", DateTime.Now.ToString("HH:mm:ss.fff"), betCache.Count, bet.Box.Id);
 
+            // If bet was not won previously
             if (bet.BetStatus != GameBet.BetStates.Win)
-            {
-                // If bet was not won previously
+            {                
                 // publish LOSE to WAMP topic
                 bet.BetStatus = GameBet.BetStates.Lose;
-
-                PublishLoseAsync(bet);
+                UserState user = GetUserState(bet.UserId);
+                PublishLoseAsync(user, bet);
                 database.SaveGameBet(bet.UserId, bet);
             }
-            //Console.WriteLine("{0}>ProcessBetTimeOut ={1}", DateTime.Now.ToString("HH:mm:ss.fff"), bet.Box.Id);
         }
 
 
-        private void PublishWinAsync(GameBet bet)
+        private void PublishWinAsync(UserState user, GameBet bet)
         {
             var t = Task.Run(() => {
                 BetResult res = new BetResult()
@@ -252,14 +268,14 @@ namespace BoxOptions.Services
                     Timestamp = DateTime.UtcNow
                 };
                 // Publish to WAMP topic
-                subject.OnNext(res);
+                user.PublishToWamp(res);
                 // Raise OnBetWin Event
                 OnBetWin(new BetEventArgs(bet));
 
-                SetUserStatus(bet.UserId, GameStatus.BetWon, $"Bet WON [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount}");
+                SetUserStatus(bet.UserId, GameStatus.BetWon, $"Bet WON [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount} Coef:{bet.Box.Coefficient} Prize:{bet.BetAmount * bet.Box.Coefficient}");
             });
         }
-        private void PublishLoseAsync(GameBet bet)
+        private void PublishLoseAsync(UserState user, GameBet bet)
         {
             var t = Task.Run(() => {
                 BetResult res = new BetResult()
@@ -270,7 +286,7 @@ namespace BoxOptions.Services
                     Timestamp = DateTime.UtcNow
                 };
                 // Publish to WAMP topic
-                subject.OnNext(res);
+                user.PublishToWamp(res);
                 // Raise OnBetLose Event
                 OnBetLose(new BetEventArgs(bet));
 
@@ -293,33 +309,33 @@ namespace BoxOptions.Services
                 if (!assetCache.ContainsKey(e.Instrument))
                     assetCache.Add(e.Instrument, new PriceCache());
 
+                // Calculate Current price [currentPrice = (ask + bid) / 2]
+                double ReceivedPrice = (e.Ask + e.Bid) / 2;
+                
                 // Do not process if price ask did not change
-                if (assetCache[e.Instrument].CurrentPrice == (decimal)e.Ask)
+                if (assetCache[e.Instrument].CurrentPrice == (decimal)ReceivedPrice)
                     return;
-
+                
+                // Update price cache
                 assetCache[e.Instrument].PreviousPrice = assetCache[e.Instrument].CurrentPrice;
-                assetCache[e.Instrument].CurrentPrice = (decimal)e.Ask;
-
-                //Console.WriteLine("{0} | {1}> >> PreviousPrice:[{2}] CurrentPrice:[{3}]", DateTime.UtcNow.ToString("HH:mm:ss.fff"), fid, assetCache[e.Instrument].PreviousPrice, assetCache[e.Instrument].CurrentPrice);
-
+                assetCache[e.Instrument].CurrentPrice = (decimal)ReceivedPrice;
+                                
                 // Get bets for current asset
                 // That are not yet with WIN status
-                var assetBets = from b in betCache
+                var assetBets = (from b in betCache
                                 where b.AssetPair == e.Instrument &&
                                 b.BetStatus != GameBet.BetStates.Win
-                                select b;
-                if (assetBets.Count() == 0)
+                                select b).ToList();
+                if (assetBets.Count == 0)
                     return;
 
 
                 foreach (var bet in assetBets)
                 {
                     // Check open bets for
-                    bool IsWin = CheckBet(bet, assetCache[e.Instrument].CurrentPrice, assetCache[e.Instrument].PreviousPrice);
-                    
+                    bool IsWin = CheckBet(bet, assetCache[e.Instrument].CurrentPrice, assetCache[e.Instrument].PreviousPrice);                    
                     if (IsWin)
                         ProcessBetWin(bet);
-
                 }
             }
             finally
@@ -369,7 +385,10 @@ namespace BoxOptions.Services
 
 
         #region IGameManager
-
+        public void InitUser(string userId)
+        {
+            UserState userState = GetUserState(userId);
+        }
         public void PlaceBet(string userId, string assetPair, string box, decimal bet)
         {
             //Console.WriteLine("{0}> PlaceBet({1} - {2} - {3:f16})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, bet);
@@ -402,8 +421,11 @@ namespace BoxOptions.Services
             // Save bet to DB
             database.SaveGameBet(userState.UserId, newBet);
 
+            // Update user balance
+            userState.SetBalance(userState.Balance - bet);
+
             // Set Status, saves User to DB            
-            SetUserStatus(userState, GameStatus.BetPlaced, $"BetPlaced[{boxObject.Id}]. AssetPair={assetPair}  Bet={bet}");
+            SetUserStatus(userState, GameStatus.BetPlaced, $"BetPlaced[{boxObject.Id}]. Asset:{assetPair}  Bet:{bet} Balance:{userState.Balance}");
 
         }
 
