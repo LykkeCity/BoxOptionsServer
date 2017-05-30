@@ -31,7 +31,7 @@ namespace BoxOptions.Services
 
         public Task SaveGameBet(string userId, GameBet bet)
         {
-            throw new NotImplementedException();
+            return Task.FromResult(0);
         }
 
         public Task SaveUserHistory(string userId, UserHistory history)
