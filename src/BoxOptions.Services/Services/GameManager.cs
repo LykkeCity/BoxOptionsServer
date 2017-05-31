@@ -50,18 +50,20 @@ namespace BoxOptions.Services
         private readonly IAssetQuoteSubscriber quoteFeed;
         private readonly IWampHostedRealm wampRealm;
         private readonly ILogRepository logRepository;
+        private readonly ILog appLog;
         private readonly BoxOptionsSettings settings;
 
         private Dictionary<string, PriceCache> assetCache;
 
         public GameManager(BoxOptionsSettings settings, IGameDatabase database, ICoefficientCalculator calculator, 
-            IAssetQuoteSubscriber quoteFeed, IWampHostedRealm wampRealm, ILogRepository logRepository)
+            IAssetQuoteSubscriber quoteFeed, IWampHostedRealm wampRealm, ILogRepository logRepository, ILog appLog)
         {
             this.database = database;
             this.calculator = calculator;
             this.quoteFeed = quoteFeed;
             this.settings = settings;            
             this.logRepository = logRepository;
+            this.appLog = appLog;
             this.wampRealm = wampRealm;
             
 
@@ -214,14 +216,46 @@ namespace BoxOptions.Services
                 Message = message
             });
         }
-                
+
+        private bool CheckBet(GameBet bet, double currentPrice, double previousPrice)
+        {            
+            decimal mcurrent = Convert.ToDecimal(currentPrice);
+            decimal mprevious = Convert.ToDecimal(previousPrice);
+
+            double currentDelta = (double)mcurrent - currentPrice;
+            double previousDelta = (double)mcurrent - currentPrice;
+
+            if (currentDelta != 0)
+                appLog.WriteWarningAsync("GameManager", "CheckBet", "", $"Decimal to Double conversion Fail! CurrentDelta={currentDelta}");
+            if (previousDelta != 0)
+                appLog.WriteWarningAsync("GameManager", "CheckBet", "", $"Decimal to Double conversion Fail! PreviousDelta={previousDelta}");
+
+            return CheckBet(bet, mcurrent, mprevious);
+        }
         private bool CheckBet(GameBet bet, decimal currentPrice, decimal previousPrice)
         {
 
             if ((currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice) ||       // currentPrice> minPrice and currentPrice<maxPrice
                 (previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice) ||     // OR previousPrice > maxPrice and currentPrice < minPrice
                 (previousPrice < bet.Box.MinPrice && currentPrice > bet.Box.MaxPrice))      // OR previousPrice < minPrice and currentPrice > maxPrice
+            {
+                string msg = string.Format("Pair:{0}", bet.AssetPair);
+                msg += string.Format("\n-PreviousPrice:{0}", previousPrice);
+                msg += string.Format("\n-CurrentPrice:{0}", currentPrice);
+                msg += string.Format("\n-MinPrice:{0}", bet.Box.MinPrice);
+                msg += string.Format("\n-MaxPrice:{0}", bet.Box.MaxPrice);
+                if (currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice)
+                    msg += "\n -  currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice";
+                else if (previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice)
+                    msg += "\n -  previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice";
+                else if (previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice)
+                    msg += "\n -  previousPrice < bet.Box.MinPrice && currentPrice > bet.Box.MaxPrice";
+                else if (previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice)
+                    msg += "\n -  ERROR";
+
+                appLog.WriteInfoAsync("GameManager", "CheckBet", "", msg);
                 return true;
+            }
             else
                 return false;
         }
@@ -308,17 +342,10 @@ namespace BoxOptions.Services
                 // Add price to cache
                 if (!assetCache.ContainsKey(e.Instrument))
                     assetCache.Add(e.Instrument, new PriceCache());
-
-                // Calculate Current price [currentPrice = (ask + bid) / 2]
-                double ReceivedPrice = (e.Ask + e.Bid) / 2;
-                
-                // Do not process if price ask did not change
-                if (assetCache[e.Instrument].CurrentPrice == (decimal)ReceivedPrice)
-                    return;
                 
                 // Update price cache
                 assetCache[e.Instrument].PreviousPrice = assetCache[e.Instrument].CurrentPrice;
-                assetCache[e.Instrument].CurrentPrice = (decimal)ReceivedPrice;
+                assetCache[e.Instrument].CurrentPrice = (Core.Models.InstrumentPrice)e.ClonePrice();
                                 
                 // Get bets for current asset
                 // That are not yet with WIN status
@@ -333,9 +360,21 @@ namespace BoxOptions.Services
                 foreach (var bet in assetBets)
                 {
                     // Check open bets for
-                    bool IsWin = CheckBet(bet, assetCache[e.Instrument].CurrentPrice, assetCache[e.Instrument].PreviousPrice);                    
+                    bool IsWin = CheckBet(bet, assetCache[e.Instrument].CurrentPrice.MidPrice(), assetCache[e.Instrument].PreviousPrice.MidPrice());
                     if (IsWin)
+                    {
+                        string msg = string.Format("Asset:[{0}] | CurrentAsk:{1} CurrentBid:{2} CurrentMid:{3} | PreviousAsk:{4} PreviousBid:{5} PreviousMid:{6}", e.Instrument,
+                            assetCache[e.Instrument].CurrentPrice.Ask,
+                            assetCache[e.Instrument].CurrentPrice.Bid,
+                            assetCache[e.Instrument].CurrentPrice.MidPrice(),
+                            assetCache[e.Instrument].PreviousPrice.Ask,
+                            assetCache[e.Instrument].PreviousPrice.Bid,
+                            assetCache[e.Instrument].PreviousPrice.MidPrice()
+                            );
+
+                        appLog.WriteInfoAsync("GameManager", "CheckBet", "", msg);
                         ProcessBetWin(bet);
+                    }
                 }
             }
             finally
@@ -359,8 +398,11 @@ namespace BoxOptions.Services
             bool IsWin = false;
             if (assetCache.ContainsKey(sdr.AssetPair))
             {
-                if (assetCache[sdr.AssetPair].CurrentPrice > 0 && assetCache[sdr.AssetPair].PreviousPrice > 0)
-                    IsWin = CheckBet(sdr, assetCache[sdr.AssetPair].CurrentPrice, assetCache[sdr.AssetPair].PreviousPrice);
+                if (assetCache[sdr.AssetPair].CurrentPrice.MidPrice() > 0 && assetCache[sdr.AssetPair].PreviousPrice.MidPrice() > 0)
+                {
+                   
+                    IsWin = CheckBet(sdr, assetCache[sdr.AssetPair].CurrentPrice.MidPrice(), assetCache[sdr.AssetPair].PreviousPrice.MidPrice());
+                }                    
             }
             
             // Set bet as with WIN status and publish WIN to WAMP topic
@@ -498,8 +540,8 @@ namespace BoxOptions.Services
 
         private class PriceCache
         {
-            public decimal CurrentPrice { get; set; }
-            public decimal PreviousPrice { get; set; }
+            public Core.Models.InstrumentPrice CurrentPrice { get; set; }
+            public Core.Models.InstrumentPrice PreviousPrice { get; set; }
         }
 
         //private void MutexTest()

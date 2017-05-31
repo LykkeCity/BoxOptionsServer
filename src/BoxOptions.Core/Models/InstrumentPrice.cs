@@ -2,34 +2,30 @@
 
 namespace BoxOptions.Core.Models
 {
-    public class InstrumentPrice
+    public class InstrumentPrice:Price
     {
         public string Instrument { get; set; }
-        public DateTime Date { get; set; }
-        public double Bid { get; set; }
-        public double Ask { get; set; }
 
-        public InstrumentPrice Clone()
+        public override Price ClonePrice()
         {
-            // all dates must be UTC
-            if (this.Date.Kind != DateTimeKind.Utc)
-                throw new InvalidTimeZoneException();
-
-
-            // DateTime with only 6 digits after seconds            
-            string ticks = Date.Ticks.ToString();
-            string trimed = ticks.Substring(0, ticks.Length - 1) + "0";
-            long trimmedTicks = long.Parse(trimed);
-
-
-
-            return new InstrumentPrice()
+            try
             {
-                Instrument = this.Instrument,
-                Ask = this.Ask,
-                Bid = this.Bid,
-                Date = new DateTime(trimmedTicks, DateTimeKind.Utc)
-            };
+                Price res = base.ClonePrice();
+                InstrumentPrice retval = new InstrumentPrice()
+                {
+                    Instrument = this.Instrument,
+                    Ask = res.Ask,
+                    Bid = res.Bid,
+                    Date = res.Date
+                };
+                
+                return retval;
+
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
         }
     }
 }

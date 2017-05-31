@@ -18,13 +18,25 @@ namespace BoxOptions.Core.Models
         {
             return (Bid + Ask) / 2.0;
         }
-        public Price ClonePrice()
+        public virtual Price ClonePrice()
         {
+            // all dates must be UTC
+            if (this.Date.Kind != DateTimeKind.Utc)
+                throw new InvalidTimeZoneException();
+
+
+            // DateTime with only 6 digits after seconds            
+            string ticks = Date.Ticks.ToString();
+            string trimed = ticks.Substring(0, ticks.Length - 1) + "0";
+            long trimmedTicks = long.Parse(trimed);
+
+
+
             return new Price()
             {
-                date = this.date,
                 Ask = this.Ask,
-                Bid = this.Bid
+                Bid = this.Bid,
+                Date = new DateTime(trimmedTicks, DateTimeKind.Utc)
             };
         }
         public override string ToString()

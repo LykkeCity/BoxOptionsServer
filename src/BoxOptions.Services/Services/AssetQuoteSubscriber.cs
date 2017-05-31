@@ -162,7 +162,7 @@ namespace BoxOptions.Services
                     
 
                     if (assetbid.Ask > 0 && assetbid.Bid > 0)
-                        MessageReceived?.Invoke(this, assetbid.Clone());
+                        MessageReceived?.Invoke(this, (InstrumentPrice)assetbid.ClonePrice());
                     return Task.FromResult(0);
                 }
             }
