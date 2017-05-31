@@ -182,6 +182,7 @@ namespace BoxOptions.Services
             await coeffCalculatorSemaphoreSlim.WaitAsync();
             try
             {
+
                 // Change calculator parameters for current pair with User parameters
                 string res = await calculator.ChangeAsync(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
                 if (res != "OK")
@@ -452,6 +453,15 @@ namespace BoxOptions.Services
         public void SetUserParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
         {
             UserState userState = GetUserState(userId);
+
+            bool ValidateParameters = calculator.ValidateChange(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
+            if (ValidateParameters == false)
+            {
+                // Invalid Parameters, throw error
+                throw new ArgumentException("Invalid Parameters");
+            }
+
+
             userState.SetParameters(pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
             database.SaveUserParameters(userId, userState.UserCoeffParameters);
             SetUserStatus(userState, GameStatus.ParameterChanged, $"ParameterChanged [{pair}] timeToFirstOption={timeToFirstOption}; optionLen={optionLen}; priceSize={priceSize}; nPriceIndex={nPriceIndex}, nTimeIndex={nTimeIndex}");
