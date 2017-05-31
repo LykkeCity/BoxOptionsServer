@@ -126,8 +126,8 @@ namespace BoxOptions.Client
                             "\"Id\": \"james@example.com\"," +
                             "\"MinPrice\": 0.0001," +
                             "\"MaxPrice\": 0.0009," +
-                            "\"TimeToGraph\": 15," +
-                            "\"TimeLength\": 10," +
+                            "\"TimeToGraph\": 7.377049180327869," +
+                            "\"TimeLength\": 7.9999999," +
                             "\"Coefficient\": 0.987654321" +
                             "}";
 

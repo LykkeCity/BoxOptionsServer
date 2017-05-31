@@ -40,7 +40,7 @@ namespace BoxOptions.Services.Models
         internal void StartWaitTimeToGraph()
         {
             BetStatus = BetStates.Waiting;
-            BetTimer.Change(1000 * Box.TimeToGraph, -1);
+            BetTimer.Change((int)(1000 * Box.TimeToGraph), -1);
         }
 
         private void WaitTimeToGraphCallback(object status)
@@ -49,7 +49,7 @@ namespace BoxOptions.Services.Models
             BetStatus = BetStates.OnGoing;
             TimeToGraphReached?.Invoke(this, new EventArgs());
 
-            BetTimer = new System.Threading.Timer(new System.Threading.TimerCallback(WaitTimeLengthCallback), Box, 1000 * Box.TimeLength, -1);
+            BetTimer = new System.Threading.Timer(new System.Threading.TimerCallback(WaitTimeLengthCallback), Box, (int)(1000 * Box.TimeLength), -1);
         }
         private void WaitTimeLengthCallback(object status)
         {
