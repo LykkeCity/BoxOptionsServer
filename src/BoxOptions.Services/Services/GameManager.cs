@@ -360,22 +360,23 @@ namespace BoxOptions.Services
                 foreach (var bet in assetBets)
                 {
                     // Check open bets for
+
                     bool IsWin = CheckBet(bet, assetCache[e.Instrument].CurrentPrice.MidPrice(), assetCache[e.Instrument].PreviousPrice.MidPrice());
                     if (IsWin)
-                    {
-                        string msg = string.Format("WON ON QuoteReceived | Asset:[{0}] | CurrentAsk:{1} CurrentBid:{2} CurrentMid:{3} | PreviousAsk:{4} PreviousBid:{5} PreviousMid:{6} | BOX={7}", 
-                            e.Instrument,
-                            assetCache[e.Instrument].CurrentPrice.Ask,
-                            assetCache[e.Instrument].CurrentPrice.Bid,
-                            assetCache[e.Instrument].CurrentPrice.MidPrice(),
-                            assetCache[e.Instrument].PreviousPrice.Ask,
-                            assetCache[e.Instrument].PreviousPrice.Bid,
-                            assetCache[e.Instrument].PreviousPrice.MidPrice(),
-                            bet.Box.Id
-                            );
+                    {                      
+                        ProcessBetWin(bet);
+                        string msg = string.Format("ON QuoteReceived | Asset:[{0}] | CurrentAsk:{1} CurrentBid:{2} CurrentMid:{3} | PreviousAsk:{4} PreviousBid:{5} PreviousMid:{6} | BOX={7}",
+                           e.Instrument,
+                           assetCache[e.Instrument].CurrentPrice.Ask,
+                           assetCache[e.Instrument].CurrentPrice.Bid,
+                           assetCache[e.Instrument].CurrentPrice.MidPrice(),
+                           assetCache[e.Instrument].PreviousPrice.Ask,
+                           assetCache[e.Instrument].PreviousPrice.Bid,
+                           assetCache[e.Instrument].PreviousPrice.MidPrice(),
+                           bet.Box.Id
+                           );
 
                         appLog.WriteInfoAsync("GameManager", "CheckBet", "", msg);
-                        ProcessBetWin(bet);
                     }
                 }
             }
@@ -401,27 +402,31 @@ namespace BoxOptions.Services
             if (assetCache.ContainsKey(sdr.AssetPair))
             {
                 if (assetCache[sdr.AssetPair].CurrentPrice.MidPrice() > 0 && assetCache[sdr.AssetPair].PreviousPrice.MidPrice() > 0)
-                {
-                    string msg = string.Format("WON ON TimeToGraphReached | Asset:[{0}] | CurrentAsk:{1} CurrentBid:{2} CurrentMid:{3} | PreviousAsk:{4} PreviousBid:{5} PreviousMid:{6} | BOX={7}",
-                        sdr.AssetPair,
-                        assetCache[sdr.AssetPair].CurrentPrice.Ask,
-                        assetCache[sdr.AssetPair].CurrentPrice.Bid,
-                        assetCache[sdr.AssetPair].CurrentPrice.MidPrice(),
-                        assetCache[sdr.AssetPair].PreviousPrice.Ask,
-                        assetCache[sdr.AssetPair].PreviousPrice.Bid,
-                        assetCache[sdr.AssetPair].PreviousPrice.MidPrice(),
-                        sdr.Box.Id
-                        );
-                    IsWin = CheckBet(sdr, assetCache[sdr.AssetPair].CurrentPrice.MidPrice(), assetCache[sdr.AssetPair].PreviousPrice.MidPrice());
+                {                    
+                    IsWin = CheckBet(sdr, assetCache[sdr.AssetPair].CurrentPrice.MidPrice(), assetCache[sdr.AssetPair].PreviousPrice.MidPrice());                    
                 }                    
             }
             
             // Set bet as with WIN status and publish WIN to WAMP topic
             if (IsWin)
                 ProcessBetWin(sdr);
-
+          
             // Add bet to cache
             betCache.Add(sdr);
+
+            string msg = string.Format("ON TimeToGraphReached WIN={8} | Asset:[{0}] | CurrentAsk:{1} CurrentBid:{2} CurrentMid:{3} | PreviousAsk:{4} PreviousBid:{5} PreviousMid:{6} | BOX={7}",
+                      sdr.AssetPair,
+                      assetCache[sdr.AssetPair].CurrentPrice.Ask,
+                      assetCache[sdr.AssetPair].CurrentPrice.Bid,
+                      assetCache[sdr.AssetPair].CurrentPrice.MidPrice(),
+                      assetCache[sdr.AssetPair].PreviousPrice.Ask,
+                      assetCache[sdr.AssetPair].PreviousPrice.Bid,
+                      assetCache[sdr.AssetPair].PreviousPrice.MidPrice(),
+                      sdr.Box.Id,
+                      IsWin
+                      );
+            appLog.WriteInfoAsync("GameManager", "CheckBet", "", msg);
+
         }
         private void Bet_TimeLenghFinished(object sender, EventArgs e)
         {
