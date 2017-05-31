@@ -248,9 +248,9 @@ namespace BoxOptions.Services
                     msg += " -  currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice";
                 else if (previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice)
                     msg += " -  previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice";
-                else if (previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice)
+                else if (previousPrice < bet.Box.MinPrice && currentPrice > bet.Box.MaxPrice)
                     msg += " -  previousPrice < bet.Box.MinPrice && currentPrice > bet.Box.MaxPrice";
-                else if (previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice)
+                else 
                     msg += " -  ERROR";
 
                 appLog.WriteInfoAsync("GameManager", "CheckBet", "", msg);
@@ -364,19 +364,7 @@ namespace BoxOptions.Services
                     bool IsWin = CheckBet(bet, assetCache[e.Instrument].CurrentPrice.MidPrice(), assetCache[e.Instrument].PreviousPrice.MidPrice());
                     if (IsWin)
                     {                      
-                        ProcessBetWin(bet);
-                        string msg = string.Format("ON QuoteReceived | Asset:[{0}] | CurrentAsk:{1} CurrentBid:{2} CurrentMid:{3} | PreviousAsk:{4} PreviousBid:{5} PreviousMid:{6} | BOX={7}",
-                           e.Instrument,
-                           assetCache[e.Instrument].CurrentPrice.Ask,
-                           assetCache[e.Instrument].CurrentPrice.Bid,
-                           assetCache[e.Instrument].CurrentPrice.MidPrice(),
-                           assetCache[e.Instrument].PreviousPrice.Ask,
-                           assetCache[e.Instrument].PreviousPrice.Bid,
-                           assetCache[e.Instrument].PreviousPrice.MidPrice(),
-                           bet.Box.Id
-                           );
-
-                        appLog.WriteInfoAsync("GameManager", "CheckBet", "", msg);
+                        ProcessBetWin(bet);                       
                     }
                 }
             }
@@ -414,7 +402,7 @@ namespace BoxOptions.Services
             // Add bet to cache
             betCache.Add(sdr);
 
-            string msg = string.Format("ON TimeToGraphReached WIN={8} | Asset:[{0}] | CurrentAsk:{1} CurrentBid:{2} CurrentMid:{3} | PreviousAsk:{4} PreviousBid:{5} PreviousMid:{6} | BOX={7}",
+            string msg = string.Format("TimeToGraphReached WIN={8} | Asset:[{0}] | CurrentAsk:{1} CurrentBid:{2} CurrentMid:{3} | PreviousAsk:{4} PreviousBid:{5} PreviousMid:{6} | BOX={7}",
                       sdr.AssetPair,
                       assetCache[sdr.AssetPair].CurrentPrice.Ask,
                       assetCache[sdr.AssetPair].CurrentPrice.Bid,
