@@ -1,4 +1,5 @@
-﻿using AzureStorage.Tables;
+﻿using AzureStorage;
+using AzureStorage.Tables;
 using BoxOptions.Core;
 using BoxOptions.Core.Interfaces;
 using BoxOptions.Core.Models;
@@ -120,17 +121,14 @@ namespace BoxOptions.AzureRepositories
         {
             return userId;
         }
-        public static string GetRowKey(DateTime histdate)
-        {
-            return $"userhist_{histdate.ToString("yyyy-MM-dd HH:mm:ss.fff")}";
-        }
+        
 
         public static UserHistoryEntity Create(IUserHistoryItem src)
         {
             return new UserHistoryEntity
             {
                 PartitionKey = GetPartitionKey(src.UserId),
-                RowKey = GetRowKey(src.Date),
+                //RowKey = GetRowKey(src.Date),
                 UserId = src.UserId,
                 Date = src.Date,
                 Status = src.Status,
@@ -208,13 +206,12 @@ namespace BoxOptions.AzureRepositories
                 
         public async Task InsertHistoryAsync(IUserHistoryItem olapEntitiy)
         {            
-            await _hstorage.InsertAsync(UserHistoryEntity.Create(olapEntitiy));
+            await _hstorage.InsertAndGenerateRowKeyAsDateTimeAsync(UserHistoryEntity.Create(olapEntitiy),DateTime.UtcNow);
         }
 
         public async Task<IEnumerable<UserHistoryItem>> GetUserHistory(string userId, int numEntries)
         {
-            var entities = (await _hstorage.GetDataAsync(new[] { userId }, numEntries,
-                    entity => entity.RowKey.StartsWith("userhist_")))
+            var entities = (await _hstorage.GetDataAsync(new[] { userId }, numEntries))
                 .OrderByDescending(item => item.Timestamp).Take(numEntries);
 
             return entities.Select(UserHistoryEntity.CreateUserHistoryItem);

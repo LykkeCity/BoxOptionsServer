@@ -225,9 +225,9 @@ namespace BoxOptions.Services
             double currentDelta = (double)mcurrent - currentPrice;
             double previousDelta = (double)mcurrent - currentPrice;
 
-            if (currentDelta != 0)
+            if (currentDelta > 0.000001 || currentDelta < -0.000001)
                 appLog.WriteWarningAsync("GameManager", "CheckBet", "", $"Decimal to Double conversion Fail! CurrentDelta={currentDelta}");
-            if (previousDelta != 0)
+            if (previousDelta > 0.000001 || previousDelta < -0.000001)
                 appLog.WriteWarningAsync("GameManager", "CheckBet", "", $"Decimal to Double conversion Fail! PreviousDelta={previousDelta}");
 
             return CheckBet(bet, mcurrent, mprevious);
@@ -239,19 +239,19 @@ namespace BoxOptions.Services
                 (previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice) ||     // OR previousPrice > maxPrice and currentPrice < minPrice
                 (previousPrice < bet.Box.MinPrice && currentPrice > bet.Box.MaxPrice))      // OR previousPrice < minPrice and currentPrice > maxPrice
             {
-                string msg = string.Format("Pair:{0}", bet.AssetPair);
-                msg += string.Format("\n-PreviousPrice:{0}", previousPrice);
-                msg += string.Format("\n-CurrentPrice:{0}", currentPrice);
-                msg += string.Format("\n-MinPrice:{0}", bet.Box.MinPrice);
-                msg += string.Format("\n-MaxPrice:{0}", bet.Box.MaxPrice);
+                string msg = string.Format("BETWIN Pair:{0} BOX:{1}[{2}]", bet.AssetPair, bet.Box.Coefficient,bet.Box.Id);
+                msg += string.Format(" -PreviousPrice:{0}", previousPrice);
+                msg += string.Format(" -CurrentPrice:{0}", currentPrice);
+                msg += string.Format(" -MinPrice:{0}", bet.Box.MinPrice);
+                msg += string.Format(" -MaxPrice:{0}", bet.Box.MaxPrice);
                 if (currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice)
-                    msg += "\n -  currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice";
+                    msg += " -  currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice";
                 else if (previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice)
-                    msg += "\n -  previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice";
+                    msg += " -  previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice";
                 else if (previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice)
-                    msg += "\n -  previousPrice < bet.Box.MinPrice && currentPrice > bet.Box.MaxPrice";
+                    msg += " -  previousPrice < bet.Box.MinPrice && currentPrice > bet.Box.MaxPrice";
                 else if (previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice)
-                    msg += "\n -  ERROR";
+                    msg += " -  ERROR";
 
                 appLog.WriteInfoAsync("GameManager", "CheckBet", "", msg);
                 return true;
@@ -363,13 +363,15 @@ namespace BoxOptions.Services
                     bool IsWin = CheckBet(bet, assetCache[e.Instrument].CurrentPrice.MidPrice(), assetCache[e.Instrument].PreviousPrice.MidPrice());
                     if (IsWin)
                     {
-                        string msg = string.Format("Asset:[{0}] | CurrentAsk:{1} CurrentBid:{2} CurrentMid:{3} | PreviousAsk:{4} PreviousBid:{5} PreviousMid:{6}", e.Instrument,
+                        string msg = string.Format("WON ON QuoteReceived | Asset:[{0}] | CurrentAsk:{1} CurrentBid:{2} CurrentMid:{3} | PreviousAsk:{4} PreviousBid:{5} PreviousMid:{6} | BOX={7}", 
+                            e.Instrument,
                             assetCache[e.Instrument].CurrentPrice.Ask,
                             assetCache[e.Instrument].CurrentPrice.Bid,
                             assetCache[e.Instrument].CurrentPrice.MidPrice(),
                             assetCache[e.Instrument].PreviousPrice.Ask,
                             assetCache[e.Instrument].PreviousPrice.Bid,
-                            assetCache[e.Instrument].PreviousPrice.MidPrice()
+                            assetCache[e.Instrument].PreviousPrice.MidPrice(),
+                            bet.Box.Id
                             );
 
                         appLog.WriteInfoAsync("GameManager", "CheckBet", "", msg);
@@ -400,7 +402,16 @@ namespace BoxOptions.Services
             {
                 if (assetCache[sdr.AssetPair].CurrentPrice.MidPrice() > 0 && assetCache[sdr.AssetPair].PreviousPrice.MidPrice() > 0)
                 {
-                   
+                    string msg = string.Format("WON ON TimeToGraphReached | Asset:[{0}] | CurrentAsk:{1} CurrentBid:{2} CurrentMid:{3} | PreviousAsk:{4} PreviousBid:{5} PreviousMid:{6} | BOX={7}",
+                        sdr.AssetPair,
+                        assetCache[sdr.AssetPair].CurrentPrice.Ask,
+                        assetCache[sdr.AssetPair].CurrentPrice.Bid,
+                        assetCache[sdr.AssetPair].CurrentPrice.MidPrice(),
+                        assetCache[sdr.AssetPair].PreviousPrice.Ask,
+                        assetCache[sdr.AssetPair].PreviousPrice.Bid,
+                        assetCache[sdr.AssetPair].PreviousPrice.MidPrice(),
+                        sdr.Box.Id
+                        );
                     IsWin = CheckBet(sdr, assetCache[sdr.AssetPair].CurrentPrice.MidPrice(), assetCache[sdr.AssetPair].PreviousPrice.MidPrice());
                 }                    
             }
