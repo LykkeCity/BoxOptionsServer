@@ -240,10 +240,10 @@ namespace BoxOptions.Services
                 (previousPrice < bet.Box.MinPrice && currentPrice > bet.Box.MaxPrice))      // OR previousPrice < minPrice and currentPrice > maxPrice
             {
                 string msg = string.Format("BETWIN Pair:{0} BOX:{1}[{2}]", bet.AssetPair, bet.Box.Coefficient,bet.Box.Id);
-                msg += string.Format(" -PreviousPrice:{0}", previousPrice);
-                msg += string.Format(" -CurrentPrice:{0}", currentPrice);
-                msg += string.Format(" -MinPrice:{0}", bet.Box.MinPrice);
-                msg += string.Format(" -MaxPrice:{0}", bet.Box.MaxPrice);
+                msg += string.Format("\n\r-PreviousPrice:{0}", previousPrice);
+                msg += string.Format("\n\r-CurrentPrice:{0}", currentPrice);
+                msg += string.Format("\n\r-MinPrice:{0}", bet.Box.MinPrice);
+                msg += string.Format("\n\r-MaxPrice:{0}\n\r", bet.Box.MaxPrice);
                 if (currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice)
                     msg += " -  currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice";
                 else if (previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice)
@@ -413,7 +413,7 @@ namespace BoxOptions.Services
                       sdr.Box.Id,
                       IsWin
                       );
-            appLog.WriteInfoAsync("GameManager", "CheckBet", "", msg);
+            appLog.WriteInfoAsync("GameManager", "TimeToGraphReached", "", msg);
 
         }
         private void Bet_TimeLenghFinished(object sender, EventArgs e)
@@ -473,6 +473,7 @@ namespace BoxOptions.Services
             // Set Status, saves User to DB            
             SetUserStatus(userState, GameStatus.BetPlaced, $"BetPlaced[{boxObject.Id}]. Asset:{assetPair}  Bet:{bet} Balance:{userState.Balance}");
 
+            appLog.WriteInfoAsync("GameManager", "PlaceBet", "", $"Coef:{boxObject.Coefficient} Id:{boxObject.Id}");
         }
 
         public decimal SetUserBalance(string userId, decimal newBalance)
