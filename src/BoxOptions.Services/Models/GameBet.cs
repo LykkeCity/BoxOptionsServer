@@ -14,21 +14,31 @@ namespace BoxOptions.Services.Models
         }
 
         readonly string userId;
+        readonly UserState user;
 
         public string UserId => userId;
+        public UserState User => user;
         public decimal BetAmount { get; set; }
         public string AssetPair { get; set; }
         public DateTime Timestamp { get; set; }
         public Box Box { get; set; }
         public BetStates BetStatus { get; set; }
         public CoeffParameters CurrentParameters { get; set; }
+        public DateTime? TimeToGraphStamp { get; private set; }
+        public DateTime? WinStamp { get; set; }
+        public DateTime? FinishedStamp { get; private set; }
 
+        
 
         System.Threading.Timer BetTimer;
-        public GameBet(string userId)
+        public GameBet(UserState user)
         {
-            this.userId = userId;
+            this.user = user;
+            this.userId = user.UserId;
             BetTimer = new System.Threading.Timer(new System.Threading.TimerCallback(WaitTimeToGraphCallback), Box, -1, -1);
+            TimeToGraphStamp = null;
+            WinStamp = null;
+            FinishedStamp = null;
         }
 
 
@@ -46,14 +56,18 @@ namespace BoxOptions.Services.Models
         private void WaitTimeToGraphCallback(object status)
         {
             ClearTimer();
+            TimeToGraphStamp = DateTime.UtcNow;
             BetStatus = BetStates.OnGoing;
-            TimeToGraphReached?.Invoke(this, new EventArgs());
 
             BetTimer = new System.Threading.Timer(new System.Threading.TimerCallback(WaitTimeLengthCallback), Box, (int)(1000 * Box.TimeLength), -1);
+
+            TimeToGraphReached?.Invoke(this, new EventArgs());
         }
         private void WaitTimeLengthCallback(object status)
         {
             ClearTimer();
+            FinishedStamp = DateTime.UtcNow;
+
             TimeLenghFinished?.Invoke(this, new EventArgs());
         }
         private void ClearTimer()

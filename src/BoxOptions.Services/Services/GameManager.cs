@@ -203,6 +203,7 @@ namespace BoxOptions.Services
         }
         private void SetUserStatus(UserState user, GameStatus status, string message = null)
         {
+            Console.WriteLine("SetUserStatus - UserId:[{0}] Status:[{1}] Message:[{2}]", user.UserId, status, message);
             var hist = user.SetStatus((int)status, message);
             // Save history to database
             database.SaveUserHistory(user.UserId, hist);
@@ -216,64 +217,102 @@ namespace BoxOptions.Services
                 Message = message
             });
         }
+               
+        private bool CheckWin(GameBet bet, double dCurrentPrice, double dPreviousPrice)
+        {
+            decimal currentPrice = Convert.ToDecimal(dCurrentPrice);
+            decimal previousPrice = Convert.ToDecimal(dPreviousPrice);
 
-        private bool CheckBet(GameBet bet, double currentPrice, double previousPrice)
-        {            
-            decimal mcurrent = Convert.ToDecimal(currentPrice);
-            decimal mprevious = Convert.ToDecimal(previousPrice);
-
-            double currentDelta = (double)mcurrent - currentPrice;
-            double previousDelta = (double)mcurrent - currentPrice;
+            double currentDelta = (double)currentPrice - dCurrentPrice;
+            double previousDelta = (double)previousPrice - dPreviousPrice;
 
             if (currentDelta > 0.000001 || currentDelta < -0.000001)
-                appLog.WriteWarningAsync("GameManager", "CheckBet", "", $"Decimal to Double conversion Fail! CurrentDelta={currentDelta}");
+                appLog.WriteWarningAsync("GameManager", "CheckWin", "", $"Double to Decimal conversion Fail! CurrDelta={currentDelta} double:{dCurrentPrice} decimal:{currentPrice}");
             if (previousDelta > 0.000001 || previousDelta < -0.000001)
-                appLog.WriteWarningAsync("GameManager", "CheckBet", "", $"Decimal to Double conversion Fail! PreviousDelta={previousDelta}");
+                appLog.WriteWarningAsync("GameManager", "CheckWin", "", $"Double to Decimal conversion Fail! PrevDelta={previousDelta} double:{dPreviousPrice} decimal:{previousPrice}");
 
-            return CheckBet(bet, mcurrent, mprevious);
-        }
-        private bool CheckBet(GameBet bet, decimal currentPrice, decimal previousPrice)
-        {
 
             if ((currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice) ||       // currentPrice> minPrice and currentPrice<maxPrice
                 (previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice) ||     // OR previousPrice > maxPrice and currentPrice < minPrice
                 (previousPrice < bet.Box.MinPrice && currentPrice > bet.Box.MaxPrice))      // OR previousPrice < minPrice and currentPrice > maxPrice
-            {
-                string msg = string.Format("BETWIN Pair:{0} BOX:{1}[{2}]", bet.AssetPair, bet.Box.Coefficient,bet.Box.Id);
-                msg += string.Format("\n\r-PreviousPrice:{0}", previousPrice);
-                msg += string.Format("\n\r-CurrentPrice:{0}", currentPrice);
-                msg += string.Format("\n\r-MinPrice:{0}", bet.Box.MinPrice);
-                msg += string.Format("\n\r-MaxPrice:{0}\n\r", bet.Box.MaxPrice);
-                if (currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice)
-                    msg += " -  currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice";
-                else if (previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice)
-                    msg += " -  previousPrice > bet.Box.MaxPrice && currentPrice < bet.Box.MinPrice";
-                else if (previousPrice < bet.Box.MinPrice && currentPrice > bet.Box.MaxPrice)
-                    msg += " -  previousPrice < bet.Box.MinPrice && currentPrice > bet.Box.MaxPrice";
-                else 
-                    msg += " -  ERROR";
-
-                appLog.WriteInfoAsync("GameManager", "CheckBet", "", msg);
                 return true;
-            }
             else
                 return false;
         }
 
-        private void ProcessBetWin(GameBet bet)
+        private void ProcessBetCheck(GameBet bet)
+        {
+            // Run Check Asynchronously
+            Task.Run(() =>
+            {
+                var assetHist = assetCache[bet.AssetPair];
+                bool IsWin = CheckWin(bet, assetHist.CurrentPrice.MidPrice(), assetHist.PreviousPrice.MidPrice());
+
+                BetResult checkres = new BetResult(bet.Box.Id)
+                {
+                    BetAmount = bet.BetAmount,
+                    Coefficient = bet.Box.Coefficient,
+                    MinPrice = bet.Box.MinPrice,
+                    MaxPrice = bet.Box.MaxPrice,
+                    TimeToGraph = bet.Box.TimeToGraph,
+                    TimeLength = bet.Box.TimeLength,
+
+                    PreviousPrice = assetHist.PreviousPrice,
+                    CurrentPrice = assetHist.CurrentPrice,
+
+                    Timestamp = bet.Timestamp,
+                    TimeToGraphStamp = bet.TimeToGraphStamp,
+                    WinStamp = bet.WinStamp,
+                    FinishedStamp = bet.FinishedStamp,
+                    BetState = (int)bet.BetStatus,
+                    IsWin = IsWin                    
+                };
+
+                if (IsWin)
+                {
+                    // Process WIN
+                    ProcessBetWin(bet, checkres);
+                }
+                else
+                {
+                    // Report Not WIN to WAMP
+                    bet.User.PublishToWamp(checkres);
+                }
+                // Log check
+                string msg = checkres.ToJson();
+                appLog.WriteInfoAsync("GameManager", "ProcessBetCheck", "", msg);
+            });
+        }
+        /// <summary>
+        /// Set bet status to WIN, update user balance, publish WIN to WAMP, Save to DB
+        /// </summary>
+        /// <param name="bet">Bet</param>
+        /// <param name="res">WinCheck Result</param>
+        private void ProcessBetWin(GameBet bet, BetResult res)
         {   
             // Set bet to win
             bet.BetStatus = GameBet.BetStates.Win;
-            //Update user balance with prize
-            UserState user = GetUserState(bet.UserId);
+            
+            //Update user balance with prize            
             decimal prize = bet.BetAmount * bet.Box.Coefficient;
-            user.SetBalance(user.Balance + prize);
+            bet.User.SetBalance(bet.User.Balance + prize);
 
-            // Publish WIN to WAMP topic
-            PublishWinAsync(user, bet);
+            // Publish WIN to WAMP topic            
+            var t = Task.Run(() => {
+                // Publish to WAMP topic
+                bet.User.PublishToWamp(res);
+                // Raise OnBetWin Event
+                OnBetWin(new BetEventArgs(bet));
+
+                SetUserStatus(bet.UserId, GameStatus.BetWon, $"Bet WON [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount} Coef:{bet.Box.Coefficient} Prize:{bet.BetAmount * bet.Box.Coefficient}");
+            });
             // Save to Database
             database.SaveGameBet(bet.UserId, bet);
         }
+        /// <summary>
+        /// Set bet status to Lose(if not won),  publish WIN to WAMP, Save to DB
+        /// </summary>
+        /// <param name="bet">Bet</param>
         private void ProcessBetTimeOut(GameBet bet)
         {
             // Remove bet from cache
@@ -282,161 +321,99 @@ namespace BoxOptions.Services
             // If bet was not won previously
             if (bet.BetStatus != GameBet.BetStates.Win)
             {                
-                // publish LOSE to WAMP topic
+                // Set bet Status to lose
                 bet.BetStatus = GameBet.BetStates.Lose;
-                UserState user = GetUserState(bet.UserId);
-                PublishLoseAsync(user, bet);
+
+                // publish LOSE to WAMP topic                
+                var t = Task.Run(() => {
+                    BetResult checkres = new BetResult(bet.Box.Id)
+                    {
+                        BetAmount = bet.BetAmount,
+                        Coefficient = bet.Box.Coefficient,
+                        MinPrice = bet.Box.MinPrice,
+                        MaxPrice = bet.Box.MaxPrice,
+                        TimeToGraph = bet.Box.TimeToGraph,
+                        TimeLength = bet.Box.TimeLength,
+
+                        PreviousPrice = assetCache[bet.AssetPair].PreviousPrice,
+                        CurrentPrice = assetCache[bet.AssetPair].CurrentPrice,
+
+                        Timestamp = bet.Timestamp,
+                        TimeToGraphStamp = bet.TimeToGraphStamp,
+                        WinStamp = bet.WinStamp,
+                        FinishedStamp = bet.FinishedStamp,
+                        BetState = (int)bet.BetStatus,
+                        IsWin = false
+                    };
+                    // Publish to WAMP topic
+                    bet.User.PublishToWamp(checkres);
+                    // Raise OnBetLose Event
+                    OnBetLose(new BetEventArgs(bet));
+
+                    SetUserStatus(bet.UserId, GameStatus.BetLost, $"Bet LOST [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount}");
+                });
                 database.SaveGameBet(bet.UserId, bet);
             }
         }
-
-
-        private void PublishWinAsync(UserState user, GameBet bet)
-        {
-            var t = Task.Run(() => {
-                BetResult res = new BetResult()
-                {
-                    BoxId = bet.Box.Id,
-                    BetAmount = bet.BetAmount,
-                    IsWin = true,
-                    Timestamp = DateTime.UtcNow
-                };
-                // Publish to WAMP topic
-                user.PublishToWamp(res);
-                // Raise OnBetWin Event
-                OnBetWin(new BetEventArgs(bet));
-
-                SetUserStatus(bet.UserId, GameStatus.BetWon, $"Bet WON [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount} Coef:{bet.Box.Coefficient} Prize:{bet.BetAmount * bet.Box.Coefficient}");
-            });
-        }
-        private void PublishLoseAsync(UserState user, GameBet bet)
-        {
-            var t = Task.Run(() => {
-                BetResult res = new BetResult()
-                {
-                    BoxId = bet.Box.Id,
-                    BetAmount = bet.BetAmount,
-                    IsWin = false,
-                    Timestamp = DateTime.UtcNow
-                };
-                // Publish to WAMP topic
-                user.PublishToWamp(res);
-                // Raise OnBetLose Event
-                OnBetLose(new BetEventArgs(bet));
-
-                SetUserStatus(bet.UserId, GameStatus.BetLost, $"Bet LOST [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount}");
-            });
-        }
-
-
+        
+      
         #region Event Handlers
         private void QuoteFeed_MessageReceived(object sender, Core.Models.InstrumentPrice e)
         {
-            Guid fid = Guid.NewGuid();
-            //Console.WriteLine("{0} | {1}> QuoteFeed Received [{2}]{3}/{4}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), fid, e.Instrument, e.Bid, e.Ask);
-            quoteReceivedSemaphoreSlim.WaitAsync();
-            //Console.WriteLine("{0} | {1}> Aquired Semaphore", DateTime.UtcNow.ToString("HH:mm:ss.fff"), fid);
+            
+            quoteReceivedSemaphoreSlim.WaitAsync();            
             try
             {
 
                 // Add price to cache
                 if (!assetCache.ContainsKey(e.Instrument))
                     assetCache.Add(e.Instrument, new PriceCache());
-                
+
                 // Update price cache
                 assetCache[e.Instrument].PreviousPrice = assetCache[e.Instrument].CurrentPrice;
                 assetCache[e.Instrument].CurrentPrice = (Core.Models.InstrumentPrice)e.ClonePrice();
-                                
+
                 // Get bets for current asset
                 // That are not yet with WIN status
                 var assetBets = (from b in betCache
-                                where b.AssetPair == e.Instrument &&
-                                b.BetStatus != GameBet.BetStates.Win
-                                select b).ToList();
+                                 where b.AssetPair == e.Instrument &&
+                                 b.BetStatus != GameBet.BetStates.Win
+                                 select b).ToList();
                 if (assetBets.Count == 0)
                     return;
 
-
                 foreach (var bet in assetBets)
                 {
-                    // Check open bets for
-                    Task.Run(() =>
-                    {
-                        bool IsWin = CheckBet(bet, assetCache[e.Instrument].CurrentPrice.MidPrice(), assetCache[e.Instrument].PreviousPrice.MidPrice());
-                        if (IsWin)
-                        {
-                            ProcessBetWin(bet);
-                        }
-                        string msg = string.Format("QuoteFeedReceived WIN={8} | Asset:[{0}] | CurrentAsk:{1} CurrentBid:{2} CurrentMid:{3} | PreviousAsk:{4} PreviousBid:{5} PreviousMid:{6} | BOX={7}",
-                            bet.AssetPair,
-                            assetCache[bet.AssetPair].CurrentPrice.Ask,
-                            assetCache[bet.AssetPair].CurrentPrice.Bid,
-                            assetCache[bet.AssetPair].CurrentPrice.MidPrice(),
-                            assetCache[bet.AssetPair].PreviousPrice.Ask,
-                            assetCache[bet.AssetPair].PreviousPrice.Bid,
-                            assetCache[bet.AssetPair].PreviousPrice.MidPrice(),
-                            bet.Box.Id,
-                            IsWin
-                            );
-                        appLog.WriteInfoAsync("GameManager", "QuoteFeed_MessageReceived", "", msg);
-                    });
+                    ProcessBetCheck(bet);
                 }
             }
-            finally
-            {
-                //Console.WriteLine("{0} | {1}> Finished", DateTime.UtcNow.ToString("HH:mm:ss.fff"), fid);
-                quoteReceivedSemaphoreSlim.Release();
-                //Console.WriteLine("{0} | {1}> Released Semaphore", DateTime.UtcNow.ToString("HH:mm:ss.fff"), fid);
-            }
+            finally { quoteReceivedSemaphoreSlim.Release(); }
 
         }
 
         private void Bet_TimeToGraphReached(object sender, EventArgs e)
         {
-            GameBet sdr = sender as GameBet;
-            if (sdr == null)
+            GameBet bet = sender as GameBet;
+            if (bet == null)
                 return;
-
-            //Console.WriteLine("{0}>Bet_TimeToGraphReached={1}", DateTime.Now.ToString("HH:mm:ss.fff"), sdr.Box.TimeToGraph);
-
-            // Do initial Check
-            bool IsWin = false;
-            if (assetCache.ContainsKey(sdr.AssetPair))
-            {
-                if (assetCache[sdr.AssetPair].CurrentPrice.MidPrice() > 0 && assetCache[sdr.AssetPair].PreviousPrice.MidPrice() > 0)
-                {                    
-                    IsWin = CheckBet(sdr, assetCache[sdr.AssetPair].CurrentPrice.MidPrice(), assetCache[sdr.AssetPair].PreviousPrice.MidPrice());                    
-                }                    
-            }
             
-            // Set bet as with WIN status and publish WIN to WAMP topic
-            if (IsWin)
-                ProcessBetWin(sdr);
-          
+            // Do initial Check            
+            if (assetCache.ContainsKey(bet.AssetPair))
+            {
+                if (assetCache[bet.AssetPair].CurrentPrice.MidPrice() > 0 && assetCache[bet.AssetPair].PreviousPrice.MidPrice() > 0)
+                {
+                    ProcessBetCheck(bet);
+                }
+            }            
+                     
             // Add bet to cache
-            betCache.Add(sdr);
-
-            string msg = string.Format("TimeToGraphReached WIN={8} | Asset:[{0}] | CurrentAsk:{1} CurrentBid:{2} CurrentMid:{3} | PreviousAsk:{4} PreviousBid:{5} PreviousMid:{6} | BOX={7}",
-                      sdr.AssetPair,
-                      assetCache[sdr.AssetPair].CurrentPrice.Ask,
-                      assetCache[sdr.AssetPair].CurrentPrice.Bid,
-                      assetCache[sdr.AssetPair].CurrentPrice.MidPrice(),
-                      assetCache[sdr.AssetPair].PreviousPrice.Ask,
-                      assetCache[sdr.AssetPair].PreviousPrice.Bid,
-                      assetCache[sdr.AssetPair].PreviousPrice.MidPrice(),
-                      sdr.Box.Id,
-                      IsWin
-                      );
-            appLog.WriteInfoAsync("GameManager", "TimeToGraphReached", "", msg);
-
+            betCache.Add(bet);
         }
         private void Bet_TimeLenghFinished(object sender, EventArgs e)
         {
             GameBet sdr = sender as GameBet;
             if (sdr == null)
                 return;
-            //Console.WriteLine("{0}>Bet_TimeLenghFinished={1}", DateTime.Now.ToString("HH:mm:ss.fff"), sdr.Box.TimeLength);
-
             ProcessBetTimeOut(sdr);
 
 
