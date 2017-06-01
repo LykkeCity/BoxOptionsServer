@@ -14,7 +14,7 @@ namespace BoxOptions.Services.Models
         }
 
         readonly string userId;
-        readonly UserState user;
+        UserState user;
 
         public string UserId => userId;
         public UserState User => user;
@@ -31,16 +31,27 @@ namespace BoxOptions.Services.Models
         
 
         System.Threading.Timer BetTimer;
-        public GameBet(UserState user)
+
+        public GameBet(string userId)
         {
-            this.user = user;
-            this.userId = user.UserId;
-            BetTimer = new System.Threading.Timer(new System.Threading.TimerCallback(WaitTimeToGraphCallback), Box, -1, -1);
+            this.userId = userId;
+            BetTimer = new System.Threading.Timer(new System.Threading.TimerCallback(WaitTimeToGraphCallback), null, -1, -1);
+            user = null;
             TimeToGraphStamp = null;
             WinStamp = null;
             FinishedStamp = null;
         }
-
+        public GameBet(UserState user) :
+            this(user.UserId)
+        {
+            this.user = user;
+        }
+        private void AssignUser(UserState user)
+        {
+            if (user != null)
+                throw new InvalidOperationException("User already defined");
+            this.user = user;
+        }
 
         public override string ToString()
         {

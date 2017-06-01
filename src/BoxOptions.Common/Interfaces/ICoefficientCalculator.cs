@@ -31,9 +31,9 @@ namespace BoxOptions.Common.Interfaces
         /// <param name="request"></param>
         /// <returns></returns>
         bool ValidateRequest(string userId, string pair);
-        bool ValidateRequestResult(string result);
+        bool ValidateRequestResult(string result,out string errorMessage);
 
         bool ValidateChange(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex);
-        bool ValidateChangeResult(string result);
+        bool ValidateChangeResult(string result, out string errorMessage);
     }
 }

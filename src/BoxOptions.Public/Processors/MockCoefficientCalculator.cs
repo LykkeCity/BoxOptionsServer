@@ -27,7 +27,8 @@ namespace BoxOptions.Public.Processors
             throw new NotImplementedException();
         }
 
-        public bool ValidateChangeResult(string result)
+      
+        public bool ValidateChangeResult(string result, out string errorMessage)
         {
             throw new NotImplementedException();
         }
@@ -36,8 +37,8 @@ namespace BoxOptions.Public.Processors
         {
             throw new NotImplementedException();
         }
-
-        public bool ValidateRequestResult(string result)
+             
+        public bool ValidateRequestResult(string result, out string errorMessage)
         {
             throw new NotImplementedException();
         }

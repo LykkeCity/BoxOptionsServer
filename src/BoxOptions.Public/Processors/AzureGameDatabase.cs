@@ -161,20 +161,20 @@ namespace BoxOptions.Public.Processors
 
         public async Task<IEnumerable<GameBet>> LoadGameBets(string userId, int betState)
         {
-            throw new NotImplementedException();
-        //    var gameBets = await gameRep.GetGameBetsByUser(userId, betState);
+            //throw new NotImplementedException();
+            var gameBets = await gameRep.GetGameBetsByUser(userId, betState);
 
-        //    var converted = from p in gameBets
-        //                    select new GameBet(userId)
-        //                    {
-        //                        BetAmount = decimal.Parse(p.BetAmount, CI),
-        //                        Box = Box.FromJson(p.Box),
-        //                        Timestamp = p.Date,
-        //                        CurrentParameters = CoeffParameters.FromJson(p.Parameters),
-        //                        AssetPair = p.AssetPair,
-        //                        BetStatus = (GameBet.BetStates)p.BetStatus                                
-        //                    };
-        //    return converted;
+            var converted = from p in gameBets
+                            select new GameBet(userId)
+                            {
+                                BetAmount = decimal.Parse(p.BetAmount, CI),
+                                Box = Box.FromJson(p.Box),
+                                Timestamp = p.Date,
+                                CurrentParameters = CoeffParameters.FromJson(p.Parameters),
+                                AssetPair = p.AssetPair,
+                                BetStatus = (GameBet.BetStates)p.BetStatus
+                            };
+            return converted;
         }
     }
 }

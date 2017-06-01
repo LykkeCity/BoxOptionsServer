@@ -585,6 +585,7 @@ namespace BoxOptions.Services
         {
             UserState userState = GetUserState(userId);
 
+            // Validate Parameters
             bool ValidateParameters = calculator.ValidateChange(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
             if (ValidateParameters == false)
             {
@@ -592,9 +593,11 @@ namespace BoxOptions.Services
                 throw new ArgumentException("Invalid Parameters");
             }
 
-
+            // Set User Parameters for AssetPair
             userState.SetParameters(pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
+            // Save User Parameters to DB
             database.SaveUserParameters(userId, userState.UserCoeffParameters);
+            // Update User Status
             SetUserStatus(userState, GameStatus.ParameterChanged, $"ParameterChanged [{pair}] timeToFirstOption={timeToFirstOption}; optionLen={optionLen}; priceSize={priceSize}; nPriceIndex={nPriceIndex}, nTimeIndex={nTimeIndex}");
         }
         public CoeffParameters GetUserParameters(string userId, string pair)
@@ -603,13 +606,33 @@ namespace BoxOptions.Services
             return userState.GetParameters(pair);
         }
         public string RequestUserCoeff(string userId, string pair)
-        {
+        {            
             UserState userState = GetUserState(userId);
+            // Load User Parameters
             var parameters = userState.GetParameters(pair);
+            
+            // Request Coeffcalculator Data
             Task<string> t = CoeffCalculatorRequest(userId, pair, parameters.TimeToFirstOption, parameters.OptionLen, parameters.PriceSize, parameters.NPriceIndex, parameters.NTimeIndex);
             t.Wait();
-            SetUserStatus(userState, GameStatus.CoeffRequest, $"CoeffRequest [{pair}]");
-            return t.Result;
+            string result = t.Result;
+
+            // Validate CoefCalculator Result
+            string ValidationError;
+            bool IsOk = calculator.ValidateRequestResult(result, out ValidationError);
+            
+            // Take action on validation result.
+            if (IsOk)
+            {
+                // Udpdate User Status
+                SetUserStatus(userState, GameStatus.CoeffRequest, $"CoeffRequest [{pair}]");
+                // return CoeffCalcResult
+                return result;
+            }
+            else
+            {
+                // Throw Exception
+                throw new ArgumentException(ValidationError);
+            }
         }
 
         public void AddLog(string userId, string eventCode, string message)

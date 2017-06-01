@@ -79,10 +79,10 @@ namespace BoxOptions.Public.Processors
             return true;
         }
 
-        public bool ValidateChangeResult(string result)
+        public bool ValidateChangeResult(string result, out string errorMessage)
         {
-            // Result validation
-
+            // TODO: Result validation
+            errorMessage = "OK";
             return true;
         }
 
@@ -91,8 +91,9 @@ namespace BoxOptions.Public.Processors
             return true;
         }
 
-        public bool ValidateRequestResult(string result)
+        public bool ValidateRequestResult(string result, out string errorMessage)
         {
+            errorMessage = "OK";
             // Parse result from coefficient API into objects
             Models.CoefModels.CoefRequestResult res = Models.CoefModels.CoefRequestResult.Parse(result);
 
@@ -139,13 +140,16 @@ namespace BoxOptions.Public.Processors
                 }                
             }
             if (AllEqualOne == true) // All coefficients are 1.0 thow exception with information.
-                throw new ArgumentException("All coefficients are equal to 1.0");
-
+            {
+                errorMessage = "All coefficients are equal to 1.0";
+                return false;
+            }
 
             if (NegativeCoef == true) // Negative coefficiente
-                throw new ArgumentException("Negative coefficients");
-
-            
+            {
+                errorMessage = "Negative coefficients";
+                return false;
+            }
 
             return true;
         }
