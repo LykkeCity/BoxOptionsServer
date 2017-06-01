@@ -123,7 +123,7 @@ namespace BoxOptions.Services.Models
         
         internal GameBet PlaceBet(Box boxObject, string assetPair, decimal bet, CoeffParameters coefPars, IAssetQuoteSubscriber quoteFeed)
         {
-            GameBet retval = new GameBet(userId)
+            GameBet retval = new GameBet(this)
             {
                 AssetPair = assetPair,
                 BetAmount = bet,
@@ -151,6 +151,7 @@ namespace BoxOptions.Services.Models
         }
         internal void PublishToWamp(BetResult betResult)
         {
+            Console.WriteLine("PublishToWamp: {0}", betResult.ToJson());
             if (subject == null)
                 throw new InvalidOperationException("Wamp Subject not set");
 
