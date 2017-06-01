@@ -360,12 +360,26 @@ namespace BoxOptions.Services
                 foreach (var bet in assetBets)
                 {
                     // Check open bets for
-
-                    bool IsWin = CheckBet(bet, assetCache[e.Instrument].CurrentPrice.MidPrice(), assetCache[e.Instrument].PreviousPrice.MidPrice());
-                    if (IsWin)
-                    {                      
-                        ProcessBetWin(bet);                       
-                    }
+                    Task.Run(() =>
+                    {
+                        bool IsWin = CheckBet(bet, assetCache[e.Instrument].CurrentPrice.MidPrice(), assetCache[e.Instrument].PreviousPrice.MidPrice());
+                        if (IsWin)
+                        {
+                            ProcessBetWin(bet);
+                        }
+                        string msg = string.Format("QuoteFeedReceived WIN={8} | Asset:[{0}] | CurrentAsk:{1} CurrentBid:{2} CurrentMid:{3} | PreviousAsk:{4} PreviousBid:{5} PreviousMid:{6} | BOX={7}",
+                            bet.AssetPair,
+                            assetCache[bet.AssetPair].CurrentPrice.Ask,
+                            assetCache[bet.AssetPair].CurrentPrice.Bid,
+                            assetCache[bet.AssetPair].CurrentPrice.MidPrice(),
+                            assetCache[bet.AssetPair].PreviousPrice.Ask,
+                            assetCache[bet.AssetPair].PreviousPrice.Bid,
+                            assetCache[bet.AssetPair].PreviousPrice.MidPrice(),
+                            bet.Box.Id,
+                            IsWin
+                            );
+                        appLog.WriteInfoAsync("GameManager", "QuoteFeed_MessageReceived", "", msg);
+                    });
                 }
             }
             finally
