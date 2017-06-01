@@ -118,12 +118,19 @@ namespace BoxOptions.Client
         public void Prices()
         {
             subscription1 = _realmProxy.Services.GetSubject<InstrumentPrice>("prices.update")
-                .Subscribe(info =>
-                {
-                    if (Program.ShowFeed)
-                        Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > BidDate[{info.Date.ToString("yyyy-MM-dd HH:mm:ss")}] | {info.Instrument} {info.Bid}/{info.Ask}");
-                });
+                .Subscribe(OnPriceFeed);
+                //info =>
+                //{
+                //    if (Program.ShowFeed)
+                //        Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > BidDate[{info.Date.ToString("yyyy-MM-dd HH:mm:ss")}] | {info.Instrument} {info.Bid}/{info.Ask}");
+                //});
         }
+        void OnPriceFeed(InstrumentPrice info)
+        {
+            if (Program.ShowFeed)
+                Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > BidDate[{info.Date.ToString("yyyy-MM-dd HH:mm:ss")}] | {info.Instrument} {info.Bid}/{info.Ask}");
+        }
+
         public void SubscribeGameEvents()
         {
             if (subscription2 != null)
@@ -131,12 +138,18 @@ namespace BoxOptions.Client
                 subscription2.Dispose();
                 subscription2 = null;
             }
-            subscription2 = _realmProxy.Services.GetSubject<BetResult>("game.events."+Program.UserId)
-                .Subscribe(info =>
-                {
-                    Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > INFO[{info.ToJson()}");
-                });
+            subscription2 = _realmProxy.Services.GetSubject<BetResult>("game.events." + Program.UserId)
+                .Subscribe(OnGameResult);
+                //info =>
+                //{
+                //    Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > INFO[{info.ToJson()}");
+                //});
         }
+        void OnGameResult(BetResult info)
+        {
+            Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > INFO[{info.ToJson()}");
+        }
+
         public void Stop()
         {
             subscription1.Dispose();
