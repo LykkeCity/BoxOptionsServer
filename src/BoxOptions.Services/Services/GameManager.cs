@@ -17,44 +17,66 @@ namespace BoxOptions.Services
 {
     public class GameManager : IGameManager, IDisposable
     {
-        public enum GameStatus
-        {
-            Created = 0,
-            Launch = 1,
-            Wake = 2,
-            Sleep = 3,
-            GameStarted = 4,
-            GameClosed = 5,
-            ChangeBet = 6,
-            ChangeScale = 7,
-            BetPlaced = 8,
-            BetWon = 9,
-            BetLost = 10,
-            BalanceChanged = 11,
-            ParameterChanged = 12,
-            CoeffRequest = 13
-        }
-                
+        #region Vars
+        /// <summary>
+        /// Coefficient Calculator Request Semaphore
+        /// Mutual Exclusion Process
+        /// </summary>
         static System.Threading.SemaphoreSlim coeffCalculatorSemaphoreSlim = new System.Threading.SemaphoreSlim(1, 1);
+        /// <summary>
+        /// Process AssetQuote Received Semaphore.
+        /// Mutual Exclusion Process
+        /// </summary>
         static System.Threading.SemaphoreSlim quoteReceivedSemaphoreSlim = new System.Threading.SemaphoreSlim(1, 1);
         static int MaxUserBuffer = 128;
 
+        /// <summary>
+        /// Ongoing Bets Cache
+        /// </summary>
         List<GameBet> betCache;
+        /// <summary>
+        /// Users Cache
+        /// </summary>
         List<UserState> userList;
         
         public event EventHandler<BetEventArgs> BetWin;
         public event EventHandler<BetEventArgs> BetLose;
-        
+
+        /// <summary>
+        /// Database Object
+        /// </summary>
         private readonly IGameDatabase database;
+        /// <summary>
+        /// CoefficientCalculator Object
+        /// </summary>
         private readonly ICoefficientCalculator calculator;
+        /// <summary>
+        /// QuoteFeed Object
+        /// </summary>
         private readonly IAssetQuoteSubscriber quoteFeed;
+        /// <summary>
+        /// WAMP Realm Object
+        /// </summary>
         private readonly IWampHostedRealm wampRealm;
+        /// <summary>
+        /// User Log Repository
+        /// </summary>
         private readonly ILogRepository logRepository;
+        /// <summary>
+        /// Application Log Repository
+        /// </summary>
         private readonly ILog appLog;
+        /// <summary>
+        /// Settings
+        /// </summary>
         private readonly BoxOptionsSettings settings;
-
+        /// <summary>
+        /// Last Prices Cache
+        /// </summary>
         private Dictionary<string, PriceCache> assetCache;
+        #endregion
 
+        #region Constructor
         public GameManager(BoxOptionsSettings settings, IGameDatabase database, ICoefficientCalculator calculator, 
             IAssetQuoteSubscriber quoteFeed, IWampHostedRealm wampRealm, ILogRepository logRepository, ILog appLog)
         {
@@ -78,20 +100,16 @@ namespace BoxOptions.Services
 
             
         }
-        public void Dispose()
-        {            
-            quoteFeed.MessageReceived -= QuoteFeed_MessageReceived;
-            betCache = null;
+        #endregion
 
-            foreach (var user in userList)
-            {
-                user.Dispose();
-            }
+        #region Methods
 
-            userList = null;
-
-        }
-
+        /// <summary>
+        /// Finds user object in User cache or loads it from DB if not in cache
+        /// Opens Wamp Topic for User Client
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <returns>User Object</returns>
         private UserState GetUserState(string userId)
         {
             var ulist = from u in userList
@@ -143,6 +161,11 @@ namespace BoxOptions.Services
             return current;
         }
 
+        /// <summary>
+        /// Loads user object from DB
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <returns>User Object</returns>
         private async Task<UserState> LoadUserStateFromDb(string userId)
         {
             //await MutexTestAsync();
@@ -178,9 +201,21 @@ namespace BoxOptions.Services
 
             return retval;
         }
-        
+
+        /// <summary>
+        /// Performs a Coefficient Request to CoeffCalculator object
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <param name="pair">Instrument</param>
+        /// <param name="timeToFirstOption">Time to first option</param>
+        /// <param name="optionLen">Option Length</param>
+        /// <param name="priceSize">Price Size</param>
+        /// <param name="nPriceIndex">NPrice Index</param>
+        /// <param name="nTimeIndex">NTime Index</param>
+        /// <returns>CoeffCalc result</returns>
         private async Task<string> CoeffCalculatorRequest(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
-        {            
+        {
+            //Activate Mutual Exclusion Semaphor
             await coeffCalculatorSemaphoreSlim.WaitAsync();
             try
             {
@@ -197,11 +232,23 @@ namespace BoxOptions.Services
 
         }
 
+        /// <summary>
+        /// Sets User status, creates an UserHistory entry and saves user to DB
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <param name="status">New Status</param>
+        /// <param name="message">Status Message</param>
         private void SetUserStatus(string userId, GameStatus status, string message = null)
         {
             UserState user = GetUserState(userId);
             SetUserStatus(user, status, message);
         }
+        /// <summary>
+        /// Sets User status, creates an UserHistory entry and saves user to DB
+        /// </summary>
+        /// <param name="user">User Object</param>
+        /// <param name="status">New Status</param>
+        /// <param name="message">Status Message</param>
         private void SetUserStatus(UserState user, GameStatus status, string message = null)
         {
             Console.WriteLine("SetUserStatus - UserId:[{0}] Status:[{1}] Message:[{2}]", user.UserId, status, message);
@@ -218,7 +265,14 @@ namespace BoxOptions.Services
                 Message = message
             });
         }
-               
+
+        /// <summary>
+        /// Checks Bet WIN agains given parameters
+        /// </summary>
+        /// <param name="bet"></param>
+        /// <param name="dCurrentPrice"></param>
+        /// <param name="dPreviousPrice"></param>
+        /// <returns>TRUE if WIN</returns>
         private bool CheckWin(GameBet bet, double dCurrentPrice, double dPreviousPrice)
         {
             decimal currentPrice = Convert.ToDecimal(dCurrentPrice);
@@ -241,6 +295,10 @@ namespace BoxOptions.Services
                 return false;
         }
 
+        /// <summary>
+        /// Performs a check to validate bet WIN
+        /// </summary>
+        /// <param name="bet">Bet</param>
         private void ProcessBetCheck(GameBet bet)
         {
             // Run Check Asynchronously
@@ -356,13 +414,49 @@ namespace BoxOptions.Services
                 database.SaveGameBet(bet.UserId, bet);
             }
         }
-        
-      
-        #region Event Handlers
-        private void QuoteFeed_MessageReceived(object sender, Core.Models.InstrumentPrice e)
+
+        /// <summary>
+        /// Raises BetWin Event
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnBetWin(BetEventArgs e)
         {
-            
-            quoteReceivedSemaphoreSlim.WaitAsync();            
+            //Console.WriteLine("{0}>OnBetWin ={1}", DateTime.Now.ToString("HH:mm:ss.fff"), e.Bet.Box.Id);
+            BetWin?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Raises BetLose Event
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnBetLose(BetEventArgs e)
+        {
+            //Console.WriteLine("{0}>OnBetLose ={1}", DateTime.Now.ToString("HH:mm:ss.fff"), e.Bet.Box.Id);
+            BetLose?.Invoke(this, e);
+        }
+
+        /// <summary>
+        /// Disposes GameManager Resources
+        /// </summary>
+        public void Dispose()
+        {
+            quoteFeed.MessageReceived -= QuoteFeed_MessageReceived;
+            betCache = null;
+
+            foreach (var user in userList)
+            {
+                user.Dispose();
+            }
+
+            userList = null;
+
+        }
+        #endregion
+
+        #region Event Handlers
+        private async void QuoteFeed_MessageReceived(object sender, Core.Models.InstrumentPrice e)
+        {
+            //Activate Mutual Exclusion Semaphore
+            await quoteReceivedSemaphoreSlim.WaitAsync();            
             try
             {
 
@@ -420,8 +514,7 @@ namespace BoxOptions.Services
 
         }
         #endregion
-
-
+        
         #region IGameManager
         public void InitUser(string userId)
         {
@@ -527,29 +620,18 @@ namespace BoxOptions.Services
             int.TryParse(eventCode, out ecode);
             SetUserStatus(userState, (GameStatus)ecode, message);
         }
-
-
+        
         #endregion
-
-
-        protected virtual void OnBetWin(BetEventArgs e)
-        {
-            //Console.WriteLine("{0}>OnBetWin ={1}", DateTime.Now.ToString("HH:mm:ss.fff"), e.Bet.Box.Id);
-            BetWin?.Invoke(this, e);
-        }
-        protected virtual void OnBetLose(BetEventArgs e)
-        {
-            //Console.WriteLine("{0}>OnBetLose ={1}", DateTime.Now.ToString("HH:mm:ss.fff"), e.Bet.Box.Id);
-            BetLose?.Invoke(this, e);
-        }
-
-
+                
+        #region Nested Class
         private class PriceCache
         {
             public Core.Models.InstrumentPrice CurrentPrice { get; set; }
             public Core.Models.InstrumentPrice PreviousPrice { get; set; }
         }
+        #endregion
 
+        #region Tests
         //private void MutexTest()
         //{
         //    var gdata = graphCache.GetGraphData();
@@ -593,7 +675,6 @@ namespace BoxOptions.Services
         //    }
         //    Console.WriteLine("ss");
         //}
-
-
+        #endregion
     }
 }
