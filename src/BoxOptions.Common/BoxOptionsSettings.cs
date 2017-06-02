@@ -21,21 +21,26 @@ namespace BoxOptions.Common
         public string BoxOptionsApiStorage { get; set; }
         public string LogsConnString { get; set; }
     }
-
-  
-
+    
     public class PricesSettingsBoxOptions
     {
-        public string RabbitMqBOConnectionString { get; set; }
-        public string RabbitMqBOExchangeName { get; set; }
-        public string RabbitMqBOMicrographQueueName { get; set; }        
-        public string RabbitMqBOPricesQueueName { get; set; }        
+        public FeedSettings PrimaryFeed { get; set; }
+        public FeedSettings SecondaryFeed { get; set; }
         public string PricesTopicName { get; set; }
         public int GraphPointsCount { get; set; }
-                
-        public int IncomingDataCheckInterval { get; set; }        
+        public int NoFeedSlackReportInSeconds { get; set; }
+    }
+
+    public class FeedSettings
+    {
+        public string RabbitMqConnectionString { get; set; }
+        public string RabbitMqExchangeName { get; set; }        
+        public string RabbitMqQueueName { get; set; }
+
+        public int IncomingDataCheckInterval { get; set; }
         public string PricesWeekExclusionStart { get; set; }
         public string PricesWeekExclusionEnd { get; set; }
+        public string[] AllowedAssets { get; set; }
     }
 
     public class SlackNotificationsSettings

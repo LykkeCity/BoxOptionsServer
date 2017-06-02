@@ -60,6 +60,6 @@ namespace BoxOptions.Core
         
 
         public const bool ASK = false; // Bid => IsBuy == true
-        public static string[] AllowedAssets { get { return new[] { "EURUSD", "EURAUD", "EURCHF", "EURGBP", "EURJPY", "USDCHF", "BTCUSD" }; } }
+        //public static string[] AllowedAssets { get { return new[] { "EURUSD", "EURAUD", "EURCHF", "EURGBP", "EURJPY", "USDCHF", "BTCUSD" }; } }
     }
 }
