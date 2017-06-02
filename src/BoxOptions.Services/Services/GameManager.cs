@@ -335,7 +335,7 @@ namespace BoxOptions.Services
                 else
                 {
                     // Report Not WIN to WAMP
-                    bet.User.PublishToWamp(checkres);
+                    //bet.User.PublishToWamp(checkres);
                 }
                 // Log check
                 string msg = checkres.ToJson();
