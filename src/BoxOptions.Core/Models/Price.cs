@@ -21,8 +21,8 @@ namespace BoxOptions.Core.Models
         public virtual Price ClonePrice()
         {
             // all dates must be UTC
-            if (this.Date.Kind != DateTimeKind.Utc)
-                throw new InvalidTimeZoneException();
+            //if (this.Date.Kind != DateTimeKind.Utc)
+            //    throw new InvalidTimeZoneException();
 
 
             // DateTime with only 6 digits after seconds            

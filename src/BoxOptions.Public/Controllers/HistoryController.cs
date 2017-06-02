@@ -27,12 +27,16 @@ namespace BoxOptions.Public.Controllers
                 try
                 {
                     AssetQuote[] res = null;
+                    Console.WriteLine("{0}>Get Data From Azure", DateTime.Now.ToString("HH:mm:ss.fff"));
                     var his = await history.GetAssetHistory(dtFrom, dtTo, assetPair);
+                    Console.WriteLine("{0}>Finished Getting Data From Azure", DateTime.Now.ToString("HH:mm:ss.fff"));
                     res = new AssetQuote[his.Count];
                     if (res.Length > 0)
                     {
                         his.CopyTo(res, 0);
+                        Console.WriteLine("{0}>Creating Bid History", DateTime.Now.ToString("HH:mm:ss.fff"));
                         var bidhistory = AssetBidProcessor.CreateBidHistory(assetPair, res);
+                        Console.WriteLine("{0}>Finished Creating Bid History", DateTime.Now.ToString("HH:mm:ss.fff"));
                         return Ok(bidhistory);
                     }
                     else
