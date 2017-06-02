@@ -163,7 +163,7 @@ namespace BoxOptions.Client
       
         internal void PlaceBet(string userId,string assetpair, string box, decimal betAmount)
         {
-            string result = _service.PlaceBet(userId, assetpair, box, betAmount);
+            var result = _service.PlaceBet(userId, assetpair, box, betAmount);
             Console.WriteLine("{0}> PlaceBet({1},{2},{3}) = {4}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, betAmount, result);
         }
        

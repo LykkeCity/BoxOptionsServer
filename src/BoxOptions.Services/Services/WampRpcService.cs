@@ -6,6 +6,7 @@ using BoxOptions.Services.Models;
 using Common.Log;
 using BoxOptions.Core;
 using System.Threading.Tasks;
+using System.Globalization;
 
 namespace BoxOptions.Services
 {
@@ -399,17 +400,16 @@ namespace BoxOptions.Services
             }            
         }
 
-        public string PlaceBet(string userId, string assetPair, string box, decimal betValue)
+        public DateTime? PlaceBet(string userId, string assetPair, string box, decimal betValue)
         {
             try
             {
-                _gameManager.PlaceBet(userId, assetPair, box, betValue);
-                return "OK";
+                return _gameManager.PlaceBet(userId, assetPair, box, betValue);
             }
             catch (Exception ex)
             {
                 LogError(ex, "PlaceBet");
-                return ex.Message;
+                return null;
             }
         }
 

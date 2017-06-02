@@ -1,4 +1,5 @@
 ﻿using BoxOptions.Core.Models;
+using System;
 using System.Collections.Generic;
 using WampSharp.V2.Rpc;
 
@@ -56,7 +57,7 @@ namespace BoxOptions.Services
         /// <param name="betValue">Bet Value</param>
         /// <returns>'OK' or error string</returns>
         [WampProcedure("game.placebet")]
-        string PlaceBet(string userId, string assetPair ,string box, decimal betValue);
+        DateTime? PlaceBet(string userId, string assetPair ,string box, decimal betValue);
 
         /// <summary>
         /// Saves log to database

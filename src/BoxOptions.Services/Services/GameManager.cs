@@ -335,7 +335,7 @@ namespace BoxOptions.Services
                 else
                 {
                     // Report Not WIN to WAMP
-                    //bet.User.PublishToWamp(checkres);
+                    bet.User.PublishToWamp(checkres);
                 }
                 // Log check
                 string msg = checkres.ToJson();
@@ -520,7 +520,7 @@ namespace BoxOptions.Services
         {
             UserState userState = GetUserState(userId);
         }
-        public void PlaceBet(string userId, string assetPair, string box, decimal bet)
+        public DateTime PlaceBet(string userId, string assetPair, string box, decimal bet)
         {
             //Console.WriteLine("{0}> PlaceBet({1} - {2} - {3:f16})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, bet);
 
@@ -559,6 +559,7 @@ namespace BoxOptions.Services
             SetUserStatus(userState, GameStatus.BetPlaced, $"BetPlaced[{boxObject.Id}]. Asset:{assetPair}  Bet:{bet} Balance:{userState.Balance}");
 
             appLog.WriteInfoAsync("GameManager", "PlaceBet", "", $"Coef:{boxObject.Coefficient} Id:{boxObject.Id}");
+            return newBet.Timestamp;
         }
 
         public decimal SetUserBalance(string userId, decimal newBalance)
