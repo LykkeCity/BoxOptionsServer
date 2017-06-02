@@ -139,7 +139,7 @@ namespace BoxOptions.Services
                 return Task.FromResult(0);
             else
             {
-                Console.WriteLine("PRI Stream:{0}", assetQuote);
+                //Console.WriteLine("PRI Stream:{0}", assetQuote);
                 return ProcessMessage(assetQuote);
             }
         }
@@ -154,7 +154,7 @@ namespace BoxOptions.Services
                 return Task.FromResult(0);
             else
             {
-                Console.WriteLine("SEC Stream:{0}",assetQuote);
+                //Console.WriteLine("SEC Stream:{0}",assetQuote);
                 return ProcessMessage(assetQuote);
             }
         }
@@ -232,7 +232,7 @@ namespace BoxOptions.Services
             if (primarySubscriber != null)
             {
                 double PrimaryStreamLastMessage = (currentdate - primaryStreamLastMessageTimeStamp).TotalSeconds;
-                Console.WriteLine("Primary Last Message: {0}", PrimaryStreamLastMessage);
+                //Console.WriteLine("Primary Last Message: {0}", PrimaryStreamLastMessage);
                 // Last message receive longer than allowed in IncomingDataCheckInterval
                 if (PrimaryStreamLastMessage > settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.IncomingDataCheckInterval)
                 {
@@ -254,7 +254,7 @@ namespace BoxOptions.Services
             if (secondarySubscriber != null)
             {
                 double SecondaryStreamLastMessage = (currentdate - secondaryStreamLastMessageTimeStamp).TotalSeconds;
-                Console.WriteLine("Secondary Last Message: {0}", SecondaryStreamLastMessage);
+                //Console.WriteLine("Secondary Last Message: {0}", SecondaryStreamLastMessage);
 
                 // Last message receive longer than allowed in IncomingDataCheckInterval
                 if (SecondaryStreamLastMessage > settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.IncomingDataCheckInterval)
