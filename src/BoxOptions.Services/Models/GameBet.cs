@@ -61,6 +61,11 @@ namespace BoxOptions.Services.Models
         internal void StartWaitTimeToGraph()
         {
             BetStatus = BetStates.Waiting;
+            DateTime now = DateTime.UtcNow;
+            Console.WriteLine("RUNBET Calc:{0} Real:{1} Delta:{2}", 
+                Timestamp.ToString("HH:mm:ss.ffff"), 
+                now.ToString("HH:mm:ss.ffff"),
+                (now- Timestamp).TotalMilliseconds);
             BetTimer.Change((int)(1000 * Box.TimeToGraph), -1);
         }
 
@@ -70,6 +75,11 @@ namespace BoxOptions.Services.Models
             TimeToGraphStamp = DateTime.UtcNow;
             BetStatus = BetStates.OnGoing;
 
+            Console.WriteLine("GRAPH Calc:{0} Real:{1} Delta:{2}",
+                Timestamp.AddSeconds(Box.TimeToGraph).ToString("HH:mm:ss.ffff"),
+                TimeToGraphStamp.Value.ToString("HH:mm:ss.ffff"),
+                (TimeToGraphStamp.Value - Timestamp.AddSeconds(Box.TimeToGraph)).TotalMilliseconds);
+
             BetTimer = new System.Threading.Timer(new System.Threading.TimerCallback(WaitTimeLengthCallback), Box, (int)(1000 * Box.TimeLength), -1);
 
             TimeToGraphReached?.Invoke(this, new EventArgs());
@@ -78,6 +88,11 @@ namespace BoxOptions.Services.Models
         {
             ClearTimer();
             FinishedStamp = DateTime.UtcNow;
+
+            Console.WriteLine("BETEND Calc:{0} Real:{1} Delta:{2}",
+                Timestamp.AddSeconds(Box.TimeToGraph+Box.TimeLength).ToString("HH:mm:ss.ffff"),
+                FinishedStamp.Value.ToString("HH:mm:ss.ffff"),
+                (FinishedStamp.Value - Timestamp.AddSeconds(Box.TimeToGraph+Box.TimeLength)).TotalMilliseconds);
 
             TimeLenghFinished?.Invoke(this, new EventArgs());
         }

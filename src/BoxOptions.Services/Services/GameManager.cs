@@ -394,8 +394,8 @@ namespace BoxOptions.Services
                         TimeToGraph = bet.Box.TimeToGraph,
                         TimeLength = bet.Box.TimeLength,
 
-                        PreviousPrice = assetCache[bet.AssetPair].PreviousPrice,
-                        CurrentPrice = assetCache[bet.AssetPair].CurrentPrice,
+                        PreviousPrice = assetCache.ContainsKey(bet.AssetPair) ? assetCache[bet.AssetPair].PreviousPrice : new Core.Models.InstrumentPrice(),    // BUG: No Prices on Cache 
+                        CurrentPrice = assetCache.ContainsKey(bet.AssetPair) ? assetCache[bet.AssetPair].CurrentPrice: new Core.Models.InstrumentPrice(),       // check if there are any prices on cache
 
                         Timestamp = bet.Timestamp,
                         TimeToGraphStamp = bet.TimeToGraphStamp,
