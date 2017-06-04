@@ -1,15 +1,12 @@
 ﻿using BoxOptions.Services.Models;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BoxOptions.Services.Interfaces
 {
     public interface IGameManager
     {
 
-        void InitUser(string userId);
+        Core.Models.BoxSize[] InitUser(string userId);
         /// <summary>
         /// Place a bet on a box.
         /// </summary>

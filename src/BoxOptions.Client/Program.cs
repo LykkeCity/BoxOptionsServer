@@ -52,6 +52,7 @@ namespace BoxOptions.Client
                     case "help":
                         Console.WriteLine(" <===HELP===>");
                         Console.WriteLine(" > help - show this help");
+                        Console.WriteLine(" > user - change user");
                         Console.WriteLine(" > feed - toggles feed output to console.");
                         Console.WriteLine(" > graph - micrograph cached data");
                         Console.WriteLine(" > log - perform log event");                        
@@ -72,9 +73,9 @@ namespace BoxOptions.Client
                             UserId = UserId3;
                         else
                             UserId = UserId1;
-                        client.InitUser(UserId);
-                        client.SubscribeGameEvents();                        
-                        Console.WriteLine("User set to: [{0}]", UserId);                        
+                        string initUserRes = client.InitUser(UserId);
+                        client.SubscribeGameEvents();
+                        Console.WriteLine("User set to: [{0}] Answer:{1}", UserId, initUserRes);
                         break;
                     case "feed":
                         ShowFeed = !ShowFeed;

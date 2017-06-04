@@ -4,12 +4,9 @@ using BoxOptions.Core;
 using BoxOptions.Services.Interfaces;
 using BoxOptions.Services.Models;
 using Common.Log;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Subjects;
-using System.Text;
 using System.Threading.Tasks;
 using WampSharp.V2.Realm;
 
@@ -58,6 +55,7 @@ namespace BoxOptions.Services
         /// WAMP Realm Object
         /// </summary>
         private readonly IWampHostedRealm wampRealm;
+        private readonly IBoxConfigRepository boxConfigRepository;
         /// <summary>
         /// User Log Repository
         /// </summary>
@@ -78,7 +76,7 @@ namespace BoxOptions.Services
 
         #region Constructor
         public GameManager(BoxOptionsSettings settings, IGameDatabase database, ICoefficientCalculator calculator, 
-            IAssetQuoteSubscriber quoteFeed, IWampHostedRealm wampRealm, ILogRepository logRepository, ILog appLog)
+            IAssetQuoteSubscriber quoteFeed, IWampHostedRealm wampRealm, IBoxConfigRepository boxConfigRepository, ILogRepository logRepository, ILog appLog)
         {
             this.database = database;
             this.calculator = calculator;
@@ -87,11 +85,11 @@ namespace BoxOptions.Services
             this.logRepository = logRepository;
             this.appLog = appLog;
             this.wampRealm = wampRealm;
-            
+            this.boxConfigRepository = boxConfigRepository;
 
             if (this.settings != null && this.settings.BoxOptionsApi != null && this.settings.BoxOptionsApi.GameManager != null)
                 MaxUserBuffer = this.settings.BoxOptionsApi.GameManager.MaxUserBuffer;
-
+                        
             userList = new List<UserState>();
             betCache = new List<GameBet>();
             assetCache = new Dictionary<string, PriceCache>();
@@ -535,11 +533,53 @@ namespace BoxOptions.Services
 
         }
         #endregion
-        
+
         #region IGameManager
-        public void InitUser(string userId)
+        public Core.Models.BoxSize[] InitUser(string userId)
         {
             UserState userState = GetUserState(userId);
+
+            Task<IEnumerable<Core.Models.BoxSize>> t = boxConfigRepository.GetAll();
+            t.Wait();
+            List<Core.Models.BoxSize> boxConfig = t.Result.ToList();
+
+            List<Core.Models.BoxSize> AssetsToAdd = new List<Core.Models.BoxSize>();
+
+
+            List<string> AllAssets = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets.ToList();
+            AllAssets.AddRange(settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets);
+
+            string[] DistictAssets = AllAssets.Distinct().ToArray();
+
+            // Validate Allowed Assets
+            foreach (var item in DistictAssets)
+            {
+                // If database does not contain allowed asset then add it
+                if (!boxConfig.Select(config => config.AssetPair).Contains(item))
+                {
+                    // Check if it was not added before to avoid duplicates
+                    if (!AssetsToAdd.Select(config => config.AssetPair).Contains(item))
+                    {
+                        // Add default settings
+                        AssetsToAdd.Add(new Core.Models.BoxSize()
+                        {
+                            AssetPair = item,
+                            BoxesPerRow = 7,
+                            BoxHeight = 7,
+                            BoxWidth = 0.005,
+                            TimeToFirstBox = 4
+                        });
+                    }
+                }
+            }
+            if (AssetsToAdd.Count > 0)
+            {
+                boxConfigRepository.InsertManyAsync(AssetsToAdd);
+                boxConfig.AddRange(AssetsToAdd);
+            }
+
+
+            return boxConfig.ToArray();
         }
         public DateTime PlaceBet(string userId, string assetPair, string box, decimal bet)
         {

@@ -7,6 +7,7 @@ using Common.Log;
 using BoxOptions.Core;
 using System.Threading.Tasks;
 using System.Globalization;
+using Common;
 
 namespace BoxOptions.Services
 {
@@ -390,8 +391,9 @@ namespace BoxOptions.Services
         {
             try
             {
-                _gameManager.InitUser(userId);
-                return "OK";
+                var res = _gameManager.InitUser(userId);
+                string retval = res.ToJson();
+                return retval;
             }
             catch (Exception ex)
             {

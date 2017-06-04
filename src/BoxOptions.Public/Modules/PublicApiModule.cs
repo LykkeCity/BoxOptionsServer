@@ -77,14 +77,17 @@ namespace BoxOptions.Public.Modules
                 slackSender);
             logAggregate.AddLogger(azureLog);
             log = logAggregate.CreateLogger();
-
             builder.RegisterInstance(log).As<ILog>();
+
+            // Client Logs Repository
             builder.RegisterInstance(new LogRepository(new AzureTableStorage<AzureRepositories.LogEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage, 
                 "ClientEventLogs", log)))
                 .As<ILogRepository>();
+            // Quote Feed Repository
             builder.RegisterInstance(new AssetRepository(new AzureTableStorage<AzureRepositories.AssetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
                 "QuoteFeed", log)))
                 .As<IAssetRepository>();
+            // User Data Repository
             builder.RegisterInstance(new UserRepository(
                 new AzureTableStorage<AzureRepositories.UserEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
                 "UserRepo", log),                
@@ -93,10 +96,16 @@ namespace BoxOptions.Public.Modules
                 new AzureTableStorage<AzureRepositories.UserHistoryEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
                 "UserHistory", log)))
                 .As<IUserRepository>();
+            // Game Manager Repository
             builder.RegisterInstance(new GameRepository(                
                 new AzureTableStorage<AzureRepositories.GameBetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
                 "GameRepo", log)))
                 .As<IGameRepository>();
+            // BoxConfig Repository
+            builder.RegisterInstance(new BoxConfigRepository(
+                new AzureTableStorage<AzureRepositories.BoxSizeEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "BoxConfig", log)))
+                .As<IBoxConfigRepository>();
 
 
             // TODO: Change to Azure Storage in prod env
@@ -110,28 +119,23 @@ namespace BoxOptions.Public.Modules
                 .SingleInstance();
 
 #endif
-            // Coefficient calculator
+            // Coefficient Calculator Interface
             ICoefficientCalculator coefCalculator;
             if (_settings.BoxOptionsApi.CoefApiUrl.ToLower() == "mock")
                 coefCalculator = new Processors.MockCoefficientCalculator();
             else
                 coefCalculator = new Processors.ProxyCoefficientCalculator(_settings);
-
             builder.RegisterInstance(coefCalculator)
                 .As<ICoefficientCalculator>()
                 .SingleInstance();
 
-            // Game Database
-            //builder.RegisterType<MockGameDatabase>()
-            //  .As<Services.Interfaces.IGameDatabase>()
-            //  .SingleInstance();
-
+            // Game Database Interface
             builder.RegisterType<Processors.AzureGameDatabase>()
               .As<Services.Interfaces.IGameDatabase>()
               .SingleInstance();
 
 
-            // Game Manager
+            // Game Manager Interface
             builder.RegisterType<GameManager>()
               .As<Services.Interfaces.IGameManager>()
               .SingleInstance();
