@@ -412,6 +412,7 @@ namespace BoxOptions.Services
                     SetUserStatus(bet.UserId, GameStatus.BetLost, $"Bet LOST [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount}");
                 });
                 database.SaveGameBet(bet.UserId, bet);
+                appLog.WriteInfoAsync("GameManager", "ProcessBetTimeout", null, bet.BetLog);
             }
         }
 
