@@ -114,16 +114,16 @@ namespace BoxOptions.Client
             var data = _service.InitChartData();
             return data;
         }
-                
+
         public void Prices()
         {
             subscription1 = _realmProxy.Services.GetSubject<InstrumentPrice>("prices.update")
                 .Subscribe(OnPriceFeed);
-                //info =>
-                //{
-                //    if (Program.ShowFeed)
-                //        Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > BidDate[{info.Date.ToString("yyyy-MM-dd HH:mm:ss")}] | {info.Instrument} {info.Bid}/{info.Ask}");
-                //});
+            //info =>
+            //{
+            //    if (Program.ShowFeed)
+            //        Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > BidDate[{info.Date.ToString("yyyy-MM-dd HH:mm:ss")}] | {info.Instrument} {info.Bid}/{info.Ask}");
+            //});
         }
         void OnPriceFeed(InstrumentPrice info)
         {
@@ -140,10 +140,10 @@ namespace BoxOptions.Client
             }
             subscription2 = _realmProxy.Services.GetSubject<BetResult>("game.events." + Program.UserId)
                 .Subscribe(OnGameResult);
-                //info =>
-                //{
-                //    Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > INFO[{info.ToJson()}");
-                //});
+            //info =>
+            //{
+            //    Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > INFO[{info.ToJson()}");
+            //});
         }
         void OnGameResult(BetResult info)
         {
@@ -160,13 +160,13 @@ namespace BoxOptions.Client
             var data = _service.InitUser(userId);
             return data;
         }
-      
-        internal void PlaceBet(string userId,string assetpair, string box, decimal betAmount)
+
+        internal void PlaceBet(string userId, string assetpair, string box, decimal betAmount)
         {
             var result = _service.PlaceBet(userId, assetpair, box, betAmount);
             Console.WriteLine("{0}> PlaceBet({1},{2},{3}) = {4}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, betAmount, result.Status);
         }
-       
+
 
         internal void GetBalance(string userId)
         {
@@ -185,8 +185,8 @@ namespace BoxOptions.Client
             Console.WriteLine("{0}> ChangeParameter({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, assetPair, result);
         }
         internal void GetParameter(string userId, string assetPair)
-        {   
-            var res= _service.GetParameters(userId, assetPair);
+        {
+            var res = _service.GetParameters(userId, assetPair);
             Console.WriteLine("\tAssetPair:{0}", res.AssetPair);
             Console.WriteLine("\tTimeToFirstOption:{0}", res.TimeToFirstOption);
             Console.WriteLine("\tOptionLen:{0}", res.OptionLen);
@@ -194,6 +194,12 @@ namespace BoxOptions.Client
             Console.WriteLine("\tNPriceIndex:{0}", res.NPriceIndex);
             Console.WriteLine("\tNTimeIndex:{0}", res.NTimeIndex);
 
+        }
+
+        internal void RequestCoeff(string userId, string pair)
+        {
+            var res = _service.RequestCoeff(userId, pair);
+            Console.WriteLine(res);
         }
 
         #endregion

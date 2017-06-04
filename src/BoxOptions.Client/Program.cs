@@ -54,17 +54,13 @@ namespace BoxOptions.Client
                         Console.WriteLine(" > help - show this help");
                         Console.WriteLine(" > feed - toggles feed output to console.");
                         Console.WriteLine(" > graph - micrograph cached data");
-                        Console.WriteLine(" > log - perform log event");
-                        //Console.WriteLine(" > launch - app launched");
-                        //Console.WriteLine(" > wake - app wake");
-                        //Console.WriteLine(" > sleep - app sleep");
-                        //Console.WriteLine(" > start - Start new game");
-                        //Console.WriteLine(" > close - Close ongoing game");
+                        Console.WriteLine(" > log - perform log event");                        
                         Console.WriteLine(" > placebet - place a new bet on a box");
                         Console.WriteLine(" > getbalance - gets user balance");
                         Console.WriteLine(" > setbalance - sets user balance");
                         Console.WriteLine(" > setpars - sets user parameters");
                         Console.WriteLine(" > getpars - gets user parameters");
+                        Console.WriteLine(" > coeff - gets asset coefficients");
 
                         break;
                     case "user":
@@ -101,27 +97,8 @@ namespace BoxOptions.Client
                         break;
                     case "log":
                         client.PostLog();
-                        break;
-                    
-                    //case "launch":
-                    //    client.Launch(UserId);
-                    //    break;
-                    //case "wake":
-                    //    client.Wake(UserId);
-                    //    break;
-                    //case "sleep":
-                    //    client.Sleep(UserId);
-                        //break;
-                    //case "start":
-                    //    Console.Write("\tAssetPair>");
-                    //    string s_pair = Console.ReadLine();
-                    //    client.GameStart(UserId, s_pair);
-                    //    break;
-                    //case "close":                        
-                    //    client.GameClose(UserId);
-                    //break;
+                        break;                                     
                     case "placebet":
-                        
                         string pb_box = "{"+
                             "\"Id\": \"james@example.com\"," +
                             "\"MinPrice\": 0.0001," +
@@ -163,6 +140,11 @@ namespace BoxOptions.Client
                         Console.Write("\tAsset>");
                         string gp_asset = Console.ReadLine();
                         client.GetParameter(UserId, gp_asset);
+                        break;
+                    case "coeff":
+                        Console.Write("\tAsset>");
+                        string co_asset = Console.ReadLine();
+                        client.RequestCoeff(UserId, co_asset);
                         break;
                 }
             } while (input != "exit");

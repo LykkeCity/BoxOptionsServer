@@ -273,7 +273,7 @@ namespace BoxOptions.Services
         /// <param name="dCurrentPrice"></param>
         /// <param name="dPreviousPrice"></param>
         /// <returns>TRUE if WIN</returns>
-        private bool CheckWin(GameBet bet, double dCurrentPrice, double dPreviousPrice)
+        private bool CheckWinOngoing(GameBet bet, double dCurrentPrice, double dPreviousPrice)
         {
             decimal currentPrice = Convert.ToDecimal(dCurrentPrice);
             decimal previousPrice = Convert.ToDecimal(dPreviousPrice);
@@ -282,9 +282,9 @@ namespace BoxOptions.Services
             double previousDelta = (double)previousPrice - dPreviousPrice;
 
             if (currentDelta > 0.000001 || currentDelta < -0.000001)
-                appLog.WriteWarningAsync("GameManager", "CheckWin", "", $"Double to Decimal conversion Fail! CurrDelta={currentDelta} double:{dCurrentPrice} decimal:{currentPrice}");
+                appLog.WriteWarningAsync("GameManager", "CheckWinOngoing", "", $"Double to Decimal conversion Fail! CurrDelta={currentDelta} double:{dCurrentPrice} decimal:{currentPrice}");
             if (previousDelta > 0.000001 || previousDelta < -0.000001)
-                appLog.WriteWarningAsync("GameManager", "CheckWin", "", $"Double to Decimal conversion Fail! PrevDelta={previousDelta} double:{dPreviousPrice} decimal:{previousPrice}");
+                appLog.WriteWarningAsync("GameManager", "CheckWinOngoing", "", $"Double to Decimal conversion Fail! PrevDelta={previousDelta} double:{dPreviousPrice} decimal:{previousPrice}");
 
 
             if ((currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice) ||       // currentPrice> minPrice and currentPrice<maxPrice
@@ -294,18 +294,38 @@ namespace BoxOptions.Services
             else
                 return false;
         }
+        private bool CheckWinOnstarted(GameBet bet, double dCurrentPrice)
+        {
+            decimal currentPrice = Convert.ToDecimal(dCurrentPrice);
+            
+            double currentDelta = (double)currentPrice - dCurrentPrice;            
+
+            if (currentDelta > 0.000001 || currentDelta < -0.000001)
+                appLog.WriteWarningAsync("GameManager", "CheckWinOnstarted", "", $"Double to Decimal conversion Fail! CurrDelta={currentDelta} double:{dCurrentPrice} decimal:{currentPrice}");
+            
+
+
+            if (currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice)
+                return true;
+            else
+                return false;
+        }
 
         /// <summary>
         /// Performs a check to validate bet WIN
         /// </summary>
         /// <param name="bet">Bet</param>
-        private void ProcessBetCheck(GameBet bet)
+        private void ProcessBetCheck(GameBet bet, bool IsFirstCheck)
         {
             // Run Check Asynchronously
             Task.Run(() =>
             {
                 var assetHist = assetCache[bet.AssetPair];
-                bool IsWin = CheckWin(bet, assetHist.CurrentPrice.MidPrice(), assetHist.PreviousPrice.MidPrice());
+                bool IsWin = false;
+                if (IsFirstCheck)
+                    IsWin  = CheckWinOnstarted(bet, assetHist.CurrentPrice.MidPrice());
+                else
+                    IsWin = CheckWinOngoing(bet, assetHist.CurrentPrice.MidPrice(), assetHist.PreviousPrice.MidPrice());
 
                 BetResult checkres = new BetResult(bet.Box.Id)
                 {
@@ -480,7 +500,7 @@ namespace BoxOptions.Services
 
                 foreach (var bet in assetBets)
                 {
-                    ProcessBetCheck(bet);
+                    ProcessBetCheck(bet, false);
                 }
             }
             finally { quoteReceivedSemaphoreSlim.Release(); }
@@ -498,7 +518,7 @@ namespace BoxOptions.Services
             {
                 if (assetCache[bet.AssetPair].CurrentPrice.MidPrice() > 0 && assetCache[bet.AssetPair].PreviousPrice.MidPrice() > 0)
                 {
-                    ProcessBetCheck(bet);
+                    ProcessBetCheck(bet, true);
                 }
             }            
                      
