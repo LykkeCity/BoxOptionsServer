@@ -1,6 +1,7 @@
 ﻿using BoxOptions.Common;
 using BoxOptions.Common.Interfaces;
 using BoxOptions.Core.Models;
+using Common.Log;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -12,10 +13,12 @@ namespace BoxOptions.Public.Controllers
     public class HistoryController: Controller
     {
         IAssetDatabase history;
+        ILog appLog;
 
-        public HistoryController(IAssetDatabase history)
+        public HistoryController(IAssetDatabase history, ILog appLog)
         {
             this.history = history;
+            this.appLog = appLog;
         }
 
         [HttpGet]
@@ -25,18 +28,22 @@ namespace BoxOptions.Public.Controllers
             if (history != null)
             {
                 try
-                {
+                {                    
                     AssetQuote[] res = null;
-                    Console.WriteLine("{0}>Get Data From Azure", DateTime.Now.ToString("HH:mm:ss.fff"));
+                    string HistoryRequestLog = string.Format("BidHistory> From:[{0} To:[{1}] Pair:[{2}]", dtFrom.Date, dtTo.Date, assetPair);
+                    HistoryRequestLog += string.Format("\n\r{0}>Get Data From Azure", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                     var his = await history.GetAssetHistory(dtFrom, dtTo, assetPair);
-                    Console.WriteLine("{0}>Finished Getting Data From Azure", DateTime.Now.ToString("HH:mm:ss.fff"));
+                    HistoryRequestLog += string.Format("\n\r{0}>Finished Getting Data From Azure", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                     res = new AssetQuote[his.Count];
                     if (res.Length > 0)
                     {
                         his.CopyTo(res, 0);
-                        Console.WriteLine("{0}>Creating Bid History", DateTime.Now.ToString("HH:mm:ss.fff"));
+                        HistoryRequestLog += string.Format("\n\r{0}>Creating Bid History", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                         var bidhistory = AssetBidProcessor.CreateBidHistory(assetPair, res);
-                        Console.WriteLine("{0}>Finished Creating Bid History", DateTime.Now.ToString("HH:mm:ss.fff"));
+                        HistoryRequestLog += string.Format("\n\r{0}>Finished Creating Bid History", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+
+                        await appLog.WriteInfoAsync("HistoryController", "BidHistory", null, HistoryRequestLog);
+
                         return Ok(bidhistory);
                     }
                     else
@@ -60,7 +67,13 @@ namespace BoxOptions.Public.Controllers
             {
                 try
                 {
+                    string HistoryRequestLog = string.Format("AssetHistory> From:[{0} To:[{1}] Pair:[{2}]", dtFrom.Date, dtTo.Date, assetPair);
+                    HistoryRequestLog += string.Format("\n\r{0}>Get Data From Azure", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                     var his = await history.GetAssetHistory(dtFrom, dtTo, assetPair);
+                    HistoryRequestLog += string.Format("\n\r{0}>Finished Getting Data From Azure", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+
+                    await appLog.WriteInfoAsync("HistoryController", "AssetHistory", null, HistoryRequestLog);
+
                     return Ok(his);                    
                 }
                 catch (Exception ex)
