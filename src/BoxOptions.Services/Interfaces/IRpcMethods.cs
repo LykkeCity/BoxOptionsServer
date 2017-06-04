@@ -57,7 +57,7 @@ namespace BoxOptions.Services
         /// <param name="betValue">Bet Value</param>
         /// <returns>'OK' or error string</returns>
         [WampProcedure("game.placebet")]
-        DateTime? PlaceBet(string userId, string assetPair ,string box, decimal betValue);
+        Models.PlaceBetResult PlaceBet(string userId, string assetPair ,string box, decimal betValue);
 
         /// <summary>
         /// Saves log to database

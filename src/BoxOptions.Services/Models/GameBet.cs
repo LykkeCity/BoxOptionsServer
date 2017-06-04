@@ -28,7 +28,7 @@ namespace BoxOptions.Services.Models
         public DateTime? WinStamp { get; set; }
         public DateTime? FinishedStamp { get; private set; }
 
-        
+        public string BetLog { get; private set; }
 
         System.Threading.Timer BetTimer;
 
@@ -40,6 +40,7 @@ namespace BoxOptions.Services.Models
             TimeToGraphStamp = null;
             WinStamp = null;
             FinishedStamp = null;
+            BetLog = "";
         }
         public GameBet(UserState user) :
             this(user.UserId)
@@ -61,6 +62,11 @@ namespace BoxOptions.Services.Models
         internal void StartWaitTimeToGraph()
         {
             BetStatus = BetStates.Waiting;
+            DateTime now = DateTime.UtcNow;
+            BetLog += string.Format("RUNBET Calc:{0} Real:{1} Delta(seconds):{2}", 
+                Timestamp.ToString("HH:mm:ss.ffff"), 
+                now.ToString("HH:mm:ss.ffff"),
+                (now- Timestamp).TotalSeconds);
             BetTimer.Change((int)(1000 * Box.TimeToGraph), -1);
         }
 
@@ -70,6 +76,11 @@ namespace BoxOptions.Services.Models
             TimeToGraphStamp = DateTime.UtcNow;
             BetStatus = BetStates.OnGoing;
 
+            BetLog += string.Format("\n\rGRAPHR Calc:{0} Real:{1} Delta(seconds):{2}",
+                Timestamp.AddSeconds(Box.TimeToGraph).ToString("HH:mm:ss.ffff"),
+                TimeToGraphStamp.Value.ToString("HH:mm:ss.ffff"),
+                (TimeToGraphStamp.Value - Timestamp.AddSeconds(Box.TimeToGraph)).TotalSeconds);
+
             BetTimer = new System.Threading.Timer(new System.Threading.TimerCallback(WaitTimeLengthCallback), Box, (int)(1000 * Box.TimeLength), -1);
 
             TimeToGraphReached?.Invoke(this, new EventArgs());
@@ -78,6 +89,11 @@ namespace BoxOptions.Services.Models
         {
             ClearTimer();
             FinishedStamp = DateTime.UtcNow;
+
+            BetLog += string.Format("\n\rBETEND Calc:{0} Real:{1} Delta(seconds):{2}",
+                Timestamp.AddSeconds(Box.TimeToGraph+Box.TimeLength).ToString("HH:mm:ss.ffff"),
+                FinishedStamp.Value.ToString("HH:mm:ss.ffff"),
+                (FinishedStamp.Value - Timestamp.AddSeconds(Box.TimeToGraph+Box.TimeLength)).TotalSeconds);
 
             TimeLenghFinished?.Invoke(this, new EventArgs());
         }

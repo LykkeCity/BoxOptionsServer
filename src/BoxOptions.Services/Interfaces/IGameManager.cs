@@ -16,7 +16,7 @@ namespace BoxOptions.Services.Interfaces
         /// <param name="userId">User Id</param>
         /// <param name="box">Box in which to bet</param>
         /// <param name="bet">Bet ammount</param>
-        /// <returns></returns>
+        /// <returns>Bet Timestamp</returns>
         DateTime PlaceBet(string userId, string assetpair, string box, decimal betAmount);
 
         decimal SetUserBalance(string userId, decimal newBalance);

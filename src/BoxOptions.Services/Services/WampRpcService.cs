@@ -400,16 +400,26 @@ namespace BoxOptions.Services
             }            
         }
 
-        public DateTime? PlaceBet(string userId, string assetPair, string box, decimal betValue)
+        public PlaceBetResult PlaceBet(string userId, string assetPair, string box, decimal betValue)
         {
             try
             {
-                return _gameManager.PlaceBet(userId, assetPair, box, betValue);
+
+                DateTime betdate = _gameManager.PlaceBet(userId, assetPair, box, betValue);
+                return new PlaceBetResult()
+                {
+                    BetTimeStamp = betdate,
+                    Status = "OK"
+                };
             }
             catch (Exception ex)
             {
                 LogError(ex, "PlaceBet");
-                return null;
+                return new PlaceBetResult()
+                {
+                    BetTimeStamp = DateTime.MinValue,
+                    Status = ex.Message
+                };
             }
         }
 
