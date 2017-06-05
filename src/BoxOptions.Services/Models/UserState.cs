@@ -121,7 +121,7 @@ namespace BoxOptions.Services.Models
             return newEntry;
         }
         
-        internal GameBet PlaceBet(Box boxObject, string assetPair, decimal bet, CoeffParameters coefPars, IAssetQuoteSubscriber quoteFeed)
+        internal GameBet PlaceBet(Box boxObject, string assetPair, decimal bet, CoeffParameters coefPars)
         {
             GameBet retval = new GameBet(this)
             {
