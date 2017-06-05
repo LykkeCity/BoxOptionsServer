@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using WampSharp.V2.Realm;
-using BoxOptions.Core.Models;
+
 
 namespace BoxOptions.Services
 {
@@ -439,8 +439,13 @@ namespace BoxOptions.Services
                 appLog.WriteInfoAsync("GameManager", "ProcessBetTimeout", null, bet.BetLog);
             }
         }
-
-        private BoxSize[] CalculatedBoxes(List<BoxSize> boxConfig, IMicrographCache priceCache)
+        /// <summary>
+        /// Calculate Box Width acording to BoxSize
+        /// </summary>
+        /// <param name="boxConfig"></param>
+        /// <param name="priceCache"></param>
+        /// <returns></returns>
+        private Core.Models.BoxSize[] CalculatedBoxes(List<Core.Models.BoxSize> boxConfig, IMicrographCache priceCache)
         {
             var gdata = priceCache.GetGraphData();
 
@@ -451,8 +456,8 @@ namespace BoxOptions.Services
 
             // Calculate BoxWidth according to average prices
             // BoxWidth = average(asset.midprice) * Box.PriceSize from database
-            BoxSize[] retval = (from c in filtered
-                                select new BoxSize()
+            Core.Models.BoxSize[] retval = (from c in filtered
+                                select new Core.Models.BoxSize()
                                 {
                                     AssetPair = c.AssetPair,
                                     BoxesPerRow = c.BoxesPerRow,
@@ -608,7 +613,7 @@ namespace BoxOptions.Services
             }
 
             // Return Calculate Price Sizes
-            BoxSize[] retval = CalculatedBoxes(boxConfig, micrographCache);
+            Core.Models.BoxSize[] retval = CalculatedBoxes(boxConfig, micrographCache);
             return retval;
         }      
 

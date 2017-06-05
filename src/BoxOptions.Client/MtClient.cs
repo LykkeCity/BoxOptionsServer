@@ -127,7 +127,7 @@ namespace BoxOptions.Client
         }
         void OnPriceFeed(InstrumentPrice info)
         {
-            if (Program.ShowFeed)
+            if (Program.ShowFeed && info.Instrument == "EURCHF")
                 Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > BidDate[{info.Date.ToString("yyyy-MM-dd HH:mm:ss")}] | {info.Instrument} {info.Bid}/{info.Ask}");
         }
 
