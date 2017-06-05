@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using WampSharp.V2.Realm;
+using BoxOptions.Core.Models;
 
 namespace BoxOptions.Services
 {
@@ -55,6 +56,10 @@ namespace BoxOptions.Services
         /// WAMP Realm Object
         /// </summary>
         private readonly IWampHostedRealm wampRealm;
+        private readonly IMicrographCache micrographCache;
+        /// <summary>
+        /// BoxSize configuration
+        /// </summary>
         private readonly IBoxConfigRepository boxConfigRepository;
         /// <summary>
         /// User Log Repository
@@ -76,7 +81,7 @@ namespace BoxOptions.Services
 
         #region Constructor
         public GameManager(BoxOptionsSettings settings, IGameDatabase database, ICoefficientCalculator calculator, 
-            IAssetQuoteSubscriber quoteFeed, IWampHostedRealm wampRealm, IBoxConfigRepository boxConfigRepository, ILogRepository logRepository, ILog appLog)
+            IAssetQuoteSubscriber quoteFeed, IWampHostedRealm wampRealm, IMicrographCache micrographCache, IBoxConfigRepository boxConfigRepository, ILogRepository logRepository, ILog appLog)
         {
             this.database = database;
             this.calculator = calculator;
@@ -86,6 +91,7 @@ namespace BoxOptions.Services
             this.appLog = appLog;
             this.wampRealm = wampRealm;
             this.boxConfigRepository = boxConfigRepository;
+            this.micrographCache = micrographCache;
 
             if (this.settings != null && this.settings.BoxOptionsApi != null && this.settings.BoxOptionsApi.GameManager != null)
                 MaxUserBuffer = this.settings.BoxOptionsApi.GameManager.MaxUserBuffer;
@@ -434,6 +440,29 @@ namespace BoxOptions.Services
             }
         }
 
+        private BoxSize[] CalculatedBoxes(List<BoxSize> boxConfig, IMicrographCache priceCache)
+        {
+            var gdata = priceCache.GetGraphData();
+
+            // Only send pairs with graph data
+            var filtered = from c in boxConfig
+                           where gdata.ContainsKey(c.AssetPair)
+                           select c;
+
+            // Calculate BoxWidth according to average prices
+            // BoxWidth = average(asset.midprice) * Box.PriceSize from database
+            BoxSize[] retval = (from c in filtered
+                                select new BoxSize()
+                                {
+                                    AssetPair = c.AssetPair,
+                                    BoxesPerRow = c.BoxesPerRow,
+                                    BoxHeight = c.BoxHeight,
+                                    TimeToFirstBox = c.TimeToFirstBox,
+                                    BoxWidth = gdata[c.AssetPair].Average(price => price.MidPrice()) * c.BoxWidth
+                                }).ToArray();
+            return retval;
+        }
+
         /// <summary>
         /// Raises BetWin Event
         /// </summary>
@@ -566,7 +595,7 @@ namespace BoxOptions.Services
                             AssetPair = item,
                             BoxesPerRow = 7,
                             BoxHeight = 7,
-                            BoxWidth = 0.005,
+                            BoxWidth = 0.00005,
                             TimeToFirstBox = 4
                         });
                     }
@@ -578,9 +607,11 @@ namespace BoxOptions.Services
                 boxConfig.AddRange(AssetsToAdd);
             }
 
+            // Return Calculate Price Sizes
+            BoxSize[] retval = CalculatedBoxes(boxConfig, micrographCache);
+            return retval;
+        }      
 
-            return boxConfig.ToArray();
-        }
         public DateTime PlaceBet(string userId, string assetPair, string box, decimal bet)
         {
             //Console.WriteLine("{0}> PlaceBet({1} - {2} - {3:f16})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, bet);
