@@ -85,8 +85,11 @@ namespace BoxOptions.Public.Modules
                 .As<ILogRepository>();
             // Quote Feed Repository
             builder.RegisterInstance(new AssetRepository(new AzureTableStorage<AzureRepositories.AssetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "QuoteFeed", log)))
+                "QuoteFeedHistory", log)))
                 .As<IAssetRepository>();
+            //builder.RegisterInstance(new OldAssetRepository(new AzureTableStorage<AzureRepositories.OldAssetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+            //    "QuoteFeed", log)))
+            //    .AsSelf();
             // User Data Repository
             builder.RegisterInstance(new UserRepository(
                 new AzureTableStorage<AzureRepositories.UserEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
@@ -109,16 +112,16 @@ namespace BoxOptions.Public.Modules
 
 
             // TODO: Change to Azure Storage in prod env
-#if DEBUG
-            builder.RegisterType<LocalFSHistory>()
-                .As<IAssetDatabase>()
-                .SingleInstance();
-#else
+//#if DEBUG
+//            builder.RegisterType<LocalFSHistory>()
+//                .As<IAssetDatabase>()
+//                .SingleInstance();
+//#else
             builder.RegisterType<Processors.AzureQuoteDatabase>()
                 .As<IAssetDatabase>()
                 .SingleInstance();
 
-#endif
+//#endif
             // Coefficient Calculator Interface
             ICoefficientCalculator coefCalculator;
             if (_settings.BoxOptionsApi.CoefApiUrl.ToLower() == "mock")

@@ -227,10 +227,10 @@ namespace BoxOptions.Services
                 {
                     // One price (Ask or Bid) has not changed. do not publish it
                     // Must only be published when both Ask Bid prices have changed
-                    Console.WriteLine("NOT Published [{4}]: {0}/{1} -> {2}/{3}",
-                        lastPrices[assetbid.Instrument].Ask, lastPrices[assetbid.Instrument].Bid,
-                        assetbid.Ask, assetbid.Bid,
-                        assetbid.Instrument);
+                    //Console.WriteLine("NOT Published [{4}]: {0}/{1} -> {2}/{3}",
+                    //    lastPrices[assetbid.Instrument].Ask, lastPrices[assetbid.Instrument].Bid,
+                    //    assetbid.Ask, assetbid.Bid,
+                    //    assetbid.Instrument);
                     publish = false;
                 }
                 else
@@ -243,13 +243,13 @@ namespace BoxOptions.Services
 
             if (assetbid.Ask <= 0 || assetbid.Bid <= 0)
             {
-                Console.WriteLine("Not Published Zero Price[{0}]: {1}/{2}", assetbid.Instrument, assetbid.Ask, assetbid.Bid);
+                //Console.WriteLine("Not Published Zero Price[{0}]: {1}/{2}", assetbid.Instrument, assetbid.Ask, assetbid.Bid);
                 publish = false;
             }
 
             if (publish)
             {
-                Console.WriteLine("Published[{0}]: {1}", assetbid.Instrument, assetbid);
+                //Console.WriteLine("Published[{0}]: {1}", assetbid.Instrument, assetbid);
                 MessageReceived?.Invoke(this, (InstrumentPrice)assetbid.ClonePrice());
             }
             return Task.FromResult(0);

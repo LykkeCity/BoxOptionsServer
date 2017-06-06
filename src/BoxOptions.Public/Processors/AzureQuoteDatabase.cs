@@ -48,10 +48,10 @@ namespace BoxOptions.Public.Processors
             {
                 List<AssetQuote> buffer = assetCache[quote.AssetPair].ToList();
                 assetCache[quote.AssetPair].Clear();
-                lock (InsertLock)
-                {
-                    InsertInAzure(buffer);
-                }
+                //lock (InsertLock)
+                //{
+                //    InsertInAzure(buffer);
+                //}
                 
             }
 

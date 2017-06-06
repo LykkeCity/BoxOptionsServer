@@ -19,31 +19,32 @@ namespace BoxOptions.AzureRepositories
         public double Price { get; set; }
         public DateTime Date { get; set; }
 
-        public static string GetPartitionKey(string assetPair)
+        public static string GetPartitionKey(IAssetItem src)
         {
-            return assetPair;
+            string key = string.Format("{0}_{1}", src.AssetPair, src.Date.ToString("yyyyMMdd_HH"));
+            return key;
         }
 
         public static AssetEntity Create(IAssetItem src)
         {
             return new AssetEntity
             {
-                PartitionKey = GetPartitionKey(src.AssetPair),
+                PartitionKey = GetPartitionKey(src),
                 AssetPair = src.AssetPair,
                 IsBuy = src.IsBuy,
                 Price = src.Price,
-                Date = src.Date                
+                Date = src.Date
             };
         }
 
         public static IEnumerable<AssetEntity> Create(IEnumerable<IAssetItem> src)
         {
-            int ctr=0;
+            int ctr = 0;
             var res = from s in src
                       select new AssetEntity
                       {
 
-                          PartitionKey = GetPartitionKey(s.AssetPair),
+                          PartitionKey = GetPartitionKey(s),
                           RowKey = string.Format("{0}.{1}", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm.ss"), ctr++.ToString("D3")),
                           AssetPair = s.AssetPair,
                           IsBuy = s.IsBuy,
@@ -51,7 +52,7 @@ namespace BoxOptions.AzureRepositories
                           Date = s.Date
                       };
             return res;
-            
+
         }
 
         public static AssetItem CreateAssetItem(AssetEntity src)
@@ -61,7 +62,7 @@ namespace BoxOptions.AzureRepositories
                 AssetPair = src.AssetPair,
                 Date = src.Date,
                 Price = src.Price,
-                IsBuy = src.IsBuy,                
+                IsBuy = src.IsBuy,
                 ServerTimestamp = src.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)
             };
         }
@@ -91,19 +92,32 @@ namespace BoxOptions.AzureRepositories
                 return;
             }
             inserting = true;
-            
-            var total =  AssetEntity.Create(olapEntities);
+
+            var total = AssetEntity.Create(olapEntities);
 
             var grouping = from e in total
-                           group e by new { e.AssetPair } into cms
+                           group e by new { e.PartitionKey } into cms
                            select new { key = cms.Key, val = cms.ToList() };
-                        
+
 
             foreach (var item in grouping)
             {
+                var list = item.val;
+
+
+                do
+                {
+                    int bufferLen = 64;
+                    if (list.Count < 64)
+                        bufferLen = list.Count;
+                    var buffer = list.Take(bufferLen);
+                    await _storage.InsertOrMergeBatchAsync(buffer);
+                    list.RemoveRange(0, bufferLen);
+
+                } while (list.Count > 0);
 
                 //Console.WriteLine("{0}>Inserting: {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), item.val.Count);                
-                await _storage.InsertOrMergeBatchAsync(item.val);
+                
                 //Console.WriteLine("{0}>Inserted: {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), item.val.Count);
             }
 
@@ -114,13 +128,35 @@ namespace BoxOptions.AzureRepositories
 
         public async Task<IEnumerable<AssetItem>> GetRange(DateTime dateFrom, DateTime dateTo, string assetPair)
         {
-            var entities = (await _storage.GetDataAsync(new[] { assetPair }, int.MaxValue,
-                    entity => entity.Timestamp >= dateFrom && entity.Timestamp < dateTo))
+            DateTime currentDate = dateFrom.Date;
+            List<AssetEntity> retval = new List<AssetEntity>();
+            Console.WriteLine("{0} > Getting Assets {1} > {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), dateFrom, dateTo);
+            do
+            {
+                string PartitionKey = string.Format("{0}_{1}", assetPair, currentDate.ToString("yyyyMMdd_HH"));
+                //Console.WriteLine("{0} > Key = {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), PartitionKey);
+
+
+                var entities = (await _storage.GetDataAsync(new[] { PartitionKey }, int.MaxValue))
                 .OrderByDescending(item => item.Timestamp);
 
-            return entities.Select(AssetEntity.CreateAssetItem);
+                //Console.WriteLine("{0} > Retrieved {1} entities", DateTime.UtcNow.ToString("HH:mm:ss.fff"), entities.Count());
+                retval.AddRange(entities);
+
+                //var entities = (await _storage.GetDataAsync(new[] { PartitionKey }, int.MaxValue,
+                //    entity => entity.Timestamp >= dateFrom && entity.Timestamp < dateTo))
+                //.OrderByDescending(item => item.Timestamp);
+
+
+
+                currentDate = currentDate.AddHours(1);
+
+            } while (currentDate < dateTo.Date.AddDays(1));
+
+            Console.WriteLine("{0} > Finished Returning {1} entities", DateTime.UtcNow.ToString("HH:mm:ss.fff"), retval.Count);
+            return retval.Select(AssetEntity.CreateAssetItem);
         }
 
-        
+
     }
 }
