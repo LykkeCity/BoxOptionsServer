@@ -116,9 +116,9 @@ namespace BoxOptions.Public.Processors
 
             return userRep.InsertHistoryAsync(hitem);
         }
-        public async Task<IEnumerable<UserHistory>> LoadUserHistory(string userId, int numEntries)
+        public async Task<IEnumerable<UserHistory>> LoadUserHistory(string userId, DateTime dateFrom, DateTime dateTo)
         {
-            var userHist = await userRep.GetUserHistory(userId, numEntries);
+            var userHist = await userRep.GetUserHistory(userId, dateFrom, dateTo);
 
             var converted = from p in userHist
                             select new UserHistory()
@@ -159,10 +159,10 @@ namespace BoxOptions.Public.Processors
             return gameRep.InsertGameBetAsync(newbet);
         }
 
-        public async Task<IEnumerable<GameBet>> LoadGameBets(string userId, int betState)
+        public async Task<IEnumerable<GameBet>> LoadGameBets(string userId, DateTime dateFrom, DateTime dateTo, int betState)
         {
             //throw new NotImplementedException();
-            var gameBets = await gameRep.GetGameBetsByUser(userId, betState);
+            var gameBets = await gameRep.GetGameBetsByUser(userId, dateFrom, dateTo, betState);
 
             var converted = from p in gameBets
                             select new GameBet(userId)

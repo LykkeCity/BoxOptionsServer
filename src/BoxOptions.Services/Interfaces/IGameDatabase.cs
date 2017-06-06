@@ -1,4 +1,5 @@
 ﻿using BoxOptions.Services.Models;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -10,12 +11,12 @@ namespace BoxOptions.Services.Interfaces
         Task<UserState> LoadUserState(string userId);
                 
         Task SaveGameBet(string userId,  GameBet bet);
-        Task<IEnumerable<GameBet>> LoadGameBets(string userId, int betState);
+        Task<IEnumerable<GameBet>> LoadGameBets(string userId, DateTime dateFrom, DateTime dateTo, int betState);
 
         Task SaveUserParameters(string userId, IEnumerable<CoeffParameters> parameters);
         Task<IEnumerable<CoeffParameters>> LoadUserParameters(string userId);
 
         Task SaveUserHistory(string userId, UserHistory history);
-        Task<IEnumerable<UserHistory>> LoadUserHistory(string userId, int numEntries);
+        Task<IEnumerable<UserHistory>> LoadUserHistory(string userId, DateTime dateFrom, DateTime dateTo);
     }
 }

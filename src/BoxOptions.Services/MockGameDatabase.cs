@@ -9,12 +9,13 @@ namespace BoxOptions.Services
 {
     public class MockGameDatabase : IGameDatabase
     {
-        public Task<IEnumerable<GameBet>> LoadGameBets(string userId, int status)
+        public Task<IEnumerable<GameBet>> LoadGameBets(string userId, DateTime dateFrom, DateTime dateTo,int status)
         {
             throw new NotImplementedException();
         }
 
-        public Task<IEnumerable<UserHistory>> LoadUserHistory(string userId, int numEntries)
+       
+        public Task<IEnumerable<UserHistory>> LoadUserHistory(string userId, DateTime dateFrom, DateTime dateTo)
         {
             throw new NotImplementedException();
         }

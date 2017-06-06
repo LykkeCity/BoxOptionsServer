@@ -117,9 +117,9 @@ namespace BoxOptions.AzureRepositories
 
         
 
-        public static string GetPartitionKey(string userId)
+        public static string GetPartitionKey(string userId, DateTime date)
         {
-            return userId;
+            return string.Format("{0}_{1}", userId, date.ToString("yyyyMMdd"));
         }
         
 
@@ -127,7 +127,7 @@ namespace BoxOptions.AzureRepositories
         {
             return new UserHistoryEntity
             {
-                PartitionKey = GetPartitionKey(src.UserId),
+                PartitionKey = GetPartitionKey(src.UserId,DateTime.UtcNow),
                 //RowKey = GetRowKey(src.Date),
                 UserId = src.UserId,
                 Date = src.Date,
@@ -209,12 +209,30 @@ namespace BoxOptions.AzureRepositories
             await _hstorage.InsertAndGenerateRowKeyAsDateTimeAsync(UserHistoryEntity.Create(olapEntitiy),DateTime.UtcNow);
         }
 
-        public async Task<IEnumerable<UserHistoryItem>> GetUserHistory(string userId, int numEntries)
+        public async Task<IEnumerable<UserHistoryItem>> GetUserHistory(string userId, DateTime dateFrom, DateTime dateTo)
         {
-            var entities = (await _hstorage.GetDataAsync(new[] { userId }, numEntries))
-                .OrderByDescending(item => item.Timestamp).Take(numEntries);
 
-            return entities.Select(UserHistoryEntity.CreateUserHistoryItem);
+            DateTime startDate = dateFrom.Date;
+            DateTime endDate = dateTo.Date.AddDays(1);
+            DateTime currentDate = startDate;
+
+            List<UserHistoryEntity> retval = new List<UserHistoryEntity>();
+            do
+            {
+                string partitionKey = UserHistoryEntity.GetPartitionKey(userId, currentDate);
+                var entities = (await _hstorage.GetDataAsync(new[] { partitionKey }, int.MaxValue))
+                .OrderByDescending(item => item.Timestamp);
+                retval.AddRange(entities);
+
+                currentDate = currentDate.AddDays(1);
+            } while (currentDate < endDate);
+                        
+
+            return retval.Select(UserHistoryEntity.CreateUserHistoryItem);
+
+            //var entities = (await _hstorage.GetDataAsync(new[] { userId }, numEntries))
+            //    .OrderByDescending(item => item.Timestamp).Take(numEntries);
+            //return entities.Select(UserHistoryEntity.CreateUserHistoryItem);
         }
     }
 }

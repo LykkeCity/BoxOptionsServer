@@ -22,9 +22,9 @@ namespace BoxOptions.AzureRepositories
         public string Parameters { get; set; }
         public int BetStatus { get; set; }
 
-        public static string GetPartitionKey(string userId)
+        public static string GetPartitionKey(string userId, DateTime date)
         {
-            return userId;
+            return string.Format("{0}_{1}", userId, date.ToString("yyyyMMdd"));
         }
         public static string GetRowKey(string boxId, DateTime date)
         {
@@ -35,7 +35,7 @@ namespace BoxOptions.AzureRepositories
         {
             return new GameBetEntity
             {
-                PartitionKey = GetPartitionKey(src.UserId),
+                PartitionKey = GetPartitionKey(src.UserId, DateTime.UtcNow),
                 RowKey = GetRowKey(src.BoxId, src.Date),
                 UserId = src.UserId,
                 BoxId = src.BoxId,
@@ -82,11 +82,54 @@ namespace BoxOptions.AzureRepositories
             await _betstorage.InsertOrReplaceAsync(GameBetEntity.Create(olapEntity));
         }
 
-        public async Task<IEnumerable<GameBetItem>> GetGameBetsByUser(string userId, int betState)
+        public async Task<IEnumerable<GameBetItem>> GetGameBetsByUser(string userId, DateTime dateFrom, DateTime dateTo)
         {
-            var entities = (await _betstorage.GetDataAsync(new[] { userId }, int.MaxValue,
-                entity => entity.RowKey.StartsWith($"bet_") && entity.BetStatus == betState));
-            return entities.Select(GameBetEntity.CreateGameBetItem);
+            DateTime startDate = dateFrom.Date;
+            DateTime endDate = dateTo.Date.AddDays(1);
+            DateTime currentDate = startDate;
+
+            List<GameBetEntity> retval = new List<GameBetEntity>();
+            do
+            {
+                string partitionKey = GameBetEntity.GetPartitionKey(userId, currentDate);
+                var entities = (await _betstorage.GetDataAsync(new[] { partitionKey }, int.MaxValue))
+                .OrderByDescending(item => item.Timestamp);
+                retval.AddRange(entities);
+
+                currentDate = currentDate.AddDays(1);
+            } while (currentDate < endDate);
+
+
+            return retval.Select(GameBetEntity.CreateGameBetItem);
+
+            //var entities = (await _betstorage.GetDataAsync(new[] { userId }, int.MaxValue,
+            //    entity => entity.RowKey.StartsWith($"bet_") && entity.BetStatus == betState));
+            //return entities.Select(GameBetEntity.CreateGameBetItem);
+        }
+        public async Task<IEnumerable<GameBetItem>> GetGameBetsByUser(string userId, DateTime dateFrom, DateTime dateTo, int betState)
+        {
+            DateTime startDate = dateFrom.Date;
+            DateTime endDate = dateTo.Date.AddDays(1);
+            DateTime currentDate = startDate;
+
+            List<GameBetEntity> retval = new List<GameBetEntity>();
+            do
+            {
+                string partitionKey = GameBetEntity.GetPartitionKey(userId, currentDate);
+                var entities = (await _betstorage.GetDataAsync(new[] { partitionKey }, int.MaxValue,
+                    entity => entity.BetStatus == betState))
+                .OrderByDescending(item => item.Timestamp);
+                retval.AddRange(entities);
+
+                currentDate = currentDate.AddDays(1);
+            } while (currentDate < endDate);
+
+
+            return retval.Select(GameBetEntity.CreateGameBetItem);
+
+            //var entities = (await _betstorage.GetDataAsync(new[] { userId }, int.MaxValue,
+            //    entity => entity.RowKey.StartsWith($"bet_") && entity.BetStatus == betState));
+            //return entities.Select(GameBetEntity.CreateGameBetItem);
         }
     }
 }
