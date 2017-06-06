@@ -42,7 +42,7 @@ namespace BoxOptions.Public.Controllers
             [FromQuery] string clientId)
         {
             const string format = "yyyyMMdd";
-            var entities = await _logRepository.GetRange(DateTime.ParseExact(dateFrom, format, CultureInfo.InvariantCulture), DateTime.ParseExact(dateTo, format, CultureInfo.InvariantCulture).AddDays(1), clientId);
+            var entities = await _logRepository.GetRange(DateTime.ParseExact(dateFrom, format, CultureInfo.InvariantCulture), DateTime.ParseExact(dateTo, format, CultureInfo.InvariantCulture), clientId);
             return entities.Select(e => new LogModel
             {
                 ClientId = e.ClientId,
@@ -52,37 +52,37 @@ namespace BoxOptions.Public.Controllers
             }).ToArray();
         }
 
-        [HttpGet]
-        [Route("boxoptionlogclientlist")]
-        public async Task<IActionResult> ClientList([FromQuery] string dateFrom, [FromQuery] string dateTo)
-        {
-            try
-            {
-                const string format = "yyyyMMdd";
-                var entities = await _logRepository.GetClients(DateTime.ParseExact(dateFrom, format, CultureInfo.InvariantCulture), DateTime.ParseExact(dateTo, format, CultureInfo.InvariantCulture).AddDays(1));
+        //[HttpGet]
+        //[Route("boxoptionlogclientlist")]
+        //public async Task<IActionResult> ClientList([FromQuery] string dateFrom, [FromQuery] string dateTo)
+        //{
+        //    try
+        //    {
+        //        const string format = "yyyyMMdd";
+        //        var entities = await _logRepository.GetClients(DateTime.ParseExact(dateFrom, format, CultureInfo.InvariantCulture), DateTime.ParseExact(dateTo, format, CultureInfo.InvariantCulture).AddDays(1));
 
-                return Ok(entities);
-            }
-            catch (Exception ex) { return StatusCode(500, ex.Message); }
-        }
+        //        return Ok(entities);
+        //    }
+        //    catch (Exception ex) { return StatusCode(500, ex.Message); }
+        //}
 
-        [HttpGet]
-        [Route("getall")]
-        public async Task<ActionResult> GetAll([FromQuery] string dateFrom, [FromQuery] string dateTo)
-        {
-            const string format = "yyyyMMdd";
-            var entities = await _logRepository.GetAll(DateTime.ParseExact(dateFrom, format, CultureInfo.InvariantCulture), DateTime.ParseExact(dateTo, format, CultureInfo.InvariantCulture).AddDays(1));
+        //[HttpGet]
+        //[Route("getall")]
+        //public async Task<ActionResult> GetAll([FromQuery] string dateFrom, [FromQuery] string dateTo)
+        //{
+        //    const string format = "yyyyMMdd";
+        //    var entities = await _logRepository.GetAll(DateTime.ParseExact(dateFrom, format, CultureInfo.InvariantCulture), DateTime.ParseExact(dateTo, format, CultureInfo.InvariantCulture).AddDays(1));
             
-            var res = entities.Select(e => new LogModel
-            {
-                ClientId = e.ClientId,
-                EventCode = e.EventCode,
-                Message = e.Message,
-                Timestamp = e.Timestamp
-            }).ToArray();
+        //    var res = entities.Select(e => new LogModel
+        //    {
+        //        ClientId = e.ClientId,
+        //        EventCode = e.EventCode,
+        //        Message = e.Message,
+        //        Timestamp = e.Timestamp
+        //    }).ToArray();
 
-            return View(res);
+        //    return View(res);
 
-        }
+        //}
     }
 }

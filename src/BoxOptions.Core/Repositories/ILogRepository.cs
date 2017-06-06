@@ -9,7 +9,7 @@ namespace BoxOptions.Core
     {
         Task InsertAsync(Interfaces.ILogItem olapEntity);
         Task<IEnumerable<Models.LogItem>> GetRange(DateTime dateFrom, DateTime dateTo, string clientId);
-        Task<IEnumerable<string>> GetClients(DateTime dateFrom, DateTime dateTo);
-        Task<IEnumerable<Models.LogItem>> GetAll(DateTime dateFrom, DateTime dateTo);
+        //Task<IEnumerable<string>> GetClients(DateTime dateFrom, DateTime dateTo);
+        //Task<IEnumerable<Models.LogItem>> GetAll(DateTime dateFrom, DateTime dateTo);
     }
 }
