@@ -153,7 +153,7 @@ namespace BoxOptions.AzureRepositories
 
             } while (currentDate < dateTo.Date.AddDays(1));
 
-            Console.WriteLine("{0} > Finished Returning {1} entities", DateTime.UtcNow.ToString("HH:mm:ss.fff"), retval.Count);
+            Console.WriteLine("{0} > Finished. Returning {1} entities", DateTime.UtcNow.ToString("HH:mm:ss.fff"), retval.Count);
             return retval.Select(AssetEntity.CreateAssetItem);
         }
 

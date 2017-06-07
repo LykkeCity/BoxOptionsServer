@@ -176,10 +176,12 @@ namespace BoxOptions.Services
                 return Task.FromResult(0);
             }
 
+
+#if !DEBUG  // DO NOT WRITE ON ASSET DATABASE DURING DEBUG
             // Add to Asset History
             history?.AddToAssetHistory(assetQuote);
+#endif
 
-            
             // Get Asset from cache
             InstrumentPrice assetbid = (from a in assetCache
                                         where a.Instrument == assetQuote.AssetPair

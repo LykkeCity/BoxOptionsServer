@@ -110,18 +110,16 @@ namespace BoxOptions.Public.Modules
                 "BoxConfig", log)))
                 .As<IBoxConfigRepository>();
 
+            
+            // Local File System Asset Database
+            //builder.RegisterType<LocalFSHistory>()
+            //    .As<IAssetDatabase>()
+            //    .SingleInstance();
 
-            // TODO: Change to Azure Storage in prod env
-//#if DEBUG
-//            builder.RegisterType<LocalFSHistory>()
-//                .As<IAssetDatabase>()
-//                .SingleInstance();
-//#else
             builder.RegisterType<Processors.AzureQuoteDatabase>()
                 .As<IAssetDatabase>()
                 .SingleInstance();
 
-//#endif
             // Coefficient Calculator Interface
             ICoefficientCalculator coefCalculator;
             if (_settings.BoxOptionsApi.CoefApiUrl.ToLower() == "mock")

@@ -34,7 +34,7 @@ namespace BoxOptions.Public.Controllers
                 try
                 {                    
                     AssetQuote[] res = null;
-                    string HistoryRequestLog = string.Format("BidHistory> From:[{0} To:[{1}] Pair:[{2}]", dtFrom.Date, dtTo.Date, assetPair);
+                    string HistoryRequestLog = string.Format("BidHistory> From:[{0}] To:[{1}] Pair:[{2}]", dtFrom.Date.ToString("yyyy-MM-dd"), dtTo.Date.ToString("yyyy-MM-dd"), assetPair);
                     HistoryRequestLog += string.Format("\n\r{0}>Get Data From Azure", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                     var his = await history.GetAssetHistory(dtFrom, dtTo, assetPair);
                     HistoryRequestLog += string.Format("\n\r{0}>Finished Getting Data From Azure", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
@@ -71,7 +71,7 @@ namespace BoxOptions.Public.Controllers
             {
                 try
                 {
-                    string HistoryRequestLog = string.Format("AssetHistory> From:[{0} To:[{1}] Pair:[{2}]", dtFrom.Date, dtTo.Date, assetPair);
+                    string HistoryRequestLog = string.Format("AssetHistory> From:[{0}] To:[{1}] Pair:[{2}]", dtFrom.Date.ToString("yyyy-MM-dd"), dtTo.Date.ToString("yyyy-MM-dd"), assetPair);
                     HistoryRequestLog += string.Format("\n\r{0}>Get Data From Azure", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                     var his = await history.GetAssetHistory(dtFrom, dtTo, assetPair);
                     HistoryRequestLog += string.Format("\n\r{0}>Finished Getting Data From Azure", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
