@@ -32,15 +32,9 @@ namespace BoxOptions.Client
             var assets = client.GetAssets();
             var chart = client.GetChardData();
             System.Console.WriteLine("Chart Entries: {0}", chart.Count);
-
-            string inituser = client.InitUser(UserId);
-            System.Console.WriteLine("Init User: {0}", inituser);
-
+            
             client.Prices();
-            client.SubscribeGameEvents();
-
-
-
+            
             do
             {
                 input = Console.ReadLine();
@@ -72,10 +66,8 @@ namespace BoxOptions.Client
                         else if (s_user == "3")
                             UserId = UserId3;
                         else
-                            UserId = UserId1;
-                        string initUserRes = client.InitUser(UserId);
-                        client.SubscribeGameEvents();
-                        Console.WriteLine("User set to: [{0}] Answer:{1}", UserId, initUserRes);
+                            UserId = UserId1;                        
+                        Console.WriteLine("User set to: [{0}] Answer", UserId);
                         break;
                     case "feed":
                         ShowFeed = !ShowFeed;
@@ -98,54 +90,20 @@ namespace BoxOptions.Client
                         break;
                     case "log":
                         client.PostLog();
-                        break;                                     
-                    case "placebet":
-                        string pb_box = "{"+
-                            "\"Id\": \"james@example.com\"," +
-                            "\"MinPrice\": 0.0001," +
-                            "\"MaxPrice\": 0.0009," +
-                            "\"TimeToGraph\": 7.377049180327869," +
-                            "\"TimeLength\": 7.9999999," +
-                            "\"Coefficient\": 0.987654321" +
-                            "}";
-
-                        Console.Write("\tAssetPair>");
-                        string s_pair = Console.ReadLine();
-                        Console.Write("\tBet>");
-                        string pb_bet = Console.ReadLine();
-                        decimal pb_bet_val = 0;
-                        decimal.TryParse(pb_bet, System.Globalization.NumberStyles.AllowDecimalPoint, CI, out pb_bet_val);
-                        if (pb_bet_val > 0)
-                            client.PlaceBet(UserId, s_pair, pb_box, pb_bet_val);
-                        else
-                            Console.WriteLine("Invalid Bet Value");
-                        break;
-                    case "getbalance":
-                        client.GetBalance(UserId);
-                        break;
-                    case "setbalance":
-                        Console.Write("\tNew Balance>");
-                        string newbal = Console.ReadLine();
-                        decimal newbal_val = 0;
-                        decimal.TryParse(newbal, System.Globalization.NumberStyles.AllowDecimalPoint, CI, out newbal_val);
-                        if (newbal_val >= 0)
-                            client.SetBalance(UserId, newbal_val);
                         break;
                     case "setpars":
                         Console.Write("\tAsset>");
                         string sp_asset = Console.ReadLine();
                         Random r = new Random();
                         client.ChangeParameter(UserId, sp_asset, r.Next(50000), r.Next(8000), 0.0003d, 16, 17);
-                        break;
-                    case "getpars":
-                        Console.Write("\tAsset>");
-                        string gp_asset = Console.ReadLine();
-                        client.GetParameter(UserId, gp_asset);
-                        break;
+                        break;                    
                     case "coeff":
                         Console.Write("\tAsset>");
                         string co_asset = Console.ReadLine();
                         client.RequestCoeff(UserId, co_asset);
+                        break;
+                    case "coeffs":                        
+                        client.RequestCoeffs(UserId);
                         break;
                 }
             } while (input != "exit");

@@ -107,60 +107,16 @@ namespace BoxOptions.AzureRepositories
             };
         }
     }
-
-    public class UserHistoryEntity : TableEntity, IUserHistoryItem
-    {
-        public string UserId { get; set; }
-        public string Status { get; set; }
-        public DateTime Date { get; set; }
-        public string Message { get; set; }
-
-        
-
-        public static string GetPartitionKey(string userId, DateTime date)
-        {
-            return string.Format("{0}_{1}", userId, date.ToString("yyyyMMdd"));
-        }
-        
-
-        public static UserHistoryEntity Create(IUserHistoryItem src)
-        {
-            return new UserHistoryEntity
-            {
-                PartitionKey = GetPartitionKey(src.UserId,DateTime.UtcNow),
-                //RowKey = GetRowKey(src.Date),
-                UserId = src.UserId,
-                Date = src.Date,
-                Status = src.Status,
-                Message = src.Message
-            };
-        }
-
-        public static UserHistoryItem CreateUserHistoryItem(UserHistoryEntity src)
-        {
-            if (src == null)
-                return null;
-            return new UserHistoryItem
-            {
-                UserId = src.UserId,
-                Date = src.Date,
-                Status = src.Status,
-                Message = src.Message
-            };
-        }
-    }
     
     public class UserRepository : IUserRepository
     {
         private readonly AzureTableStorage<UserEntity> _storage;
         private readonly AzureTableStorage<UserParameterEntity> _pstorage;
-        private readonly AzureTableStorage<UserHistoryEntity> _hstorage;
-
-        public UserRepository(AzureTableStorage<UserEntity> storage, AzureTableStorage<UserParameterEntity> pstorage, AzureTableStorage<UserHistoryEntity> hstorage)
+        
+        public UserRepository(AzureTableStorage<UserEntity> storage, AzureTableStorage<UserParameterEntity> pstorage)
         {
             _storage = storage;
-            _pstorage = pstorage;
-            _hstorage = hstorage;
+            _pstorage = pstorage;            
         }
 
         public async Task InsertUserAsync(IUserItem olapEntity)
@@ -177,22 +133,11 @@ namespace BoxOptions.AzureRepositories
                 
         }
 
-
-        bool insertingParams = false;
+                
         public async Task InsertManyParametersAsync(IEnumerable<IUserParameterItem> olapEntities)
-        {
-            if (insertingParams)
-            {
-                Console.WriteLine("{0}>Packet Lost: {1}", DateTime.UtcNow.ToString("HH:mm:ss"), olapEntities.Count());
-                return;
-            }
-            insertingParams = true;
-
+        {  
             var total = olapEntities.Select(UserParameterEntity.Create);
-
             await _pstorage.InsertOrMergeBatchAsync(total);
-        
-            insertingParams = false;
         }
 
         public async Task<IEnumerable<UserParameterItem>> GetUserParameters(string userId)
@@ -202,37 +147,7 @@ namespace BoxOptions.AzureRepositories
                 .OrderByDescending(item => item.Timestamp);
 
             return entities.Select(UserParameterEntity.CreateUserParameterItem);
-        }
-                
-        public async Task InsertHistoryAsync(IUserHistoryItem olapEntitiy)
-        {            
-            await _hstorage.InsertAndGenerateRowKeyAsDateTimeAsync(UserHistoryEntity.Create(olapEntitiy),DateTime.UtcNow);
-        }
-
-        public async Task<IEnumerable<UserHistoryItem>> GetUserHistory(string userId, DateTime dateFrom, DateTime dateTo)
-        {
-
-            DateTime startDate = dateFrom.Date;
-            DateTime endDate = dateTo.Date.AddDays(1);
-            DateTime currentDate = startDate;
-
-            List<UserHistoryEntity> retval = new List<UserHistoryEntity>();
-            do
-            {
-                string partitionKey = UserHistoryEntity.GetPartitionKey(userId, currentDate);
-                var entities = (await _hstorage.GetDataAsync(new[] { partitionKey }, int.MaxValue))
-                .OrderByDescending(item => item.Timestamp);
-                retval.AddRange(entities);
-
-                currentDate = currentDate.AddDays(1);
-            } while (currentDate < endDate);
-                        
-
-            return retval.Select(UserHistoryEntity.CreateUserHistoryItem);
-
-            //var entities = (await _hstorage.GetDataAsync(new[] { userId }, numEntries))
-            //    .OrderByDescending(item => item.Timestamp).Take(numEntries);
-            //return entities.Select(UserHistoryEntity.CreateUserHistoryItem);
-        }
+        }                
+        
     }
 }

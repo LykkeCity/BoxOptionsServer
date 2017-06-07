@@ -10,6 +10,7 @@ using System.IO;
 using BoxOptions.Core.Models;
 using Lykke.Common;
 using BoxOptions.Services.Models;
+using System.Threading.Tasks;
 
 namespace BoxOptions.Client
 {
@@ -20,8 +21,7 @@ namespace BoxOptions.Client
         private IRpcMethods _service;
 
         IDisposable subscription1;
-        IDisposable subscription2;
-
+        
         public void Connect(ClientEnv env)
         {
             SetEnv(env);
@@ -131,120 +131,61 @@ namespace BoxOptions.Client
                 Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > BidDate[{info.Date.ToString("yyyy-MM-dd HH:mm:ss")}] | {info.Instrument} {info.Bid}/{info.Ask}");
         }
 
-        public void SubscribeGameEvents()
-        {
-            if (subscription2 != null)
-            {
-                subscription2.Dispose();
-                subscription2 = null;
-            }
-            subscription2 = _realmProxy.Services.GetSubject<BetResult>("game.events." + Program.UserId)
-                .Subscribe(OnGameResult);
-            //info =>
-            //{
-            //    Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > INFO[{info.ToJson()}");
-            //});
-        }
-        void OnGameResult(BetResult info)
-        {
-            Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > INFO[{info.ToJson()}");
-        }
-
+       
+      
         public void Stop()
         {
-            subscription1.Dispose();
-            subscription2.Dispose();
+            subscription1.Dispose();            
         }
-        public string InitUser(string userId)
-        {
-            var data = _service.InitUser(userId);
-            return data;
-        }
-
-        internal void PlaceBet(string userId, string assetpair, string box, decimal betAmount)
-        {
-            var result = _service.PlaceBet(userId, assetpair, box, betAmount);
-            Console.WriteLine("{0}> PlaceBet({1},{2},{3}) = {4}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, betAmount, result.Status);
-        }
-
-
-        internal void GetBalance(string userId)
-        {
-            decimal result = _service.GetBalance(userId);
-            Console.WriteLine("{0}> GetBalance({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
-        }
-        internal void SetBalance(string userId, decimal newBalance)
-        {
-            string result = _service.SetBalance(userId, newBalance);
-            Console.WriteLine("{0}> SetBalance({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, newBalance, result);
-        }
+       
 
         internal void ChangeParameter(string userId, string assetPair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
         {
             string result = _service.ChangeParameters(userId, assetPair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
             Console.WriteLine("{0}> ChangeParameter({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, assetPair, result);
-        }
-        internal void GetParameter(string userId, string assetPair)
+        }       
+       
+
+        internal void RequestCoeffs(string userId)
         {
-            var res = _service.GetParameters(userId, assetPair);
-            Console.WriteLine("\tAssetPair:{0}", res.AssetPair);
-            Console.WriteLine("\tTimeToFirstOption:{0}", res.TimeToFirstOption);
-            Console.WriteLine("\tOptionLen:{0}", res.OptionLen);
-            Console.WriteLine("\tPriceSize:{0}", res.PriceSize);
-            Console.WriteLine("\tNPriceIndex:{0}", res.NPriceIndex);
-            Console.WriteLine("\tNTimeIndex:{0}", res.NTimeIndex);
+            string[] AllowedAssets = new string[] { "EURUSD", "EURCHF", "EURGBP", "EURJPY", "USDCHF" };
+            //string[] AllowedAssets = new string[] { "EURUSD", "EURGBP" };
+
+            foreach (var asset in AllowedAssets)
+            {
+                Task.Run(() =>
+                {
+                    Console.WriteLine("1st Request");
+                    RequestCoeff(userId, asset);
+                                        
+                    Console.WriteLine("2nd Request Same pars");
+                    RequestCoeff(userId, asset);
+
+
+                    Console.WriteLine("{0}>{1} | Change Parameters", DateTime.Now.ToString("HH:mm:ss.fff"), asset);
+                    Random r = new Random();                    
+                    _service.ChangeParameters(userId, asset, r.Next(50000), r.Next(8000), 0.0003d, 8, 9);
+
+                    Console.WriteLine("3rd Request diff pars");                    
+                    RequestCoeff(userId, asset);
+                });
+            }
 
         }
-
-        internal void RequestCoeff(string userId, string pair)
+        internal void RequestCoeff(string userId, string asset)
         {
-            var res = _service.RequestCoeff(userId, pair);
-            Console.WriteLine(res);
+            string tasset = asset;
+            Console.WriteLine("{0}>{1} | START ({2})", DateTime.Now.ToString("HH:mm:ss.fff"), tasset, Thread.CurrentThread.ManagedThreadId);
+            var res = _service.RequestCoeff(userId, asset);
+            string trimmedRes = "NULL";
+            if (res.Length > 20)
+                trimmedRes = res.Substring(0, 20);
+            Console.WriteLine("{0}>{1} | FINISHED ({2}) Res={3}", DateTime.Now.ToString("HH:mm:ss.fff"), tasset, Thread.CurrentThread.ManagedThreadId, trimmedRes);
         }
+
 
         #endregion
 
 
-        //internal void Launch(string userId)
-        //{
-        //    string result = _service.Launch(userId);
-        //    Console.WriteLine("{0}> Game Launch({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
-        //}
-
-        //internal void Wake(string userId)
-        //{
-        //    string result = _service.Wake(userId);
-        //    Console.WriteLine("{0}> Wake({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
-        //}
-
-        //internal void Sleep(string userId)
-        //{
-        //    string result = _service.Sleep(userId);
-        //    Console.WriteLine("{0}> Sleep({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
-        //}
-
-        //internal void GameStart(string userId, string assetPair)
-        //{
-        //    string result = _service.GameStart(userId, assetPair);
-        //    Console.WriteLine("{0}> GameStart({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, assetPair, result);
-        //}
-
-        //internal void GameClose(string userId)
-        //{
-        //    string result = _service.GameClose(userId);
-        //    Console.WriteLine("{0}> GameClose({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
-        //}
-
-        //internal void ChangeBet(string userId, string box, decimal betAmount)
-        //{
-        //    string result = _service.ChangeBet(userId, box, betAmount);
-        //    Console.WriteLine("{0}> ChangeBet({1},{2},{3}) = {4}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, betAmount, result);
-        //}
-
-        //internal void ChangeScale(string userId, decimal scale)
-        //{
-        //    string result = _service.ChangeScale(userId, scale);
-        //    Console.WriteLine("{0}> ChangeBet({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, scale, result);
-        //}
     }
 }

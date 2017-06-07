@@ -8,15 +8,9 @@ namespace BoxOptions.Services.Interfaces
     public interface IGameDatabase
     {
         Task SaveUserState(UserState userState);
-        Task<UserState> LoadUserState(string userId);
-                
-        Task SaveGameBet(string userId,  GameBet bet);
-        Task<IEnumerable<GameBet>> LoadGameBets(string userId, DateTime dateFrom, DateTime dateTo, int betState);
-
+        Task<UserState> LoadUserState(string userId);                
+        
         Task SaveUserParameters(string userId, IEnumerable<CoeffParameters> parameters);
         Task<IEnumerable<CoeffParameters>> LoadUserParameters(string userId);
-
-        Task SaveUserHistory(string userId, UserHistory history);
-        Task<IEnumerable<UserHistory>> LoadUserHistory(string userId, DateTime dateFrom, DateTime dateTo);
     }
 }

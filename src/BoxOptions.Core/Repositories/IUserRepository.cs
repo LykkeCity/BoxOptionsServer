@@ -11,9 +11,7 @@ namespace BoxOptions.Core
                 
         Task InsertManyParametersAsync(IEnumerable<Interfaces.IUserParameterItem> olapEntities);
         Task<IEnumerable<Models.UserParameterItem>> GetUserParameters(string userId);
-
-        Task InsertHistoryAsync(Interfaces.IUserHistoryItem olapEntity);
-        Task<IEnumerable<Models.UserHistoryItem>> GetUserHistory(string userId, DateTime dateFrom, DateTime dateTo);
+        
 
     }
 }

@@ -37,8 +37,7 @@ namespace BoxOptions.Public.Models
                     List<Coeff> coefBlockList = new List<Coeff>();
                     if (block.Length < 1)
                         continue;
-                    string[] coefs = block.Split('{');
-                    Console.WriteLine(coefs);
+                    string[] coefs = block.Split('{');                    
                     foreach (var coef in coefs)
                     {
                         if (coef.Length < 1)
@@ -60,13 +59,11 @@ namespace BoxOptions.Public.Models
 
                             if (valuePair[0] == "\"hitCoeff\"")
                             {
-                                newItem.HitCoeff = decimal.Parse(valuePair[1], ci);
-                                //Console.WriteLine("HitCoeff:\n\t{0}\n\t{1:F16}", valuePair[1], newItem.HitCoeff);
+                                newItem.HitCoeff = decimal.Parse(valuePair[1], ci);                                
                             }
                             else if (valuePair[0] == "\"missCoeff\"")
                             {
-                                newItem.MissCoeff = decimal.Parse(valuePair[1], ci);
-                                //Console.WriteLine("MissCoeff :\n\t{0}\n\t{1:F16}", valuePair[1], newItem.MissCoeff);
+                                newItem.MissCoeff = decimal.Parse(valuePair[1], ci);                                
                             }
                         }
                         coefBlockList.Add(newItem);

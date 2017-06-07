@@ -140,8 +140,7 @@ namespace BoxOptions.Services
                 // Not in allowed assets list, discard entry
                 return Task.FromResult(0);
             else
-            {
-                //Console.WriteLine("PRI Stream:{0}", assetQuote);
+            {                
                 return ProcessMessage(assetQuote);
             }
         }
@@ -155,8 +154,7 @@ namespace BoxOptions.Services
                 // Not in allowed assets list, discard entry
                 return Task.FromResult(0);
             else
-            {
-                //Console.WriteLine("SEC Stream:{0}",assetQuote);
+            {   
                 return ProcessMessage(assetQuote);
             }
         }
@@ -228,11 +226,7 @@ namespace BoxOptions.Services
                     (lastPrices[assetbid.Instrument].Ask == assetbid.Ask || lastPrices[assetbid.Instrument].Bid == assetbid.Bid))
                 {
                     // One price (Ask or Bid) has not changed. do not publish it
-                    // Must only be published when both Ask Bid prices have changed
-                    //Console.WriteLine("NOT Published [{4}]: {0}/{1} -> {2}/{3}",
-                    //    lastPrices[assetbid.Instrument].Ask, lastPrices[assetbid.Instrument].Bid,
-                    //    assetbid.Ask, assetbid.Bid,
-                    //    assetbid.Instrument);
+                    // Must only be published when both Ask Bid prices have changed                    
                     publish = false;
                 }
                 else
@@ -245,13 +239,11 @@ namespace BoxOptions.Services
 
             if (assetbid.Ask <= 0 || assetbid.Bid <= 0)
             {
-                //Console.WriteLine("Not Published Zero Price[{0}]: {1}/{2}", assetbid.Instrument, assetbid.Ask, assetbid.Bid);
                 publish = false;
             }
 
             if (publish)
-            {
-                //Console.WriteLine("Published[{0}]: {1}", assetbid.Instrument, assetbid);
+            {                
                 MessageReceived?.Invoke(this, (InstrumentPrice)assetbid.ClonePrice());
             }
             return Task.FromResult(0);
@@ -270,7 +262,7 @@ namespace BoxOptions.Services
             if (primarySubscriber != null)
             {
                 double PrimaryStreamLastMessage = (currentdate - primaryStreamLastMessageTimeStamp).TotalSeconds;
-                //Console.WriteLine("Primary Last Message: {0}", PrimaryStreamLastMessage);
+                
                 // Last message receive longer than allowed in IncomingDataCheckInterval
                 if (PrimaryStreamLastMessage > settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.IncomingDataCheckInterval)
                 {
@@ -292,8 +284,7 @@ namespace BoxOptions.Services
             if (secondarySubscriber != null)
             {
                 double SecondaryStreamLastMessage = (currentdate - secondaryStreamLastMessageTimeStamp).TotalSeconds;
-                //Console.WriteLine("Secondary Last Message: {0}", SecondaryStreamLastMessage);
-
+                
                 // Last message receive longer than allowed in IncomingDataCheckInterval
                 if (SecondaryStreamLastMessage > settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.IncomingDataCheckInterval)
                 {

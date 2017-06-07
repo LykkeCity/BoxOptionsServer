@@ -19,15 +19,13 @@ namespace BoxOptions.Services
         private readonly IMicrographCache _micrographCacheService;
         private readonly IGameManager _gameManager;
         private readonly ILog _log;
-        private readonly ILogRepository _logRepository;
-
-        public WampRpcService(IMicrographCache micrographCacheService, IGameManager gameManager, ILog log, ILogRepository logRepository)
+        
+        public WampRpcService(IMicrographCache micrographCacheService, IGameManager gameManager, ILog log)
         {
             _micrographCacheService = micrographCacheService;
             _gameManager = gameManager;
             _log = log;
-            _logRepository = logRepository;
-
+            
             LogInfo("Wamp Rpc Service Started");
         }
 
@@ -387,71 +385,6 @@ namespace BoxOptions.Services
 
         }
 
-        public string InitUser(string userId)
-        {
-            try
-            {
-                var res = _gameManager.InitUser(userId);
-                string retval = res.ToJson();
-                return retval;
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "InitUser");
-                return ex.Message;
-            }            
-        }
-
-        public PlaceBetResult PlaceBet(string userId, string assetPair, string box, decimal betValue)
-        {
-            try
-            {
-
-                DateTime betdate = _gameManager.PlaceBet(userId, assetPair, box, betValue);
-                return new PlaceBetResult()
-                {
-                    BetTimeStamp = betdate,
-                    Status = "OK"
-                };
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "PlaceBet");
-                return new PlaceBetResult()
-                {
-                    BetTimeStamp = DateTime.MinValue,
-                    Status = ex.Message
-                };
-            }
-        }
-
-        public decimal GetBalance(string userId)
-        {
-            try
-            {
-                return _gameManager.GetUserBalance(userId);
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "GetBalance");
-                return -1;
-            }
-        }
-
-        public string SetBalance(string userId, decimal balance)
-        {
-            try
-            {
-                _gameManager.SetUserBalance(userId, balance);
-                return "OK";
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "SetBalance");
-                return ex.Message;
-            }
-        }
-
         public string ChangeParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
         {
             try
@@ -465,19 +398,7 @@ namespace BoxOptions.Services
                 return ex.Message;
             }
         }
-        public CoeffParameters GetParameters(string userId, string pair)
-        {
-            try
-            {
-                return _gameManager.GetUserParameters(userId, pair);
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "GetParameters");
-                return null;
-            }
-        }
-
+      
         public string RequestCoeff(string userId, string pair)
         {
             try
@@ -490,67 +411,17 @@ namespace BoxOptions.Services
                 return ex.Message;
             }
         }
-
-        public string SaveLog(string userId, string eventCode, string message)
-        {
-            try
-            {
-                Task t = _logRepository?.InsertAsync(new LogItem()
-                {
-                    ClientId = userId,
-                    EventCode = eventCode,
-                    Message = message
-                });
-                t.Wait();
-
-                _gameManager.AddLog(userId, eventCode, message);
-
-                return "OK";
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "RequestCoeff");
-                return ex.Message;
-            }
-        }
-
-        private void LogInfo(string message, string sender = "this")
+        
+        private void LogInfo(string message, string sender = "WampRpcService")
         {
             _log?.WriteInfoAsync("WampRpcService", sender, "", message);
         }
-        private void LogError(Exception ex, string sender = "this")
+        private void LogError(Exception ex, string sender = "WampRpcService")
         {
             _log?.WriteErrorAsync("WampRpcService", sender, "", ex);
         }
                 
 
-
-
-        //public string GameStart(string userId, string assetPair)
-        //{
-        //    try
-        //    {
-        //        return _gameManager.GameStart(userId, assetPair);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        LogError(ex, "GameStart");
-        //        return ex.Message;
-        //    }
-        //}
-
-        //public string GameClose(string userId)
-        //{
-        //    try
-        //    {
-        //        _gameManager.GameClose(userId);
-        //        return "OK";
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        LogError(ex, "GameClose");
-        //        return ex.Message;
-        //    }
-        //}
+        
     }
 }

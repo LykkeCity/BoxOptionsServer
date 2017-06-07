@@ -95,21 +95,8 @@ namespace BoxOptions.Public.Modules
                 new AzureTableStorage<AzureRepositories.UserEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
                 "UserRepo", log),                
                 new AzureTableStorage<AzureRepositories.UserParameterEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "UserRepo", log),
-                new AzureTableStorage<AzureRepositories.UserHistoryEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "UserHistory", log)))
+                "UserRepo", log)))
                 .As<IUserRepository>();
-            // Game Manager Repository
-            builder.RegisterInstance(new GameRepository(                
-                new AzureTableStorage<AzureRepositories.GameBetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "GameRepo", log)))
-                .As<IGameRepository>();
-            // BoxConfig Repository
-            builder.RegisterInstance(new BoxConfigRepository(
-                new AzureTableStorage<AzureRepositories.BoxSizeEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "BoxConfig", log)))
-                .As<IBoxConfigRepository>();
-
             
             // Local File System Asset Database
             //builder.RegisterType<LocalFSHistory>()
