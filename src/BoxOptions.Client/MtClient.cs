@@ -222,7 +222,7 @@ namespace BoxOptions.Client
             double coef = 1.027643619053309;
             System.Globalization.CultureInfo CI = new System.Globalization.CultureInfo("en-us");
             List<PlaceBetResult> results = new List<PlaceBetResult>();
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 100; i++)
             {
                 Task.Run(()=>
                 {
@@ -241,7 +241,7 @@ namespace BoxOptions.Client
                         Console.WriteLine(ex.Message);
                     }
                 });
-                Thread.Sleep(100);
+                Thread.Sleep(10);
             }
 
             Console.WriteLine(results.Count);
