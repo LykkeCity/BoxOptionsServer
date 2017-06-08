@@ -503,7 +503,7 @@ namespace BoxOptions.Services
                 });
                 t.Wait();
 
-                _gameManager.AddLog(userId, eventCode, message);
+                _gameManager.AddUserLog(userId, eventCode, message);
 
                 return "OK";
             }

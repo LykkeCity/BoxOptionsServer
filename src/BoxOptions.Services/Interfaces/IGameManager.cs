@@ -24,7 +24,7 @@ namespace BoxOptions.Services.Interfaces
         CoeffParameters GetUserParameters(string userId, string pair);
         string RequestUserCoeff(string userId, string pair);
 
-        void AddLog(string userId, string eventCode, string message);
+        void AddUserLog(string userId, string eventCode, string message);
         
         event EventHandler<BetEventArgs> BetWin;
         event EventHandler<BetEventArgs> BetLose;

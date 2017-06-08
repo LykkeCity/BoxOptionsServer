@@ -77,6 +77,8 @@ namespace BoxOptions.Services
         /// Last Prices Cache
         /// </summary>
         private Dictionary<string, PriceCache> assetCache;
+
+        Queue<string> appLogInfoQueue = new Queue<string>();
         #endregion
 
         #region Constructor
@@ -361,12 +363,13 @@ namespace BoxOptions.Services
                     bet.User.PublishToWamp(checkres);
 
                     // Log check
-                    string msg = checkres.ToJson();
-                    appLog.WriteInfoAsync("GameManager", "ProcessBetCheck", "", msg);
+                    string msg = checkres.ToJson();                    
+                    AppLog("ProcessBetCheck", msg);
                 }
                 
             });
         }
+                        
         /// <summary>
         /// Set bet status to WIN, update user balance, publish WIN to WAMP, Save to DB
         /// </summary>
@@ -409,7 +412,7 @@ namespace BoxOptions.Services
                 OnBetWin(new BetEventArgs(bet));
 
                 string msg = checkres.ToJson();
-                appLog.WriteInfoAsync("GameManager", "ProcessBetWin", "", msg);
+                AppLog("ProcessBetWin", msg);                
 
                 SetUserStatus(bet.UserId, GameStatus.BetWon, $"Bet WON [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount} Coef:{bet.Box.Coefficient} Prize:{bet.BetAmount * bet.Box.Coefficient}");
             });
@@ -457,13 +460,13 @@ namespace BoxOptions.Services
                     // Raise OnBetLose Event
                     OnBetLose(new BetEventArgs(bet));
 
-                    string msg = checkres.ToJson();
-                    appLog.WriteInfoAsync("GameManager", "ProcessBetTimeOut", "", msg);
-
+                    //string msg = checkres.ToJson();
+                    //AppLog("ProcessBetTimeOut", msg);
+                    AppLog("ProcessBetTimeout", bet.BetLog);
                     SetUserStatus(bet.UserId, GameStatus.BetLost, $"Bet LOST [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount}");
                 });
                 database.SaveGameBet(bet.UserId, bet);
-                appLog.WriteInfoAsync("GameManager", "ProcessBetTimeout", null, bet.BetLog);
+                
             }
         }
         /// <summary>
@@ -493,6 +496,11 @@ namespace BoxOptions.Services
                                     BoxWidth = gdata[c.AssetPair].Average(price => price.MidPrice()) * c.BoxWidth
                                 }).ToArray();
             return retval;
+        }
+
+        private void AppLog(string process, string msg)
+        {
+            //appLog.WriteInfoAsync("GameManager", process, null, msg);
         }
 
         /// <summary>
@@ -682,7 +690,7 @@ namespace BoxOptions.Services
             // Set Status, saves User to DB            
             SetUserStatus(userState, GameStatus.BetPlaced, $"BetPlaced[{boxObject.Id}]. Asset:{assetPair}  Bet:{bet} Balance:{userState.Balance}");
 
-            appLog.WriteInfoAsync("GameManager", "PlaceBet", "", $"Coef:{boxObject.Coefficient} Id:{boxObject.Id}");
+            AppLog("PlaceBet", $"Coef:{boxObject.Coefficient} Id:{boxObject.Id}");            
             return newBet.Timestamp;
         }
 
@@ -760,7 +768,7 @@ namespace BoxOptions.Services
             }
         }
 
-        public void AddLog(string userId, string eventCode, string message)
+        public void AddUserLog(string userId, string eventCode, string message)
         {
             UserState userState = GetUserState(userId);
 
