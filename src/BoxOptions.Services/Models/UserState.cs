@@ -150,8 +150,7 @@ namespace BoxOptions.Services.Models
             subject = wampRealm.Services.GetSubject<BetResult>(topicName + "." + userId);
         }
         internal void PublishToWamp(BetResult betResult)
-        {
-            Console.WriteLine("PublishToWamp: {0}", betResult.ToJson());
+        {            
             if (subject == null)
                 throw new InvalidOperationException("Wamp Subject not set");
 

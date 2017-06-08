@@ -26,6 +26,8 @@ namespace BoxOptions.Services
         /// Mutual Exclusion Process
         /// </summary>
         static System.Threading.SemaphoreSlim quoteReceivedSemaphoreSlim = new System.Threading.SemaphoreSlim(1, 1);
+        static object BetCacheLock = new object();
+
         static int MaxUserBuffer = 128;
 
         /// <summary>
@@ -146,7 +148,9 @@ namespace BoxOptions.Services
                     if (OlderUser != null)
                     {
                         // Check if user does not have running bets
-                        var userOpenBets = from b in betCache
+                        var betCacheSnap = GetRunningBets();
+
+                        var userOpenBets = from b in betCacheSnap
                                            where b.UserId == OlderUser.UserId
                                            select b;
 
@@ -165,6 +169,17 @@ namespace BoxOptions.Services
                 userList.Add(current);
             }
             return current;
+        }
+
+        
+        private GameBet[] GetRunningBets()
+        {
+            GameBet[] retval = null; ;
+            lock (BetCacheLock)
+            {                
+                retval = betCache.ToArray();
+            }
+            return retval;
         }
 
         /// <summary>
@@ -237,20 +252,9 @@ namespace BoxOptions.Services
             finally { coeffCalculatorSemaphoreSlim.Release(); }
 
         }
-
+             
         /// <summary>
-        /// Sets User status, creates an UserHistory entry and saves user to DB
-        /// </summary>
-        /// <param name="userId">User Id</param>
-        /// <param name="status">New Status</param>
-        /// <param name="message">Status Message</param>
-        private void SetUserStatus(string userId, GameStatus status, string message = null)
-        {
-            UserState user = GetUserState(userId);
-            SetUserStatus(user, status, message);
-        }
-        /// <summary>
-        /// Sets User status, creates an UserHistory entry and saves user to DB
+        /// Sets User status
         /// </summary>
         /// <param name="user">User Object</param>
         /// <param name="status">New Status</param>
@@ -258,18 +262,7 @@ namespace BoxOptions.Services
         private void SetUserStatus(UserState user, GameStatus status, string message = null)
         {
             Console.WriteLine("SetUserStatus - UserId:[{0}] Status:[{1}] Message:[{2}]", user.UserId, status, message);
-            var hist = user.SetStatus((int)status, message);
-            // Save history to database
-            database.SaveUserHistory(user.UserId, hist);
-            // Save status to Database
-            database.SaveUserState(user);
-
-            logRepository.InsertAsync(new Core.Models.LogItem
-            {
-                ClientId = user.UserId,
-                EventCode = ((int)status).ToString(),
-                Message = message
-            });
+            var hist = user.SetStatus((int)status, message);            
         }
 
         /// <summary>
@@ -406,19 +399,18 @@ namespace BoxOptions.Services
                     BetState = (int)bet.BetStatus,
                     IsWin = true
                 };
+                Console.WriteLine("Bet Won:{0}", bet.Box.Id);
+
                 // Publish to WAMP topic
                 bet.User.PublishToWamp(checkres);
-                // Raise OnBetWin Event
-                OnBetWin(new BetEventArgs(bet));
 
-                string msg = checkres.ToJson();
-                AppLog("ProcessBetWin", msg);                
-
-                SetUserStatus(bet.UserId, GameStatus.BetWon, $"Bet WON [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount} Coef:{bet.Box.Coefficient} Prize:{bet.BetAmount * bet.Box.Coefficient}");
+                SetUserStatus(bet.User, GameStatus.BetWon, $"Bet WON [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount} Coef:{bet.Box.Coefficient} Prize:{bet.BetAmount * bet.Box.Coefficient}");                
             });
-            // Save to Database
-            database.SaveGameBet(bet.UserId, bet);
+
+            // Raise OnBetWin Event
+            OnBetWin(new BetEventArgs(bet));
         }
+                
         /// <summary>
         /// Set bet status to Lose(if not won),  publish WIN to WAMP, Save to DB
         /// </summary>
@@ -426,8 +418,11 @@ namespace BoxOptions.Services
         private void ProcessBetTimeOut(GameBet bet)
         {
             // Remove bet from cache
-            bool res = betCache.Remove(bet);
-
+            lock (BetCacheLock)
+            {
+                bool res = betCache.Remove(bet);
+                Console.WriteLine("Bet Cache Size:{0}", betCache.Count);
+            }            
             // If bet was not won previously
             if (bet.BetStatus != GameBet.BetStates.Win)
             {                
@@ -455,18 +450,15 @@ namespace BoxOptions.Services
                         BetState = (int)bet.BetStatus,
                         IsWin = false
                     };
+                    
                     // Publish to WAMP topic
                     bet.User.PublishToWamp(checkres);
-                    // Raise OnBetLose Event
-                    OnBetLose(new BetEventArgs(bet));
 
-                    //string msg = checkres.ToJson();
-                    //AppLog("ProcessBetTimeOut", msg);
-                    AppLog("ProcessBetTimeout", bet.BetLog);
-                    SetUserStatus(bet.UserId, GameStatus.BetLost, $"Bet LOST [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount}");
+                    SetUserStatus(bet.User, GameStatus.BetLost, $"Bet LOST [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount}");
                 });
-                database.SaveGameBet(bet.UserId, bet);
-                
+
+                // Raise OnBetLose Event
+                OnBetLose(new BetEventArgs(bet));
             }
         }
         /// <summary>
@@ -496,6 +488,37 @@ namespace BoxOptions.Services
                                     BoxWidth = gdata[c.AssetPair].Average(price => price.MidPrice()) * c.BoxWidth
                                 }).ToArray();
             return retval;
+        }
+
+        
+        private void SaveUserAndBet(GameBet bet, GameStatus status, string message)
+        {
+            Console.WriteLine("SaveUserAndBet: ({0}) {1}", System.Threading.Thread.CurrentThread.ManagedThreadId, message);
+
+            //string msg = checkres.ToJson();
+            //AppLog("ProcessBetWin", msg);                
+            //SetUserStatus(bet.User, status, message);
+            // Save to Database
+            //database.SaveGameBet(bet.UserId, bet);
+
+
+            ////string msg = checkres.ToJson();
+            ////AppLog("ProcessBetTimeOut", msg);
+            //AppLog("ProcessBetTimeout", bet.BetLog);
+            //SetUserStatus(bet.UserId, GameStatus.BetLost, $"Bet LOST [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount}");
+            //database.SaveGameBet(bet.UserId, bet);
+
+            //// Save history to database
+            //database.SaveUserHistory(user.UserId, hist);
+            //// Save status to Database
+            //database.SaveUserState(user);
+
+            //logRepository.InsertAsync(new Core.Models.LogItem
+            //{
+            //    ClientId = user.UserId,
+            //    EventCode = ((int)status).ToString(),
+            //    Message = message
+            //});
         }
 
         private void AppLog(string process, string msg)
@@ -560,7 +583,8 @@ namespace BoxOptions.Services
                 // That are not yet with WIN status
                 try
                 {
-                    var assetBets = (from b in betCache
+                    var betCacheSnap = GetRunningBets();
+                    var assetBets = (from b in betCacheSnap
                                      where b.AssetPair == e.Instrument &&
                                      b.BetStatus != GameBet.BetStates.Win
                                      select b).ToList();
@@ -594,10 +618,13 @@ namespace BoxOptions.Services
                 {
                     ProcessBetCheck(bet, true);
                 }
-            }            
-                     
-            // Add bet to cache
-            betCache.Add(bet);
+            }
+
+            lock (BetCacheLock)
+            {
+                // Add bet to cache
+                betCache.Add(bet);
+            }
         }
         private void Bet_TimeLenghFinished(object sender, EventArgs e)
         {
@@ -659,45 +686,65 @@ namespace BoxOptions.Services
             return retval;
         }      
 
-        public DateTime PlaceBet(string userId, string assetPair, string box, decimal bet)
+        public DateTime PlaceBet(string userId, string assetPair, string box, decimal bet, out string message)
         {
-            //Console.WriteLine("{0}> PlaceBet({1} - {2} - {3:f16})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, bet);
+            message = "OK";
+            // Get Box object
+            Console.WriteLine("{0}> PlaceBet User({1})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId);
+            Box boxObject = Box.FromJson(box);
+            Console.WriteLine("{0}> PlaceBet Box({1})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), boxObject.Id);
 
             // Get user state
             UserState userState = GetUserState(userId);
-            
+            Console.WriteLine("{0}> UserState ({1})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userState.Balance);
+
             // Validate balance
             if (bet > userState.Balance)
-                throw new InvalidOperationException("User has no balance for the bet.");
-
-            // TODO: Get Box from... somewhere            
-            Box boxObject = Box.FromJson(box);
+            {
+                message = "User has no balance for the bet.";
+                return DateTime.MinValue;
+                //throw new InvalidOperationException("User has no balance for the bet.");
+            }
+            
                         
             // Get Current Coeffs for Game's Assetpair
             CoeffParameters coef = userState.GetParameters(assetPair);
-            if (coef == null || 
-                coef.PriceSize == 0 || 
-                coef.OptionLen==0)
-                throw new InvalidOperationException($"Coefficient parameters are not set for Asset Pair [{assetPair}].");
+            Console.WriteLine("{0}> UserPars ({1})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), coef.AssetPair);
+            if (coef == null ||
+                coef.PriceSize == 0 ||
+                coef.OptionLen == 0)
+            {
+                message = $"Coefficient parameters are not set for Asset Pair [{assetPair}].";
+                return DateTime.MinValue;
+            }
 
             // Place Bet            
             GameBet newBet = userState.PlaceBet(boxObject, assetPair, bet, coef);
             newBet.TimeToGraphReached += Bet_TimeToGraphReached;
             newBet.TimeLenghFinished += Bet_TimeLenghFinished;
-            
-            // Run bet
-            newBet.StartWaitTimeToGraph();
-
-            // Save bet to DB
-            database.SaveGameBet(userState.UserId, newBet);
 
             // Update user balance
             userState.SetBalance(userState.Balance - bet);
 
-            // Set Status, saves User to DB            
-            SetUserStatus(userState, GameStatus.BetPlaced, $"BetPlaced[{boxObject.Id}]. Asset:{assetPair}  Bet:{bet} Balance:{userState.Balance}");
+            // Run bet
+            newBet.StartWaitTimeToGraph();
 
-            AppLog("PlaceBet", $"Coef:{boxObject.Coefficient} Id:{boxObject.Id}");            
+            // Run async tasks
+            //Console.WriteLine("{0}> Bet Placed ({1}) Running async tasks", DateTime.UtcNow.ToString("HH:mm:ss.fff"), boxObject.Id);
+            //Task.Run(() =>
+            //{            
+
+            //    // Save bet to DB
+            //    database.SaveGameBet(userState.UserId, newBet);
+
+            
+
+            //    // Set Status, saves User to DB            
+            //    SetUserStatus(userState, GameStatus.BetPlaced, $"BetPlaced[{boxObject.Id}]. Asset:{assetPair}  Bet:{bet} Balance:{userState.Balance}");
+
+            //    AppLog("PlaceBet", $"Coef:{boxObject.Coefficient} Id:{boxObject.Id}");
+            //});
+            Console.WriteLine("{0}> Return  BET ({1})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), boxObject.Id);
             return newBet.Timestamp;
         }
 
@@ -705,12 +752,12 @@ namespace BoxOptions.Services
         {
             UserState userState = GetUserState(userId);
             userState.SetBalance(newBalance);
-            
-            // Save User to DB            
-            database.SaveUserState(userState);
-
+                        
             // Log Balance Change
             SetUserStatus(userState, GameStatus.BalanceChanged, $"New Balance: {newBalance}");
+
+            // TODO: Save User to DB            
+            //database.SaveUserState(userState);
 
             return newBalance;
         }
@@ -735,10 +782,9 @@ namespace BoxOptions.Services
 
             // Set User Parameters for AssetPair
             userState.SetParameters(pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
-            // Save User Parameters to DB
-            database.SaveUserParameters(userId, userState.UserCoeffParameters);
+            
             // Update User Status
-            SetUserStatus(userState, GameStatus.ParameterChanged, $"ParameterChanged [{pair}] timeToFirstOption={timeToFirstOption}; optionLen={optionLen}; priceSize={priceSize}; nPriceIndex={nPriceIndex}, nTimeIndex={nTimeIndex}");
+            SetUserStatus(userState, GameStatus.ParameterChanged, $"ParameterChanged [{pair}] timeToFirstOption={timeToFirstOption}; optionLen={optionLen}; priceSize={priceSize}; nPriceIndex={nPriceIndex}, nTimeIndex={nTimeIndex}");            
         }
         public CoeffParameters GetUserParameters(string userId, string pair)
         {
@@ -773,16 +819,7 @@ namespace BoxOptions.Services
                 // Throw Exception
                 throw new ArgumentException(ValidationError);
             }
-        }
-
-        public void AddUserLog(string userId, string eventCode, string message)
-        {
-            UserState userState = GetUserState(userId);
-
-            int ecode = -1;
-            int.TryParse(eventCode, out ecode);
-            SetUserStatus(userState, (GameStatus)ecode, message);
-        }
+        }       
         
         #endregion
                 

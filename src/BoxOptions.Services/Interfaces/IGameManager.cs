@@ -14,7 +14,7 @@ namespace BoxOptions.Services.Interfaces
         /// <param name="box">Box in which to bet</param>
         /// <param name="bet">Bet ammount</param>
         /// <returns>Bet Timestamp</returns>
-        DateTime PlaceBet(string userId, string assetpair, string box, decimal betAmount);
+        DateTime PlaceBet(string userId, string assetpair, string box, decimal betAmount, out string message);
 
         decimal SetUserBalance(string userId, decimal newBalance);
 
@@ -23,8 +23,6 @@ namespace BoxOptions.Services.Interfaces
         void SetUserParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex);
         CoeffParameters GetUserParameters(string userId, string pair);
         string RequestUserCoeff(string userId, string pair);
-
-        void AddUserLog(string userId, string eventCode, string message);
         
         event EventHandler<BetEventArgs> BetWin;
         event EventHandler<BetEventArgs> BetLose;

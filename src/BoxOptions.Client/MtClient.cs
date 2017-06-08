@@ -187,17 +187,7 @@ namespace BoxOptions.Client
             string result = _service.ChangeParameters(userId, assetPair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
             Console.WriteLine("{0}> ChangeParameter({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, assetPair, result);
         }
-        internal void GetParameter(string userId, string assetPair)
-        {
-            var res = _service.GetParameters(userId, assetPair);
-            Console.WriteLine("\tAssetPair:{0}", res.AssetPair);
-            Console.WriteLine("\tTimeToFirstOption:{0}", res.TimeToFirstOption);
-            Console.WriteLine("\tOptionLen:{0}", res.OptionLen);
-            Console.WriteLine("\tPriceSize:{0}", res.PriceSize);
-            Console.WriteLine("\tNPriceIndex:{0}", res.NPriceIndex);
-            Console.WriteLine("\tNTimeIndex:{0}", res.NTimeIndex);
-
-        }
+       
 
         internal void RequestCoeff(string userId, string pair)
         {
@@ -215,7 +205,7 @@ namespace BoxOptions.Client
                 "\"Coefficient\":{1}," +
                 "\"MinPrice\":0.9649558795483333," +
                 "\"MaxPrice\":0.9650041204516666," +
-                "\"TimeToGraph\":32," +
+                "\"TimeToGraph\":8," +
                 "\"TimeLength\":6.9999999999999973" +                
                 "}}";
             // place 20 bets concurrently
