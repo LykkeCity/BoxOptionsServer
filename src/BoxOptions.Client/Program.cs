@@ -57,6 +57,7 @@ namespace BoxOptions.Client
                         Console.WriteLine(" > graph - micrograph cached data");
                         Console.WriteLine(" > log - perform log event");                        
                         Console.WriteLine(" > placebet - place a new bet on a box");
+                        Console.WriteLine(" > placebet - place multiple bets at once");
                         Console.WriteLine(" > getbalance - gets user balance");
                         Console.WriteLine(" > setbalance - sets user balance");
                         Console.WriteLine(" > setpars - sets user parameters");
@@ -119,6 +120,9 @@ namespace BoxOptions.Client
                             client.PlaceBet(UserId, s_pair, pb_box, pb_bet_val);
                         else
                             Console.WriteLine("Invalid Bet Value");
+                        break;
+                    case "placebets":
+                        client.PlaceBets(UserId);
                         break;
                     case "getbalance":
                         client.GetBalance(UserId);

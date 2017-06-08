@@ -558,16 +558,23 @@ namespace BoxOptions.Services
 
                 // Get bets for current asset
                 // That are not yet with WIN status
-                var assetBets = (from b in betCache
-                                 where b.AssetPair == e.Instrument &&
-                                 b.BetStatus != GameBet.BetStates.Win
-                                 select b).ToList();
-                if (assetBets.Count == 0)
-                    return;
-
-                foreach (var bet in assetBets)
+                try
                 {
-                    ProcessBetCheck(bet, false);
+                    var assetBets = (from b in betCache
+                                     where b.AssetPair == e.Instrument &&
+                                     b.BetStatus != GameBet.BetStates.Win
+                                     select b).ToList();
+                    if (assetBets.Count == 0)
+                        return;
+
+                    foreach (var bet in assetBets)
+                    {
+                        ProcessBetCheck(bet, false);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw;
                 }
             }
             finally { quoteReceivedSemaphoreSlim.Release(); }
