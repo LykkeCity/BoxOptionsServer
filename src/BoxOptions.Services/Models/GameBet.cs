@@ -94,7 +94,7 @@ namespace BoxOptions.Services.Models
                 Timestamp.AddSeconds(Box.TimeToGraph+Box.TimeLength).ToString("HH:mm:ss.ffff"),
                 FinishedStamp.Value.ToString("HH:mm:ss.ffff"),
                 (FinishedStamp.Value - Timestamp.AddSeconds(Box.TimeToGraph+Box.TimeLength)).TotalSeconds);
-
+                        
             TimeLenghFinished?.Invoke(this, new EventArgs());
         }
         private void ClearTimer()

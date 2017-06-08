@@ -10,6 +10,7 @@ using System.IO;
 using BoxOptions.Core.Models;
 using Lykke.Common;
 using BoxOptions.Services.Models;
+using System.Threading.Tasks;
 
 namespace BoxOptions.Client
 {
@@ -167,6 +168,8 @@ namespace BoxOptions.Client
             Console.WriteLine("{0}> PlaceBet({1},{2},{3}) = {4}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, betAmount, result.Status);
         }
 
+      
+
 
         internal void GetBalance(string userId)
         {
@@ -200,6 +203,49 @@ namespace BoxOptions.Client
         {
             var res = _service.RequestCoeff(userId, pair);
             Console.WriteLine(res);
+        }
+
+        internal void PlaceBets(string userId)
+        {
+         
+
+            // {"BoxId":"4E8F0395-7DB5-440F-B434-49217CF9DA89","MinPrice":0.9649558795483333,"MaxPrice":0.9650041204516666,"TimeToGraph":32.0,"TimeLength":6.999999999999992,"Coefficient":1.027643619053309,"BetState":3,"PreviousPrice":{"Instrument":"USDCHF","Bid":0.96499,"Ask":0.96503,"Date":"2017-06-08T04:03:17.673696Z","Time":1496894597673},"CurrentPrice":{"Instrument":"USDCHF","Bid":0.96496,"Ask":0.965,"Date":"2017-06-08T04:03:22.778847Z","Time":1496894602778},"TimeToGraphStamp":"2017-06-08T04:04:42.819815Z","WinStamp":"2017-06-08T04:04:42.819902Z","FinishedStamp":null,"Timestamp":"2017-06-08T04:04:11.208345Z","BetAmount":1.0,"IsWin":true}
+            string boxstring = "{{" +
+                "\"Id\":\"{0}\"," +
+                "\"Coefficient\":{1}," +
+                "\"MinPrice\":0.9649558795483333," +
+                "\"MaxPrice\":0.9650041204516666," +
+                "\"TimeToGraph\":32," +
+                "\"TimeLength\":6.9999999999999973" +                
+                "}}";
+            // place 20 bets concurrently
+            double coef = 1.027643619053309;
+            System.Globalization.CultureInfo CI = new System.Globalization.CultureInfo("en-us");
+            List<PlaceBetResult> results = new List<PlaceBetResult>();
+            for (int i = 0; i < 10; i++)
+            {
+                Task.Run(()=>
+                {
+                    string GUID = Guid.NewGuid().ToString().ToLower();
+                    try
+                    {
+                        string box = string.Format(CI, boxstring, GUID, coef);
+                        coef += 0.02;
+                        Console.WriteLine("{0} | {1} > Placing Bet", DateTime.UtcNow.ToString("HH:mm:ss.fff"), GUID);
+                        PlaceBetResult result = _service.PlaceBet(userId, "USDCHF", box, 1);
+                        Console.WriteLine("{0} | {1} > Result = {2} ({3})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), GUID, result.BetTimeStamp.ToString("yyyy-MM-dd_HH:mm:ss.fff"), result.Status);                        
+                        results.Add(result);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                });
+                Thread.Sleep(100);
+            }
+
+            Console.WriteLine(results.Count);
+
         }
 
         #endregion
