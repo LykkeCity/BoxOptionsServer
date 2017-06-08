@@ -354,12 +354,7 @@ namespace BoxOptions.Services
                     };
                     // Report Not WIN to WAMP
                     bet.User.PublishToWamp(checkres);
-
-                    // Log check
-                    string msg = checkres.ToJson();                    
-                    AppLog("ProcessBetCheck", msg);
                 }
-                
             });
         }
                         
@@ -669,7 +664,7 @@ namespace BoxOptions.Services
                             AssetPair = item,
                             BoxesPerRow = 7,
                             BoxHeight = 7,
-                            BoxWidth = 0.00005,
+                            BoxWidth = 0.00003,
                             TimeToFirstBox = 4
                         });
                     }

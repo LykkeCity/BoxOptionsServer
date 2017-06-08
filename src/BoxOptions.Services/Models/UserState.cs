@@ -8,9 +8,9 @@ using WampSharp.V2.Realm;
 
 namespace BoxOptions.Services.Models
 {
-    public class UserState:IDisposable
+    public class UserState : IDisposable
     {
-        readonly string userId;        
+        readonly string userId;
         decimal balance;
         int currentState;
         List<UserHistory> statusHistory;
@@ -18,23 +18,30 @@ namespace BoxOptions.Services.Models
         List<GameBet> openBets;                     // Bet cache
         ISubject<BetResult> subject;                // WAMP Subject
 
+        private DateTime lastDbSync;
+        public event EventHandler DbSyncRequest;
+        System.Threading.Timer dbSyncTimer;
+
         public UserState(string userId)
-        {            
-            this.userId = userId;            
-            statusHistory = new List<UserHistory>();            
+        {
+            this.userId = userId;
+            statusHistory = new List<UserHistory>();
             userCoeffParameters = new List<CoeffParameters>();
             openBets = new List<GameBet>();
             subject = null;
             LastChange = DateTime.UtcNow;
+
+            lastDbSync = DateTime.UtcNow;
+            dbSyncTimer = new System.Threading.Timer(new System.Threading.TimerCallback(DbSyncTimerCallback), null, 20 * 1000, 20 * 1000);            
         }
-        public UserState(string userId, decimal balance, int currentState) 
-            :this(userId)
+        public UserState(string userId, decimal balance, int currentState)
+            : this(userId)
         {
-            this.balance = balance;            
+            this.balance = balance;
             this.currentState = currentState;
         }
-                
-                
+
+
         /// <summary>
         /// Unique User Id
         /// </summary>
@@ -42,18 +49,18 @@ namespace BoxOptions.Services.Models
         /// <summary>
         /// User Balance
         /// </summary>
-        public decimal Balance { get => balance; }                
-        public int CurrentState { get => currentState; }        
+        public decimal Balance { get => balance; }
+        public int CurrentState { get => currentState; }
         public CoeffParameters[] UserCoeffParameters => userCoeffParameters.ToArray();
         public UserHistory[] StatusHistory => statusHistory.ToArray();
         public DateTime LastChange { get; set; }
-        
+
         public void SetParameters(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
         {
 
             CoeffParameters selectedPair = (from c in userCoeffParameters
-                                           where c.AssetPair == pair
-                                           select c).FirstOrDefault();
+                                            where c.AssetPair == pair
+                                            select c).FirstOrDefault();
             // Pair does not exist on parameter list, Add It
             if (selectedPair == null)
             {
@@ -66,11 +73,13 @@ namespace BoxOptions.Services.Models
             selectedPair.PriceSize = priceSize;
             selectedPair.NPriceIndex = nPriceIndex;
             selectedPair.NTimeIndex = nTimeIndex;
-            
+
             LastChange = DateTime.UtcNow;
         }
         public void LoadParameters(IEnumerable<CoeffParameters> pars)
         {
+            lastDbSync = DateTime.UtcNow;
+
             // Ensure no duplicates
             var distictPairs = (from p in pars
                                 select p.AssetPair).Distinct();
@@ -78,7 +87,7 @@ namespace BoxOptions.Services.Models
                 throw new ArgumentException("Duplicate Assets found");
 
 
-                userCoeffParameters = new List<CoeffParameters>(pars);
+            userCoeffParameters = new List<CoeffParameters>(pars);
         }
 
         public CoeffParameters GetParameters(string pair)
@@ -94,12 +103,12 @@ namespace BoxOptions.Services.Models
             }
 
             return selectedPair;
-        }        
+        }
         public void SetBalance(decimal newBalance)
         {
             balance = newBalance;
             LastChange = DateTime.UtcNow;
-        }                
+        }
         internal UserHistory SetStatus(int status, string message)
         {
             UserHistory newEntry = new UserHistory()
@@ -115,12 +124,12 @@ namespace BoxOptions.Services.Models
             {
                 statusHistory.RemoveAt(0);
             }
-            
+
             currentState = status;
             LastChange = DateTime.UtcNow;
             return newEntry;
         }
-        
+
         internal GameBet PlaceBet(Box boxObject, string assetPair, decimal bet, CoeffParameters coefPars)
         {
             GameBet retval = new GameBet(this)
@@ -131,7 +140,7 @@ namespace BoxOptions.Services.Models
                 Box = boxObject,
                 CurrentParameters = coefPars,
                 Timestamp = DateTime.UtcNow
-            };            
+            };
             openBets.Add(retval);
             // keep bet cache to 100
             if (openBets.Count > 100)
@@ -150,7 +159,7 @@ namespace BoxOptions.Services.Models
             subject = wampRealm.Services.GetSubject<BetResult>(topicName + "." + userId);
         }
         internal void PublishToWamp(BetResult betResult)
-        {            
+        {
             if (subject == null)
                 throw new InvalidOperationException("Wamp Subject not set");
 
@@ -165,6 +174,23 @@ namespace BoxOptions.Services.Models
             {
                 bet.Dispose();
             }
+        }
+
+        private void DbSyncTimerCallback(object status)
+        {            
+            if (LastChange < lastDbSync)
+                return; // No changes since last save to db
+            else
+            {
+             //   OnDbSyncRequest
+            }
+            
+
+        }
+
+        private void OnDbSyncRequest(EventArgs e)
+        {
+            DbSyncRequest?.BeginInvoke(this, e, null, null);
         }
     }
 }
