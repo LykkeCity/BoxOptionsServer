@@ -4,7 +4,7 @@ namespace BoxOptions.Client
 {
     class Program
     {
-        const string UserId1 = "204af161-50c5-477b-8375-89bfc715c2cc";
+        const string UserId1 = "2E95B3E8-C9B3-4D66-830E-11922DD21EC0";
         const string UserId2 = "404af161-50c5-477b-8375-89bfc7150001";
         const string UserId3 = "604af161-50c5-477b-8375-89bfc7150001";
 
@@ -149,7 +149,7 @@ namespace BoxOptions.Client
                     case "coeff":
                         Console.Write("\tAsset>");
                         string co_asset = Console.ReadLine();
-                        client.RequestCoeff(UserId, co_asset);
+                        client.RequestCoeff("2E95B3E8-C9B3-4D66-830E-11922DD21EC0", co_asset);
                         break;
                 }
             } while (input != "exit");

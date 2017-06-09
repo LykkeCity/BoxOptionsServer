@@ -620,8 +620,7 @@ namespace BoxOptions.Services
             List<Core.Models.BoxSize> boxConfig = t.Result.ToList();
 
             List<Core.Models.BoxSize> AssetsToAdd = new List<Core.Models.BoxSize>();
-
-
+            
             List<string> AllAssets = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets.ToList();
             AllAssets.AddRange(settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets);
 
@@ -642,7 +641,7 @@ namespace BoxOptions.Services
                             AssetPair = item,
                             BoxesPerRow = 7,
                             BoxHeight = 7,
-                            BoxWidth = 0.00005,
+                            BoxWidth = 0.00003,
                             TimeToFirstBox = 4
                         });
                     }
@@ -653,9 +652,33 @@ namespace BoxOptions.Services
                 boxConfigRepository.InsertManyAsync(AssetsToAdd);
                 boxConfig.AddRange(AssetsToAdd);
             }
+                     
 
             // Return Calculate Price Sizes
             Core.Models.BoxSize[] retval = CalculatedBoxes(boxConfig, micrographCache);
+            List<CoeffParameters> coefList = new List<CoeffParameters>();
+            foreach (var asset in DistictAssets)
+            {
+                var Box = retval.Where(b => b.AssetPair == asset).FirstOrDefault();
+                if (Box != null)
+                {
+                    coefList.Add(new CoeffParameters()
+                    {
+                        AssetPair = asset,
+                        NPriceIndex = 15,
+                        NTimeIndex = 8,
+                        OptionLen = Convert.ToInt32(Box.BoxHeight),
+                        PriceSize = Box.BoxWidth,
+                        TimeToFirstOption = Convert.ToInt32(Box.TimeToFirstBox)
+                    });
+                }
+                    
+                    
+            }
+            userState.LoadParameters(coefList.ToArray());
+
+          
+
             return retval;
         }      
 
