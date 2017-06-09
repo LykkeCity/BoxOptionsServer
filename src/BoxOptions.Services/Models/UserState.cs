@@ -1,4 +1,5 @@
 ﻿using BoxOptions.Common.Interfaces;
+using BoxOptions.Core.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,16 +14,14 @@ namespace BoxOptions.Services.Models
         readonly string userId;        
         decimal balance;
         int currentState;
-        List<UserHistory> statusHistory;
-        List<CoeffParameters> userCoeffParameters;  // Coefficient Calculator parameters
+        List<UserHistory> statusHistory;        
         List<GameBet> openBets;                     // Bet cache
         ISubject<BetResult> subject;                // WAMP Subject
 
         public UserState(string userId)
         {            
             this.userId = userId;            
-            statusHistory = new List<UserHistory>();            
-            userCoeffParameters = new List<CoeffParameters>();
+            statusHistory = new List<UserHistory>();
             openBets = new List<GameBet>();
             subject = null;
             LastChange = DateTime.UtcNow;
@@ -43,8 +42,7 @@ namespace BoxOptions.Services.Models
         /// User Balance
         /// </summary>
         public decimal Balance { get => balance; }                
-        public int CurrentState { get => currentState; }        
-        public CoeffParameters[] UserCoeffParameters => userCoeffParameters.ToArray();
+        public int CurrentState { get => currentState; }                
         public UserHistory[] StatusHistory => statusHistory.ToArray();
         public DateTime LastChange { get; set; }
         
@@ -123,7 +121,7 @@ namespace BoxOptions.Services.Models
             return newEntry;
         }
         
-        internal GameBet PlaceBet(Box boxObject, string assetPair, decimal bet, CoeffParameters coefPars)
+        internal GameBet PlaceBet(Box boxObject, string assetPair, decimal bet, BoxSize boxConfig)
         {
             GameBet retval = new GameBet(this)
             {
@@ -131,7 +129,7 @@ namespace BoxOptions.Services.Models
                 BetAmount = bet,
                 BetStatus = GameBet.BetStates.Waiting,
                 Box = boxObject,
-                CurrentParameters = coefPars,
+                CurrentParameters = boxConfig,
                 Timestamp = DateTime.UtcNow
             };            
             openBets.Add(retval);

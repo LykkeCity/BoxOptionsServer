@@ -1,4 +1,5 @@
 ﻿using BoxOptions.Common.Interfaces;
+using BoxOptions.Core.Models;
 using System;
 
 namespace BoxOptions.Services.Models
@@ -23,7 +24,7 @@ namespace BoxOptions.Services.Models
         public DateTime Timestamp { get; set; }
         public Box Box { get; set; }
         public BetStates BetStatus { get; set; }
-        public CoeffParameters CurrentParameters { get; set; }
+        public BoxSize CurrentParameters { get; set; }
         public DateTime? TimeToGraphStamp { get; private set; }
         public DateTime? WinStamp { get; set; }
         public DateTime? FinishedStamp { get; private set; }

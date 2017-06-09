@@ -57,50 +57,6 @@ namespace BoxOptions.Public.Processors
 
         }
         
-        public Task SaveUserParameters(string userId, IEnumerable<CoeffParameters> parameters)
-        {
-            if (parameters == null )
-                throw new ArgumentNullException();
-
-            List<UserParameterItem> parlist = new List<UserParameterItem>();
-            foreach (CoeffParameters par in parameters)
-            {
-                UserParameterItem userPar = new UserParameterItem()
-                {
-                    UserId = userId,
-                    AssetPair = par.AssetPair,
-                    TimeToFirstOption = par.TimeToFirstOption,
-                    OptionLen = par.OptionLen,
-                    PriceSize = par.PriceSize,
-                    NPriceIndex = par.NPriceIndex,
-                    NTimeIndex = par.NTimeIndex
-                };
-                parlist.Add(userPar);
-            }
-
-           
-
-            return userRep.InsertManyParametersAsync(parlist);
-        }
-        public async Task<IEnumerable<CoeffParameters>> LoadUserParameters(string userId)
-        {
-
-            var userPars = await userRep.GetUserParameters(userId);
-
-            var converted = from p in userPars
-                            select new CoeffParameters()
-                            {
-                                AssetPair = p.AssetPair,
-                                NPriceIndex = p.NPriceIndex,
-                                NTimeIndex = p.NTimeIndex,
-                                OptionLen = p.OptionLen,
-                                PriceSize = p.PriceSize,
-                                TimeToFirstOption = p.TimeToFirstOption
-                            };
-            return converted;
-        }
-
-
         public Task SaveUserHistory(string userId, UserHistory history)
         {
             if (string.IsNullOrEmpty(userId) || history == null)
@@ -132,25 +88,14 @@ namespace BoxOptions.Public.Processors
                 
         public Task SaveGameBet(string userId, GameBet bet)
         {
-            
-            UserParameterItem betpars = new UserParameterItem()
-            {
-                AssetPair = bet.CurrentParameters.AssetPair,
-                NPriceIndex = bet.CurrentParameters.NPriceIndex,
-                NTimeIndex = bet.CurrentParameters.NTimeIndex,
-                OptionLen = bet.CurrentParameters.OptionLen,
-                PriceSize = bet.CurrentParameters.PriceSize,
-                TimeToFirstOption = bet.CurrentParameters.TimeToFirstOption,
-                UserId = userId
-            };
-
+          
             GameBetItem newbet = new GameBetItem()
             {
                 UserId = userId,                
                 BetAmount = bet.BetAmount.ToString(CI),
                 Box = bet.Box.ToJson(),
                 Date = bet.Timestamp,
-                Parameters = betpars.ToJson(),
+                Parameters = bet.CurrentParameters.ToJson(),
                 AssetPair = bet.AssetPair,
                 BetStatus = (int)bet.BetStatus,
                 BoxId = bet.Box.Id
@@ -170,7 +115,7 @@ namespace BoxOptions.Public.Processors
                                 BetAmount = decimal.Parse(p.BetAmount, CI),
                                 Box = Box.FromJson(p.Box),
                                 Timestamp = p.Date,
-                                CurrentParameters = CoeffParameters.FromJson(p.Parameters),
+                                CurrentParameters = p.Parameters.DeserializeJson<BoxSize>(),
                                 AssetPair = p.AssetPair,
                                 BetStatus = (GameBet.BetStates)p.BetStatus
                             };
