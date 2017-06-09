@@ -233,10 +233,10 @@ namespace BoxOptions.Services
 
             lock (CoeffCacheLock)
             {
-                Console.WriteLine("{0} > LoadCoefficientCache LOCK", DateTime.Now.ToString("HH:mm:ss.fff"));
+                //Console.WriteLine("{0} > LoadCoefficientCache LOCK", DateTime.Now.ToString("HH:mm:ss.fff"));
                 CoefficientCache = t.Result;
             }
-            Console.WriteLine("{0} > LoadCoefficientCache LOCK Released", DateTime.Now.ToString("HH:mm:ss.fff"));
+            //Console.WriteLine("{0} > LoadCoefficientCache LOCK Released", DateTime.Now.ToString("HH:mm:ss.fff"));
         }
 
         private string GetCoefficients(string assetPair)
@@ -244,10 +244,10 @@ namespace BoxOptions.Services
             string retval = "";
             lock (CoeffCacheLock)
             {
-                Console.WriteLine("{0} > GetCoefficients LOCK", DateTime.Now.ToString("HH:mm:ss.fff"));
+                //Console.WriteLine("{0} > GetCoefficients LOCK", DateTime.Now.ToString("HH:mm:ss.fff"));
                 retval = CoefficientCache[assetPair];
             }
-            Console.WriteLine("{0} > GetCoefficients LOCK release", DateTime.Now.ToString("HH:mm:ss.fff"));
+            //Console.WriteLine("{0} > GetCoefficients LOCK release", DateTime.Now.ToString("HH:mm:ss.fff"));
             return retval;
         }
 
@@ -370,18 +370,18 @@ namespace BoxOptions.Services
             {
                 string res = "EMPTY BOXES";
 
-                Console.WriteLine("{0} > Calculator.ChangeAsync BATCH Start", DateTime.Now.ToString("HH:mm:ss.fff"));
+                //Console.WriteLine("{0} > Calculator.ChangeAsync BATCH Start", DateTime.Now.ToString("HH:mm:ss.fff"));
                 foreach (var box in boxes)
                 {
                     // Change calculator parameters for current pair with User parameters
-                    Console.WriteLine("{0} > Calculator.ChangeAsync Start", DateTime.Now.ToString("HH:mm:ss.fff"));
+                    //Console.WriteLine("{0} > Calculator.ChangeAsync Start", DateTime.Now.ToString("HH:mm:ss.fff"));
                     res = await calculator.ChangeAsync(userId, box.AssetPair, Convert.ToInt32(box.TimeToFirstBox), Convert.ToInt32(box.BoxHeight), box.BoxWidth, NPriceIndex, NTimeIndex);
-                    Console.WriteLine("{0} > Calculator.ChangeAsync Finished", DateTime.Now.ToString("HH:mm:ss.fff"));
+                    //Console.WriteLine("{0} > Calculator.ChangeAsync Finished", DateTime.Now.ToString("HH:mm:ss.fff"));
 
                     if (res != "OK")
                         throw new InvalidOperationException(res);
                 }
-                Console.WriteLine("{0} > Calculator.ChangeAsync BATCH Finished", DateTime.Now.ToString("HH:mm:ss.fff"));
+                //Console.WriteLine("{0} > Calculator.ChangeAsync BATCH Finished", DateTime.Now.ToString("HH:mm:ss.fff"));
                 return res;
             }
             finally { coeffCalculatorSemaphoreSlim.Release(); }
@@ -406,15 +406,15 @@ namespace BoxOptions.Services
             try
             {
                 Dictionary<string, string> retval = new Dictionary<string, string>();
-                Console.WriteLine("{0} > Calculator.RequestAsync BATCH Start", DateTime.Now.ToString("HH:mm:ss.fff"));
+                //Console.WriteLine("{0} > Calculator.RequestAsync BATCH Start", DateTime.Now.ToString("HH:mm:ss.fff"));
                 foreach (var asset in assetPairs)
                 {
-                    Console.WriteLine("{0} > Calculator.RequestAsync Start", DateTime.Now.ToString("HH:mm:ss.fff"));
+                    //Console.WriteLine("{0} > Calculator.RequestAsync Start", DateTime.Now.ToString("HH:mm:ss.fff"));
                     string res = await calculator.RequestAsync(userId, asset);
-                    Console.WriteLine("{0} > Calculator.RequestAsync Finished", DateTime.Now.ToString("HH:mm:ss.fff"));
+                    //Console.WriteLine("{0} > Calculator.RequestAsync Finished", DateTime.Now.ToString("HH:mm:ss.fff"));
                     retval.Add(asset, res);
                 }
-                Console.WriteLine("{0} > Calculator.RequestAsync BATCH Finished", DateTime.Now.ToString("HH:mm:ss.fff"));
+                //Console.WriteLine("{0} > Calculator.RequestAsync BATCH Finished", DateTime.Now.ToString("HH:mm:ss.fff"));
                 return retval;                
             }
             finally { coeffCalculatorSemaphoreSlim.Release(); }
