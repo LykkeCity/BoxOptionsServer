@@ -758,8 +758,10 @@ namespace BoxOptions.Services
 
             // Validate CoefCalculator Result
             string ValidationError;
-            bool IsOk = calculator.ValidateRequestResult(result, out ValidationError);
-            
+            //bool IsOk = calculator.ValidateRequestResult(result, out ValidationError);
+
+            ValidationError = "OK";
+            bool IsOk = true;
             // Take action on validation result.
             if (IsOk)
             {
