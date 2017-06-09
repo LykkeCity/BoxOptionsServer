@@ -452,33 +452,6 @@ namespace BoxOptions.Services
                 return ex.Message;
             }
         }
-
-        public string ChangeParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
-        {
-            try
-            {
-                _gameManager.SetUserParameters(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
-                return "OK";
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "ChangeParameters");
-                return ex.Message;
-            }
-        }
-        public CoeffParameters GetParameters(string userId, string pair)
-        {
-            try
-            {
-                return _gameManager.GetUserParameters(userId, pair);
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "GetParameters");
-                return null;
-            }
-        }
-
         public string RequestCoeff(string userId, string pair)
         {
             try

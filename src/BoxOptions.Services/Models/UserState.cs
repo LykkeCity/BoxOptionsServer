@@ -48,53 +48,55 @@ namespace BoxOptions.Services.Models
         public UserHistory[] StatusHistory => statusHistory.ToArray();
         public DateTime LastChange { get; set; }
         
-        public void SetParameters(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
-        {
+        //public void SetParameters(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
+        //{
 
-            CoeffParameters selectedPair = (from c in userCoeffParameters
-                                           where c.AssetPair == pair
-                                           select c).FirstOrDefault();
-            // Pair does not exist on parameter list, Add It
-            if (selectedPair == null)
-            {
-                selectedPair = new CoeffParameters() { AssetPair = pair };
-                userCoeffParameters.Add(selectedPair);
-            }
-            // Set parameters
-            selectedPair.TimeToFirstOption = timeToFirstOption;
-            selectedPair.OptionLen = optionLen;
-            selectedPair.PriceSize = priceSize;
-            selectedPair.NPriceIndex = nPriceIndex;
-            selectedPair.NTimeIndex = nTimeIndex;
+        //    CoeffParameters selectedPair = (from c in userCoeffParameters
+        //                                   where c.AssetPair == pair
+        //                                   select c).FirstOrDefault();
+        //    // Pair does not exist on parameter list, Add It
+        //    if (selectedPair == null)
+        //    {
+        //        selectedPair = new CoeffParameters() { AssetPair = pair };
+        //        userCoeffParameters.Add(selectedPair);
+        //    }
+        //    // Set parameters
+        //    selectedPair.TimeToFirstOption = timeToFirstOption;
+        //    selectedPair.OptionLen = optionLen;
+        //    selectedPair.PriceSize = priceSize;
+        //    selectedPair.NPriceIndex = nPriceIndex;
+        //    selectedPair.NTimeIndex = nTimeIndex;
             
-            LastChange = DateTime.UtcNow;
-        }
-        public void LoadParameters(IEnumerable<CoeffParameters> pars)
-        {
-            // Ensure no duplicates
-            var distictPairs = (from p in pars
-                                select p.AssetPair).Distinct();
-            if (distictPairs.Count() != pars.Count())
-                throw new ArgumentException("Duplicate Assets found");
+        //    LastChange = DateTime.UtcNow;
+        //}
+        //public void LoadParameters(IEnumerable<CoeffParameters> pars)
+        //{
+        //    // Ensure no duplicates
+        //    var distictPairs = (from p in pars
+        //                        select p.AssetPair).Distinct();
+        //    if (distictPairs.Count() != pars.Count())
+        //        throw new ArgumentException("Duplicate Assets found");
 
 
-                userCoeffParameters = new List<CoeffParameters>(pars);
-        }
+        //        userCoeffParameters = new List<CoeffParameters>(pars);
+        //}
 
-        public CoeffParameters GetParameters(string pair)
-        {
-            CoeffParameters selectedPair = (from c in userCoeffParameters
-                                            where c.AssetPair == pair
-                                            select c).FirstOrDefault();
-            // Pair does not exist on parameter list, Add It
-            if (selectedPair == null)
-            {
-                selectedPair = new CoeffParameters() { AssetPair = pair };
-                userCoeffParameters.Add(selectedPair);
-            }
+        //public CoeffParameters GetParameters(string pair)
+        //{
+        //    CoeffParameters selectedPair = (from c in userCoeffParameters
+        //                                    where c.AssetPair == pair
+        //                                    select c).FirstOrDefault();
+        //    // Pair does not exist on parameter list, Add It
+        //    if (selectedPair == null)
+        //    {
+        //        selectedPair = new CoeffParameters() { AssetPair = pair };
+        //        userCoeffParameters.Add(selectedPair);
+        //    }
 
-            return selectedPair;
-        }        
+        //    return selectedPair;
+        //}        
+
+
         public void SetBalance(decimal newBalance)
         {
             balance = newBalance;

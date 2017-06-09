@@ -68,31 +68,8 @@ namespace BoxOptions.Services
         /// <returns></returns>
         [WampProcedure("game.savelog")]
         string SaveLog(string userId, string eventCode, string message);
-
-      
-        /// <summary>
-        /// Coefficient Api Change Parameters
-        /// </summary>
-        /// <param name="userId">User Id</param>
-        /// <param name="pair">Instrument</param>
-        /// <param name="timeToFirstOption">timeToFirstOption</param>
-        /// <param name="optionLen">optionLen</param>
-        /// <param name="priceSize">priceSize</param>
-        /// <param name="nPriceIndex">nPriceIndex</param>
-        /// <param name="nTimeIndex">nTimeIndex</param>
-        /// <returns>'OK' or error string</returns>
-        [WampProcedure("coeffapi.changeparameters")]
-        string ChangeParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex);
-
-        /// <summary>
-        /// Retrieve Coefficient Api Parameters
-        /// </summary>
-        /// <param name="userId">User Id</param>
-        /// <param name="pair">Asset Pair</param>
-        /// <returns></returns>
-        [WampProcedure("coeffapi.getparameters")]
-        Models.CoeffParameters GetParameters(string userId, string pair);
-
+              
+       
         /// <summary>
         /// Coefficient Api Request Coefficients
         /// </summary>

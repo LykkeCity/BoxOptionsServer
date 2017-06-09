@@ -78,6 +78,11 @@ namespace BoxOptions.Services
         /// </summary>
         private Dictionary<string, PriceCache> assetCache;
 
+        /// <summary>
+        /// Box configuration
+        /// </summary>
+        List<Core.Models.BoxSize> defaultBoxConfig;
+
         Queue<string> appLogInfoQueue = new Queue<string>();
         #endregion
 
@@ -101,14 +106,82 @@ namespace BoxOptions.Services
             userList = new List<UserState>();
             betCache = new List<GameBet>();
             assetCache = new Dictionary<string, PriceCache>();
-
+                        
             this.quoteFeed.MessageReceived += QuoteFeed_MessageReceived;
 
-            
+            defaultBoxConfig = null;
         }
+
+
         #endregion
 
         #region Methods
+
+        private void InitializeCoefCalc( )
+        {
+            Core.Models.BoxSize[] calculatedParams = CalculatedBoxes(defaultBoxConfig, micrographCache);
+
+            Console.WriteLine(calculatedParams.Length);
+
+        }
+
+        private List<Core.Models.BoxSize> LoadBoxParameters()
+        {
+            Task<IEnumerable<Core.Models.BoxSize>> t = boxConfigRepository.GetAll();
+            t.Wait();
+
+            List<Core.Models.BoxSize> boxConfig = t.Result.ToList();
+            List<Core.Models.BoxSize> AssetsToAdd = new List<Core.Models.BoxSize>();
+
+            List<string> AllAssets = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets.ToList();
+            AllAssets.AddRange(settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets);
+
+            string[] DistictAssets = AllAssets.Distinct().ToArray();            
+            // Validate Allowed Assets
+            foreach (var item in DistictAssets)
+            {
+                
+                // If database does not contain allowed asset then add it
+                if (!boxConfig.Select(config => config.AssetPair).Contains(item))
+                {
+                    // Check if it was not added before to avoid duplicates
+                    if (!AssetsToAdd.Select(config => config.AssetPair).Contains(item))
+                    {
+                        // Add default settings
+                        AssetsToAdd.Add(new Core.Models.BoxSize()
+                        {
+                            AssetPair = item,
+                            BoxesPerRow = 7,
+                            BoxHeight = 7,
+                            BoxWidth = 0.00003,
+                            TimeToFirstBox = 4
+                        });
+                    }
+                }
+            }
+            if (AssetsToAdd.Count > 0)
+            {
+                boxConfigRepository.InsertManyAsync(AssetsToAdd);
+                boxConfig.AddRange(AssetsToAdd);
+            }
+
+            List<Core.Models.BoxSize> retval = new List<Core.Models.BoxSize>();
+            foreach (var item in DistictAssets)
+            {
+                var box = boxConfig.Where(bx => bx.AssetPair == item).FirstOrDefault();
+                retval.Add(new Core.Models.BoxSize()
+                {
+                    AssetPair = box.AssetPair,
+                    BoxesPerRow = box.BoxesPerRow,
+                    BoxHeight = box.BoxHeight,
+                    BoxWidth = box.BoxWidth,
+                    TimeToFirstBox = box.TimeToFirstBox
+                });
+
+            }
+
+            return boxConfig;
+        }
 
         /// <summary>
         /// Finds user object in User cache or loads it from DB if not in cache
@@ -194,18 +267,29 @@ namespace BoxOptions.Services
             else
             {                
                 // Load User Parameters
-                var userParameters = await database.LoadUserParameters(userId);
-                retval.LoadParameters(userParameters);
+                //var userParameters = await database.LoadUserParameters(userId);
+                //retval.LoadParameters(userParameters);
 
                 // TODO: Load User Bets                
                 //var bets = await database.LoadGameBets(userId, (int)GameBet.BetStates.OnGoing);
                 //retval.LoadBets(bets);
-
-
-
             }
 
             return retval;
+        }
+
+        private async Task<string> CoeffCalculatorChange(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
+        {
+            await coeffCalculatorSemaphoreSlim.WaitAsync();
+            try
+            {
+                // Change calculator parameters for current pair with User parameters
+                string res = await calculator.ChangeAsync(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
+                if (res != "OK")
+                    throw new InvalidOperationException(res);
+                return res;
+            }
+            finally { coeffCalculatorSemaphoreSlim.Release(); }
         }
 
         /// <summary>
@@ -219,18 +303,12 @@ namespace BoxOptions.Services
         /// <param name="nPriceIndex">NPrice Index</param>
         /// <param name="nTimeIndex">NTime Index</param>
         /// <returns>CoeffCalc result</returns>
-        private async Task<string> CoeffCalculatorRequest(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
+        private async Task<string> CoeffCalculatorRequest(string userId, string pair)
         {
             //Activate Mutual Exclusion Semaphor
             await coeffCalculatorSemaphoreSlim.WaitAsync();
             try
-            {
-
-                // Change calculator parameters for current pair with User parameters
-                string res = await calculator.ChangeAsync(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
-                if (res != "OK")
-                    throw new InvalidOperationException(res);
-
+            {                
                 // Request calculator coefficients
                 return await calculator.RequestAsync(userId, pair);
             }
@@ -574,6 +652,7 @@ namespace BoxOptions.Services
                 }
                 catch (Exception ex)
                 {
+                    await appLog.WriteErrorAsync("GameManager", "QuoteFeed_MessageReceived", null, ex);
                     throw;
                 }
             }
@@ -615,43 +694,22 @@ namespace BoxOptions.Services
         {
             UserState userState = GetUserState(userId);
 
-            Task<IEnumerable<Core.Models.BoxSize>> t = boxConfigRepository.GetAll();
-            t.Wait();
-            List<Core.Models.BoxSize> boxConfig = t.Result.ToList();
+            //
+            List<Core.Models.BoxSize> boxConfig = LoadBoxParameters();
 
-            List<Core.Models.BoxSize> AssetsToAdd = new List<Core.Models.BoxSize>();
-
-
-            List<string> AllAssets = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets.ToList();
-            AllAssets.AddRange(settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets);
-
-            string[] DistictAssets = AllAssets.Distinct().ToArray();
-
-            // Validate Allowed Assets
-            foreach (var item in DistictAssets)
+            if (defaultBoxConfig == null)
             {
-                // If database does not contain allowed asset then add it
-                if (!boxConfig.Select(config => config.AssetPair).Contains(item))
-                {
-                    // Check if it was not added before to avoid duplicates
-                    if (!AssetsToAdd.Select(config => config.AssetPair).Contains(item))
-                    {
-                        // Add default settings
-                        AssetsToAdd.Add(new Core.Models.BoxSize()
-                        {
-                            AssetPair = item,
-                            BoxesPerRow = 7,
-                            BoxHeight = 7,
-                            BoxWidth = 0.00005,
-                            TimeToFirstBox = 4
-                        });
-                    }
-                }
-            }
-            if (AssetsToAdd.Count > 0)
-            {
-                boxConfigRepository.InsertManyAsync(AssetsToAdd);
-                boxConfig.AddRange(AssetsToAdd);
+                defaultBoxConfig = (from c in boxConfig
+                                    select new Core.Models.BoxSize()
+                                    {
+                                        AssetPair = c.AssetPair,
+                                        BoxesPerRow = c.BoxesPerRow,
+                                        BoxHeight = c.BoxHeight,
+                                        BoxWidth = c.BoxWidth,
+                                        TimeToFirstBox = c.TimeToFirstBox
+                                    }).ToList();
+                InitializeCoefCalc();
+
             }
 
             // Return Calculate Price Sizes
@@ -672,13 +730,40 @@ namespace BoxOptions.Services
 
             // TODO: Get Box from... somewhere            
             Box boxObject = Box.FromJson(box);
-                        
+
+            //// Get Current Coeffs for Game's Assetpair
+            //var assetConfig = defaultBoxConfig.Where(b => b.AssetPair == assetPair).FirstOrDefault();
+            //if (assetConfig == null)
+            //    throw new InvalidOperationException("Asset pair not configured");
+
+
+            //CoeffParameters coef =new CoeffParameters()
+            //{
+            //    AssetPair = assetConfig.AssetPair,
+            //    NPriceIndex = 15, // Number of columns hardcoded
+            //    NTimeIndex = 8, // Number of rows hardcoded
+            //    OptionLen 
+            //}
+
             // Get Current Coeffs for Game's Assetpair
-            CoeffParameters coef = userState.GetParameters(assetPair);
-            if (coef == null || 
-                coef.PriceSize == 0 || 
-                coef.OptionLen==0)
+            var assetConfig = defaultBoxConfig.Where(b => b.AssetPair == assetPair).FirstOrDefault();
+            if (assetConfig == null)
                 throw new InvalidOperationException($"Coefficient parameters are not set for Asset Pair [{assetPair}].");
+
+            CoeffParameters coef = new CoeffParameters()
+            {
+                AssetPair = assetConfig.AssetPair,
+                TimeToFirstOption = (int)assetConfig.TimeToFirstBox,    // Time to first box in seconds
+                OptionLen = (int)assetConfig.BoxHeight,     // Box Height in seconds
+                PriceSize = assetConfig.BoxWidth,   // Box Width factor (not calculated)
+                NPriceIndex = 15,   // Number of columns hardcoded
+                NTimeIndex = 8  // Number of rows hardcoded
+            };
+            if (coef == null ||
+                coef.PriceSize == 0 ||
+                coef.OptionLen == 0)
+                throw new InvalidOperationException($"Coefficient parameters are not set for Asset Pair [{assetPair}].");
+
 
             // Place Bet            
             GameBet newBet = userState.PlaceBet(boxObject, assetPair, bet, coef);
@@ -721,38 +806,35 @@ namespace BoxOptions.Services
             return userState.Balance;
         }
 
-        public void SetUserParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
-        {
-            UserState userState = GetUserState(userId);
+        //public void SetUserParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
+        //{
+        //    UserState userState = GetUserState(userId);
 
-            // Validate Parameters
-            bool ValidateParameters = calculator.ValidateChange(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
-            if (ValidateParameters == false)
-            {
-                // Invalid Parameters, throw error
-                throw new ArgumentException("Invalid Parameters");
-            }
+        //    // Validate Parameters
+        //    bool ValidateParameters = calculator.ValidateChange(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
+        //    if (ValidateParameters == false)
+        //    {
+        //        // Invalid Parameters, throw error
+        //        throw new ArgumentException("Invalid Parameters");
+        //    }
 
-            // Set User Parameters for AssetPair
-            userState.SetParameters(pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
-            // Save User Parameters to DB
-            database.SaveUserParameters(userId, userState.UserCoeffParameters);
-            // Update User Status
-            SetUserStatus(userState, GameStatus.ParameterChanged, $"ParameterChanged [{pair}] timeToFirstOption={timeToFirstOption}; optionLen={optionLen}; priceSize={priceSize}; nPriceIndex={nPriceIndex}, nTimeIndex={nTimeIndex}");
-        }
-        public CoeffParameters GetUserParameters(string userId, string pair)
-        {
-            UserState userState = GetUserState(userId);
-            return userState.GetParameters(pair);
-        }
+        //    // Set User Parameters for AssetPair
+        //    userState.SetParameters(pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
+        //    // Save User Parameters to DB
+        //    database.SaveUserParameters(userId, userState.UserCoeffParameters);
+        //    // Update User Status
+        //    SetUserStatus(userState, GameStatus.ParameterChanged, $"ParameterChanged [{pair}] timeToFirstOption={timeToFirstOption}; optionLen={optionLen}; priceSize={priceSize}; nPriceIndex={nPriceIndex}, nTimeIndex={nTimeIndex}");
+        //}
+        //public CoeffParameters GetUserParameters(string userId, string pair)
+        //{
+        //    UserState userState = GetUserState(userId);
+        //    return userState.GetParameters(pair);
+        //}
         public string RequestUserCoeff(string userId, string pair)
         {            
-            UserState userState = GetUserState(userId);
-            // Load User Parameters
-            var parameters = userState.GetParameters(pair);
             
             // Request Coeffcalculator Data
-            Task<string> t = CoeffCalculatorRequest(userId, pair, parameters.TimeToFirstOption, parameters.OptionLen, parameters.PriceSize, parameters.NPriceIndex, parameters.NTimeIndex);
+            Task<string> t = CoeffCalculatorRequest(userId, pair);
             t.Wait();
             string result = t.Result;
 
@@ -764,7 +846,7 @@ namespace BoxOptions.Services
             if (IsOk)
             {
                 // Udpdate User Status
-                SetUserStatus(userState, GameStatus.CoeffRequest, $"CoeffRequest [{pair}]");
+                //SetUserStatus(userState, GameStatus.CoeffRequest, $"CoeffRequest [{pair}]");
                 // return CoeffCalcResult
                 return result;
             }
