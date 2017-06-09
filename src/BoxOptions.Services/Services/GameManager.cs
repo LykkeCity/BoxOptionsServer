@@ -15,6 +15,11 @@ namespace BoxOptions.Services
 {
     public class GameManager : IGameManager, IDisposable
     {
+        const int NPriceIndex = 15; // Number of columns hardcoded
+        const int NTimeIndex = 8;   // Number of rows hardcoded
+        const int CoeffMonitorTimerInterval = 1000; // Coeff cache update interval (milliseconds)
+
+
         #region Vars
         /// <summary>
         /// Coefficient Calculator Request Semaphore
@@ -26,7 +31,12 @@ namespace BoxOptions.Services
         /// Mutual Exclusion Process
         /// </summary>
         static System.Threading.SemaphoreSlim quoteReceivedSemaphoreSlim = new System.Threading.SemaphoreSlim(1, 1);
+                
         static int MaxUserBuffer = 128;
+        static object CoeffCacheLock = new object();
+
+
+        string GameManagerId;
 
         /// <summary>
         /// Ongoing Bets Cache
@@ -78,7 +88,15 @@ namespace BoxOptions.Services
         /// </summary>
         private Dictionary<string, PriceCache> assetCache;
 
+        /// <summary>
+        /// Box configuration
+        /// </summary>
+        List<Core.Models.BoxSize> defaultBoxConfig;
+
         Queue<string> appLogInfoQueue = new Queue<string>();
+
+        System.Threading.Timer CoeffMonitorTimer = null;
+        bool isDisposing = false;
         #endregion
 
         #region Constructor
@@ -97,18 +115,158 @@ namespace BoxOptions.Services
 
             if (this.settings != null && this.settings.BoxOptionsApi != null && this.settings.BoxOptionsApi.GameManager != null)
                 MaxUserBuffer = this.settings.BoxOptionsApi.GameManager.MaxUserBuffer;
-                        
+
+            GameManagerId = Guid.NewGuid().ToString();
             userList = new List<UserState>();
             betCache = new List<GameBet>();
             assetCache = new Dictionary<string, PriceCache>();
-
+                        
             this.quoteFeed.MessageReceived += QuoteFeed_MessageReceived;
 
-            
+            defaultBoxConfig = null;
         }
+
+
         #endregion
 
         #region Methods
+
+        private void InitializeCoefCalc( )
+        {
+            // Create default coef parameters foreach Asset
+            //List<CoeffParameters> coeffPars = new List<CoeffParameters>();
+            //foreach (var box in defaultBoxConfig)
+            //{
+            //    coeffPars.Add(new CoeffParameters()
+            //    {
+            //        AssetPair = box.AssetPair,
+            //        TimeToFirstOption = (int)box.TimeToFirstBox,    // Time to first box in seconds
+            //        OptionLen = (int)box.BoxHeight,     // Box Height in seconds
+            //        PriceSize = box.BoxWidth,   // Box Width factor (not calculated)
+            //        NPriceIndex = NPriceIndex,  // Number of columns hardcoded
+            //        NTimeIndex = NTimeIndex     // Number of rows hardcoded
+            //    });
+
+            //}
+            
+            Core.Models.BoxSize[] calculatedParams = CalculatedBoxes(defaultBoxConfig, micrographCache);
+
+            Task t = CoeffCalculatorChangeBatch(GameManagerId, calculatedParams);
+            t.Wait();
+
+            LoadCoefficientCache();
+
+            StartCoefficientCacheMonitor();
+
+            Console.WriteLine(calculatedParams.Length);
+
+        }
+               
+        
+        private List<Core.Models.BoxSize> LoadBoxParameters()
+        {
+            Task<IEnumerable<Core.Models.BoxSize>> t = boxConfigRepository.GetAll();
+            t.Wait();
+
+            List<Core.Models.BoxSize> boxConfig = t.Result.ToList();
+            List<Core.Models.BoxSize> AssetsToAdd = new List<Core.Models.BoxSize>();
+
+            List<string> AllAssets = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets.ToList();
+            AllAssets.AddRange(settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets);
+
+            string[] DistictAssets = AllAssets.Distinct().ToArray();
+            // Validate Allowed Assets
+            foreach (var item in DistictAssets)
+            {
+
+                // If database does not contain allowed asset then add it
+                if (!boxConfig.Select(config => config.AssetPair).Contains(item))
+                {
+                    // Check if it was not added before to avoid duplicates
+                    if (!AssetsToAdd.Select(config => config.AssetPair).Contains(item))
+                    {
+                        // Add default settings
+                        AssetsToAdd.Add(new Core.Models.BoxSize()
+                        {
+                            AssetPair = item,
+                            BoxesPerRow = 7,
+                            BoxHeight = 7,
+                            BoxWidth = 0.00003,
+                            TimeToFirstBox = 4
+                        });
+                    }
+                }
+            }
+            if (AssetsToAdd.Count > 0)
+            {
+                boxConfigRepository.InsertManyAsync(AssetsToAdd);
+                boxConfig.AddRange(AssetsToAdd);
+            }
+
+            List<Core.Models.BoxSize> retval = new List<Core.Models.BoxSize>();
+            foreach (var item in DistictAssets)
+            {
+                var box = boxConfig.Where(bx => bx.AssetPair == item).FirstOrDefault();
+                retval.Add(new Core.Models.BoxSize()
+                {
+                    AssetPair = box.AssetPair,
+                    BoxesPerRow = box.BoxesPerRow,
+                    BoxHeight = box.BoxHeight,
+                    BoxWidth = box.BoxWidth,
+                    TimeToFirstBox = box.TimeToFirstBox
+                });
+
+            }
+
+            return retval;
+        }
+
+        #region Coefficient Cache Monitor
+        Dictionary<string, string> CoefficientCache;
+
+        private void LoadCoefficientCache()
+        {
+            string[] assets = defaultBoxConfig.Select(b => b.AssetPair).ToArray();
+
+            Task<Dictionary<string, string>> t = CoeffCalculatorRequestBatch(GameManagerId, assets);
+            t.Wait();
+
+            lock (CoeffCacheLock)
+            {
+                Console.WriteLine("{0} > LoadCoefficientCache LOCK", DateTime.Now.ToString("HH:mm:ss.fff"));
+                CoefficientCache = t.Result;
+            }
+            Console.WriteLine("{0} > LoadCoefficientCache LOCK Released", DateTime.Now.ToString("HH:mm:ss.fff"));
+        }
+
+        private string GetCoefficients(string assetPair)
+        {
+            string retval = "";
+            lock (CoeffCacheLock)
+            {
+                Console.WriteLine("{0} > GetCoefficients LOCK", DateTime.Now.ToString("HH:mm:ss.fff"));
+                retval = CoefficientCache[assetPair];
+            }
+            Console.WriteLine("{0} > GetCoefficients LOCK release", DateTime.Now.ToString("HH:mm:ss.fff"));
+            return retval;
+        }
+
+        private void StartCoefficientCacheMonitor()
+        {
+            CoeffMonitorTimer = new System.Threading.Timer(new System.Threading.TimerCallback(CoeffMonitorTimerCallback), null, CoeffMonitorTimerInterval, -1);
+
+        }
+        private void CoeffMonitorTimerCallback(object status)
+        {
+            CoeffMonitorTimer.Change(-1, -1);
+
+            LoadCoefficientCache();
+
+            if (!isDisposing)
+                CoeffMonitorTimer.Change(CoeffMonitorTimerInterval, -1);
+        }
+        #endregion
+
 
         /// <summary>
         /// Finds user object in User cache or loads it from DB if not in cache
@@ -194,20 +352,42 @@ namespace BoxOptions.Services
             else
             {                
                 // Load User Parameters
-                var userParameters = await database.LoadUserParameters(userId);
-                retval.LoadParameters(userParameters);
+                //var userParameters = await database.LoadUserParameters(userId);
+                //retval.LoadParameters(userParameters);
 
                 // TODO: Load User Bets                
                 //var bets = await database.LoadGameBets(userId, (int)GameBet.BetStates.OnGoing);
                 //retval.LoadBets(bets);
-
-
-
             }
 
             return retval;
         }
 
+        private async Task<string> CoeffCalculatorChangeBatch(string userId, Core.Models.BoxSize[] boxes)
+        {
+            await coeffCalculatorSemaphoreSlim.WaitAsync();
+            try
+            {
+                string res = "EMPTY BOXES";
+
+                Console.WriteLine("{0} > Calculator.ChangeAsync BATCH Start", DateTime.Now.ToString("HH:mm:ss.fff"));
+                foreach (var box in boxes)
+                {
+                    // Change calculator parameters for current pair with User parameters
+                    Console.WriteLine("{0} > Calculator.ChangeAsync Start", DateTime.Now.ToString("HH:mm:ss.fff"));
+                    res = await calculator.ChangeAsync(userId, box.AssetPair, Convert.ToInt32(box.TimeToFirstBox), Convert.ToInt32(box.BoxHeight), box.BoxWidth, NPriceIndex, NTimeIndex);
+                    Console.WriteLine("{0} > Calculator.ChangeAsync Finished", DateTime.Now.ToString("HH:mm:ss.fff"));
+
+                    if (res != "OK")
+                        throw new InvalidOperationException(res);
+                }
+                Console.WriteLine("{0} > Calculator.ChangeAsync BATCH Finished", DateTime.Now.ToString("HH:mm:ss.fff"));
+                return res;
+            }
+            finally { coeffCalculatorSemaphoreSlim.Release(); }
+
+
+        }        
         /// <summary>
         /// Performs a Coefficient Request to CoeffCalculator object
         /// </summary>
@@ -219,20 +399,23 @@ namespace BoxOptions.Services
         /// <param name="nPriceIndex">NPrice Index</param>
         /// <param name="nTimeIndex">NTime Index</param>
         /// <returns>CoeffCalc result</returns>
-        private async Task<string> CoeffCalculatorRequest(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
+        private async Task<Dictionary<string, string>> CoeffCalculatorRequestBatch(string userId, string[] assetPairs)
         {
             //Activate Mutual Exclusion Semaphor
             await coeffCalculatorSemaphoreSlim.WaitAsync();
             try
             {
-
-                // Change calculator parameters for current pair with User parameters
-                string res = await calculator.ChangeAsync(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
-                if (res != "OK")
-                    throw new InvalidOperationException(res);
-
-                // Request calculator coefficients
-                return await calculator.RequestAsync(userId, pair);
+                Dictionary<string, string> retval = new Dictionary<string, string>();
+                Console.WriteLine("{0} > Calculator.RequestAsync BATCH Start", DateTime.Now.ToString("HH:mm:ss.fff"));
+                foreach (var asset in assetPairs)
+                {
+                    Console.WriteLine("{0} > Calculator.RequestAsync Start", DateTime.Now.ToString("HH:mm:ss.fff"));
+                    string res = await calculator.RequestAsync(userId, asset);
+                    Console.WriteLine("{0} > Calculator.RequestAsync Finished", DateTime.Now.ToString("HH:mm:ss.fff"));
+                    retval.Add(asset, res);
+                }
+                Console.WriteLine("{0} > Calculator.RequestAsync BATCH Finished", DateTime.Now.ToString("HH:mm:ss.fff"));
+                return retval;                
             }
             finally { coeffCalculatorSemaphoreSlim.Release(); }
 
@@ -527,6 +710,17 @@ namespace BoxOptions.Services
         /// </summary>
         public void Dispose()
         {
+            if (isDisposing)
+                return;
+            isDisposing = true;
+
+            if (CoeffMonitorTimer != null)
+            {
+                CoeffMonitorTimer.Change(-1, -1);
+                CoeffMonitorTimer.Dispose();
+                CoeffMonitorTimer = null;
+            }
+            
             quoteFeed.MessageReceived -= QuoteFeed_MessageReceived;
             betCache = null;
 
@@ -574,6 +768,7 @@ namespace BoxOptions.Services
                 }
                 catch (Exception ex)
                 {
+                    await appLog.WriteErrorAsync("GameManager", "QuoteFeed_MessageReceived", null, ex);
                     throw;
                 }
             }
@@ -615,70 +810,26 @@ namespace BoxOptions.Services
         {
             UserState userState = GetUserState(userId);
 
-            Task<IEnumerable<Core.Models.BoxSize>> t = boxConfigRepository.GetAll();
-            t.Wait();
-            List<Core.Models.BoxSize> boxConfig = t.Result.ToList();
+            //
+            List<Core.Models.BoxSize> boxConfig = LoadBoxParameters();
 
-            List<Core.Models.BoxSize> AssetsToAdd = new List<Core.Models.BoxSize>();
-            
-            List<string> AllAssets = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets.ToList();
-            AllAssets.AddRange(settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets);
-
-            string[] DistictAssets = AllAssets.Distinct().ToArray();
-
-            // Validate Allowed Assets
-            foreach (var item in DistictAssets)
+            if (defaultBoxConfig == null)
             {
-                // If database does not contain allowed asset then add it
-                if (!boxConfig.Select(config => config.AssetPair).Contains(item))
-                {
-                    // Check if it was not added before to avoid duplicates
-                    if (!AssetsToAdd.Select(config => config.AssetPair).Contains(item))
-                    {
-                        // Add default settings
-                        AssetsToAdd.Add(new Core.Models.BoxSize()
-                        {
-                            AssetPair = item,
-                            BoxesPerRow = 7,
-                            BoxHeight = 7,
-                            BoxWidth = 0.00003,
-                            TimeToFirstBox = 4
-                        });
-                    }
-                }
+                defaultBoxConfig = (from c in boxConfig
+                                    select new Core.Models.BoxSize()
+                                    {
+                                        AssetPair = c.AssetPair,
+                                        BoxesPerRow = c.BoxesPerRow,
+                                        BoxHeight = c.BoxHeight,
+                                        BoxWidth = c.BoxWidth,
+                                        TimeToFirstBox = c.TimeToFirstBox
+                                    }).ToList();
+                InitializeCoefCalc();
+
             }
-            if (AssetsToAdd.Count > 0)
-            {
-                boxConfigRepository.InsertManyAsync(AssetsToAdd);
-                boxConfig.AddRange(AssetsToAdd);
-            }
-                     
 
             // Return Calculate Price Sizes
             Core.Models.BoxSize[] retval = CalculatedBoxes(boxConfig, micrographCache);
-            List<CoeffParameters> coefList = new List<CoeffParameters>();
-            foreach (var asset in DistictAssets)
-            {
-                var Box = retval.Where(b => b.AssetPair == asset).FirstOrDefault();
-                if (Box != null)
-                {
-                    coefList.Add(new CoeffParameters()
-                    {
-                        AssetPair = asset,
-                        NPriceIndex = 15,
-                        NTimeIndex = 8,
-                        OptionLen = Convert.ToInt32(Box.BoxHeight),
-                        PriceSize = Box.BoxWidth,
-                        TimeToFirstOption = Convert.ToInt32(Box.TimeToFirstBox)
-                    });
-                }
-                    
-                    
-            }
-            userState.LoadParameters(coefList.ToArray());
-
-          
-
             return retval;
         }      
 
@@ -695,16 +846,16 @@ namespace BoxOptions.Services
 
             // TODO: Get Box from... somewhere            
             Box boxObject = Box.FromJson(box);
-                        
+
+           
             // Get Current Coeffs for Game's Assetpair
-            CoeffParameters coef = userState.GetParameters(assetPair);
-            if (coef == null || 
-                coef.PriceSize == 0 || 
-                coef.OptionLen==0)
+            var assetConfig = defaultBoxConfig.Where(b => b.AssetPair == assetPair).FirstOrDefault();
+            if (assetConfig == null)
                 throw new InvalidOperationException($"Coefficient parameters are not set for Asset Pair [{assetPair}].");
 
+
             // Place Bet            
-            GameBet newBet = userState.PlaceBet(boxObject, assetPair, bet, coef);
+            GameBet newBet = userState.PlaceBet(boxObject, assetPair, bet, assetConfig);
             newBet.TimeToGraphReached += Bet_TimeToGraphReached;
             newBet.TimeLenghFinished += Bet_TimeLenghFinished;
             
@@ -744,60 +895,54 @@ namespace BoxOptions.Services
             return userState.Balance;
         }
 
-        public void SetUserParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
-        {
-            UserState userState = GetUserState(userId);
+        //public void SetUserParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
+        //{
+        //    UserState userState = GetUserState(userId);
 
-            // Validate Parameters
-            bool ValidateParameters = calculator.ValidateChange(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
-            if (ValidateParameters == false)
-            {
-                // Invalid Parameters, throw error
-                throw new ArgumentException("Invalid Parameters");
-            }
+        //    // Validate Parameters
+        //    bool ValidateParameters = calculator.ValidateChange(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
+        //    if (ValidateParameters == false)
+        //    {
+        //        // Invalid Parameters, throw error
+        //        throw new ArgumentException("Invalid Parameters");
+        //    }
 
-            // Set User Parameters for AssetPair
-            userState.SetParameters(pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
-            // Save User Parameters to DB
-            database.SaveUserParameters(userId, userState.UserCoeffParameters);
-            // Update User Status
-            SetUserStatus(userState, GameStatus.ParameterChanged, $"ParameterChanged [{pair}] timeToFirstOption={timeToFirstOption}; optionLen={optionLen}; priceSize={priceSize}; nPriceIndex={nPriceIndex}, nTimeIndex={nTimeIndex}");
-        }
-        public CoeffParameters GetUserParameters(string userId, string pair)
-        {
-            UserState userState = GetUserState(userId);
-            return userState.GetParameters(pair);
-        }
+        //    // Set User Parameters for AssetPair
+        //    userState.SetParameters(pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
+        //    // Save User Parameters to DB
+        //    database.SaveUserParameters(userId, userState.UserCoeffParameters);
+        //    // Update User Status
+        //    SetUserStatus(userState, GameStatus.ParameterChanged, $"ParameterChanged [{pair}] timeToFirstOption={timeToFirstOption}; optionLen={optionLen}; priceSize={priceSize}; nPriceIndex={nPriceIndex}, nTimeIndex={nTimeIndex}");
+        //}
+        //public CoeffParameters GetUserParameters(string userId, string pair)
+        //{
+        //    UserState userState = GetUserState(userId);
+        //    return userState.GetParameters(pair);
+        //}
         public string RequestUserCoeff(string userId, string pair)
-        {            
-            UserState userState = GetUserState(userId);
-            // Load User Parameters
-            var parameters = userState.GetParameters(pair);
-            
-            // Request Coeffcalculator Data
-            Task<string> t = CoeffCalculatorRequest(userId, pair, parameters.TimeToFirstOption, parameters.OptionLen, parameters.PriceSize, parameters.NPriceIndex, parameters.NTimeIndex);
-            t.Wait();
-            string result = t.Result;
+        {
 
-            // Validate CoefCalculator Result
-            string ValidationError;
-            //bool IsOk = calculator.ValidateRequestResult(result, out ValidationError);
+            // Request Coeffcalculator Data            
+            string result = GetCoefficients(pair);
+            return result;
 
-            ValidationError = "OK";
-            bool IsOk = true;
-            // Take action on validation result.
-            if (IsOk)
-            {
-                // Udpdate User Status
-                SetUserStatus(userState, GameStatus.CoeffRequest, $"CoeffRequest [{pair}]");
-                // return CoeffCalcResult
-                return result;
-            }
-            else
-            {
-                // Throw Exception
-                throw new ArgumentException(ValidationError);
-            }
+            // TODO: Validate CoefCalculator Result
+            //string ValidationError;
+            //654bool IsOk = calculator.ValidateRequestResult(result, out ValidationError);
+
+            //// Take action on validation result.
+            //if (IsOk)
+            //{
+            //    // Udpdate User Status
+            //    //SetUserStatus(userState, GameStatus.CoeffRequest, $"CoeffRequest [{pair}]");
+            //    // return CoeffCalcResult
+            //    return result;
+            //}
+            //else
+            //{
+            //    // Throw Exception
+            //    throw new ArgumentException(ValidationError);
+            //}
         }
 
         public void AddUserLog(string userId, string eventCode, string message)

@@ -93,8 +93,6 @@ namespace BoxOptions.Public.Modules
             // User Data Repository
             builder.RegisterInstance(new UserRepository(
                 new AzureTableStorage<AzureRepositories.UserEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "UserRepo", log),                
-                new AzureTableStorage<AzureRepositories.UserParameterEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
                 "UserRepo", log),
                 new AzureTableStorage<AzureRepositories.UserHistoryEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
                 "UserHistory", log)))

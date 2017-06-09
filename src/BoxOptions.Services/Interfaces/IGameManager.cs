@@ -20,8 +20,8 @@ namespace BoxOptions.Services.Interfaces
 
         decimal GetUserBalance(string userId);
 
-        void SetUserParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex);
-        CoeffParameters GetUserParameters(string userId, string pair);
+        //void SetUserParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex);
+        //CoeffParameters GetUserParameters(string userId, string pair);
         string RequestUserCoeff(string userId, string pair);
 
         void AddUserLog(string userId, string eventCode, string message);
