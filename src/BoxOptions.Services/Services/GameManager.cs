@@ -180,7 +180,7 @@ namespace BoxOptions.Services
 
             }
 
-            return boxConfig;
+            return retval;
         }
 
         /// <summary>
