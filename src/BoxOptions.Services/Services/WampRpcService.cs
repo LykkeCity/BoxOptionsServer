@@ -402,56 +402,56 @@ namespace BoxOptions.Services
             }            
         }
 
-        public PlaceBetResult PlaceBet(string userId, string assetPair, string box, decimal betValue)
-        {
-            try
-            {
-                Console.WriteLine("{0} | PlaceBet > {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), box.Substring(0,20));
-                //DateTime betdate = _gameManager.PlaceBet(userId, assetPair, box, betValue);
-                DateTime betdate = DateTime.UtcNow;
-                return new PlaceBetResult()
-                {
-                    BetTimeStamp = betdate,
-                    Status = "OK"
-                };
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "PlaceBet");
-                return new PlaceBetResult()
-                {
-                    BetTimeStamp = DateTime.MinValue,
-                    Status = ex.Message
-                };
-            }
-        }
+        //public PlaceBetResult PlaceBet(string userId, string assetPair, string box, decimal betValue)
+        //{
+        //    try
+        //    {
+        //        Console.WriteLine("{0} | PlaceBet > {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), box.Substring(0,20));
+        //        //DateTime betdate = _gameManager.PlaceBet(userId, assetPair, box, betValue);
+        //        DateTime betdate = DateTime.UtcNow;
+        //        return new PlaceBetResult()
+        //        {
+        //            BetTimeStamp = betdate,
+        //            Status = "OK"
+        //        };
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        LogError(ex, "PlaceBet");
+        //        return new PlaceBetResult()
+        //        {
+        //            BetTimeStamp = DateTime.MinValue,
+        //            Status = ex.Message
+        //        };
+        //    }
+        //}
 
-        public decimal GetBalance(string userId)
-        {
-            try
-            {
-                return _gameManager.GetUserBalance(userId);
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "GetBalance");
-                return -1;
-            }
-        }
+        //public decimal GetBalance(string userId)
+        //{
+        //    try
+        //    {
+        //        return _gameManager.GetUserBalance(userId);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        LogError(ex, "GetBalance");
+        //        return -1;
+        //    }
+        //}
 
-        public string SetBalance(string userId, decimal balance)
-        {
-            try
-            {
-                _gameManager.SetUserBalance(userId, balance);
-                return "OK";
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "SetBalance");
-                return ex.Message;
-            }
-        }
+        //public string SetBalance(string userId, decimal balance)
+        //{
+        //    try
+        //    {
+        //        _gameManager.SetUserBalance(userId, balance);
+        //        return "OK";
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        LogError(ex, "SetBalance");
+        //        return ex.Message;
+        //    }
+        //}
         public string RequestCoeff(string userId, string pair)
         {
             try
@@ -468,15 +468,7 @@ namespace BoxOptions.Services
         public string SaveLog(string userId, string eventCode, string message)
         {
             try
-            {
-                Task t = _logRepository?.InsertAsync(new LogItem()
-                {
-                    ClientId = userId,
-                    EventCode = eventCode,
-                    Message = message
-                });
-                t.Wait();
-
+            {                               
                 _gameManager.AddUserLog(userId, eventCode, message);
 
                 return "OK";

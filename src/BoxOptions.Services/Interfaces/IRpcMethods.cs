@@ -34,8 +34,8 @@ namespace BoxOptions.Services
         /// </summary>
         /// <param name="userId">User Id</param>
         /// <returns>User's balance</returns>
-        [WampProcedure("user.getbalance")]
-        decimal GetBalance(string userId);
+        //[WampProcedure("user.getbalance")]
+        //decimal GetBalance(string userId);
 
         /// <summary>
         /// Set User Balance
@@ -43,8 +43,8 @@ namespace BoxOptions.Services
         /// <param name="userId">User Id</param>
         /// <param name="balance">New Balance</param>
         /// <returns>'OK' or error string</returns>
-        [WampProcedure("user.setbalance")]
-        string SetBalance(string userId, decimal balance);
+        //[WampProcedure("user.setbalance")]
+        //string SetBalance(string userId, decimal balance);
 
 
 
@@ -56,8 +56,8 @@ namespace BoxOptions.Services
         /// <param name="box">Box Details(json)</param>
         /// <param name="betValue">Bet Value</param>
         /// <returns>'OK' or error string</returns>
-        [WampProcedure("game.placebet")]
-        Models.PlaceBetResult PlaceBet(string userId, string assetPair ,string box, decimal betValue);
+        //[WampProcedure("game.placebet")]
+        //Models.PlaceBetResult PlaceBet(string userId, string assetPair ,string box, decimal betValue);
 
         /// <summary>
         /// Saves log to database

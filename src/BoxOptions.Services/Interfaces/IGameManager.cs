@@ -7,6 +7,9 @@ namespace BoxOptions.Services.Interfaces
     {
 
         Core.Models.BoxSize[] InitUser(string userId);
+
+        /*
+         * 
         /// <summary>
         /// Place a bet on a box.
         /// </summary>
@@ -19,16 +22,13 @@ namespace BoxOptions.Services.Interfaces
         decimal SetUserBalance(string userId, decimal newBalance);
 
         decimal GetUserBalance(string userId);
+        */
 
         //void SetUserParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex);
         //CoeffParameters GetUserParameters(string userId, string pair);
         string RequestUserCoeff(string userId, string pair);
 
         void AddUserLog(string userId, string eventCode, string message);
-        
-        event EventHandler<BetEventArgs> BetWin;
-        event EventHandler<BetEventArgs> BetLose;
-
         
     }
 }
