@@ -100,7 +100,6 @@ namespace BoxOptions.Services.Models
         {
             if (BetTimer != null)
             {
-                Console.WriteLine("Disposing Bet Timer:{0}", this.Timestamp.ToString("HH:mm:ss.fff"));
                 BetTimer.Change(-1, -1);
                 BetTimer.Dispose();
                 BetTimer = null;

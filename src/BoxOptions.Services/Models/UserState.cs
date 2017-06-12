@@ -106,7 +106,6 @@ namespace BoxOptions.Services.Models
         }
         internal void PublishToWamp(BetResult betResult)
         {
-            //Console.WriteLine("PublishToWamp: {0}", betResult.ToJson());
             if (subject == null)
                 throw new InvalidOperationException("Wamp Subject not set");
 

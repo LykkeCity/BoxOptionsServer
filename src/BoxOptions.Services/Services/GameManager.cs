@@ -140,9 +140,6 @@ namespace BoxOptions.Services
             LoadCoefficientCache();
 
             StartCoefficientCacheMonitor();
-
-            Console.WriteLine(calculatedParams.Length);
-
         }
 
         private List<BoxSize> LoadBoxParameters()
@@ -154,8 +151,7 @@ namespace BoxOptions.Services
             List<BoxSize> AssetsToAdd = new List<BoxSize>();
 
             List<string> AllAssets = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets.ToList();
-            AllAssets.AddRange(settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets);
-
+            
             string[] DistictAssets = AllAssets.Distinct().ToArray();
             // Validate Allowed Assets
             foreach (var item in DistictAssets)
@@ -255,10 +251,8 @@ namespace BoxOptions.Services
 
             lock (CoeffCacheLock)
             {
-                //Console.WriteLine("{0} > LoadCoefficientCache LOCK", DateTime.Now.ToString("HH:mm:ss.fff"));
                 CoefficientCache = t.Result;
             }
-            //Console.WriteLine("{0} > LoadCoefficientCache LOCK Released", DateTime.Now.ToString("HH:mm:ss.fff"));
         }
 
         private string GetCoefficients(string assetPair)
@@ -266,10 +260,8 @@ namespace BoxOptions.Services
             string retval = "";
             lock (CoeffCacheLock)
             {
-                //Console.WriteLine("{0} > GetCoefficients LOCK", DateTime.Now.ToString("HH:mm:ss.fff"));
                 retval = CoefficientCache[assetPair];
             }
-            //Console.WriteLine("{0} > GetCoefficients LOCK release", DateTime.Now.ToString("HH:mm:ss.fff"));
             return retval;
         }
 
@@ -300,19 +292,14 @@ namespace BoxOptions.Services
             try
             {
                 string res = "EMPTY BOXES";
-
-                //Console.WriteLine("{0} > Calculator.ChangeAsync BATCH Start", DateTime.Now.ToString("HH:mm:ss.fff"));
+                                
                 foreach (var box in boxes)
                 {
-                    // Change calculator parameters for current pair with User parameters
-                    //Console.WriteLine("{0} > Calculator.ChangeAsync Start", DateTime.Now.ToString("HH:mm:ss.fff"));
+                    // Change calculator parameters for current pair with User parameters                    
                     res = await calculator.ChangeAsync(userId, box.AssetPair, Convert.ToInt32(box.TimeToFirstBox), Convert.ToInt32(box.BoxHeight), box.BoxWidth, NPriceIndex, NTimeIndex);
-                    //Console.WriteLine("{0} > Calculator.ChangeAsync Finished", DateTime.Now.ToString("HH:mm:ss.fff"));
-
                     if (res != "OK")
                         throw new InvalidOperationException(res);
-                }
-                //Console.WriteLine("{0} > Calculator.ChangeAsync BATCH Finished", DateTime.Now.ToString("HH:mm:ss.fff"));
+                }                
                 return res;
             }
             finally { coeffCalculatorSemaphoreSlim.Release(); }
@@ -336,16 +323,12 @@ namespace BoxOptions.Services
             await coeffCalculatorSemaphoreSlim.WaitAsync();
             try
             {
-                Dictionary<string, string> retval = new Dictionary<string, string>();
-                //Console.WriteLine("{0} > Calculator.RequestAsync BATCH Start", DateTime.Now.ToString("HH:mm:ss.fff"));
+                Dictionary<string, string> retval = new Dictionary<string, string>();                
                 foreach (var asset in assetPairs)
                 {
-                    //Console.WriteLine("{0} > Calculator.RequestAsync Start", DateTime.Now.ToString("HH:mm:ss.fff"));
                     string res = await calculator.RequestAsync(userId, asset);
-                    //Console.WriteLine("{0} > Calculator.RequestAsync Finished", DateTime.Now.ToString("HH:mm:ss.fff"));
                     retval.Add(asset, res);
                 }
-                //Console.WriteLine("{0} > Calculator.RequestAsync BATCH Finished", DateTime.Now.ToString("HH:mm:ss.fff"));
                 return retval;
             }
             finally { coeffCalculatorSemaphoreSlim.Release(); }
@@ -452,8 +435,7 @@ namespace BoxOptions.Services
         {
             //await MutexTestAsync();
             //MutexTest();
-            //Console.WriteLine("MutexTestAsync Done");
-
+            
             // Database object fetch
             UserState retval = await database.LoadUserState(userId);            
 
@@ -489,16 +471,11 @@ namespace BoxOptions.Services
         /// <param name="message">Status Message</param>
         private void SetUserStatus(UserState user, GameStatus status, string message = null)
         {
-            Console.WriteLine("{0} - SetUserStatus - UserId:[{1}] Status:[{2}] Message:[{3}]", DateTime.UtcNow.ToString("HH:mm:ss.fff"), user.UserId, status, message);
-                     
             var hist = user.SetStatus((int)status, message);
-
             // Save User
             database.SaveUserState(user);
-
             // Save user History
             database.SaveUserHistory(hist);
-
         }
 
         #endregion
@@ -651,8 +628,7 @@ namespace BoxOptions.Services
                     };
                     
                     // Report Not WIN to WAMP
-                    bet.User.PublishToWamp(checkres);
-                    Console.WriteLine("BetCheck: {0} = {1}", checkres.BoxId, checkres.IsWin);
+                    bet.User.PublishToWamp(checkres);                    
                 }
                 
             });
@@ -696,8 +672,7 @@ namespace BoxOptions.Services
                 };
                 // Publish to WAMP topic
                 bet.User.PublishToWamp(checkres);
-                Console.WriteLine("ProcessBetWin: {0} = {1}", checkres.BoxId, checkres.IsWin);
-
+                
                 // Save bet to Database
                 database.SaveGameBet(bet);
 
@@ -718,7 +693,6 @@ namespace BoxOptions.Services
             lock (BetCacheLock)
             {
                 bool res = betCache.Remove(bet);
-                Console.WriteLine("Bet Cache Size:{0}", betCache.Count);
             }
 
             // If bet was not won previously
@@ -750,8 +724,7 @@ namespace BoxOptions.Services
                     };
                     // Publish to WAMP topic
                     bet.User.PublishToWamp(checkres);
-                    Console.WriteLine("ProcessBetTimeOut: {0} = {1}", checkres.BoxId, checkres.IsWin);
-
+                    
                     // Save bet to Database
                     database.SaveGameBet(bet);
 
@@ -952,50 +925,6 @@ namespace BoxOptions.Services
         }
         #endregion
 
-        #region Tests
-        //private void MutexTest()
-        //{
-        //    var gdata = graphCache.GetGraphData();
-
-        //    int timeToFirstOption = 30000;
-        //    int optionLen = 30000;
-        //    double priceSize = 0.0002;
-        //    int nPriceindex = 15;
-        //    int nTimeIndex = 15;
-
-        //    foreach (var item in gdata)
-        //    {
-        //        Task t = CoeffCalculatorRequest("USERID", item.Key, timeToFirstOption, optionLen, priceSize, nPriceindex, nTimeIndex);
-        //        //t.Start();
-
-        //        optionLen += 1000;
-        //        priceSize += 0.0002;
-        //    }
-        //    Console.WriteLine("ss");
-        //}
-        //private async Task MutexTestAsync()
-        //{
-        //    var gdata = graphCache.GetGraphData();
-
-        //    int timeToFirstOption = 30000;
-        //    int optionLen = 30000;
-        //    double priceSize = 0.0002;
-        //    int nPriceindex = 15;
-        //    int nTimeIndex = 15;
-
-        //    foreach (var item in gdata)
-        //    {
-        //        if (item.Key == "BTCUSD")
-        //            continue;
-        //        string res = await CoeffCalculatorRequest("USERID", item.Key, timeToFirstOption, optionLen, priceSize, nPriceindex, nTimeIndex);
-        //        Console.WriteLine(res);
-        //        //t.Start();
-
-        //        optionLen += 1000;
-        //        priceSize += 0.0002;
-        //    }
-        //    Console.WriteLine("ss");
-        //}
-        #endregion
+       
     }
 }

@@ -406,8 +406,7 @@ namespace BoxOptions.Services
         {
             try
             {
-                string msg = "OK";
-                Console.WriteLine("{0} | PlaceBet > {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), box.Substring(0, 20));
+                string msg = "OK";                
                 DateTime betdate = _gameManager.PlaceBet(userId, assetPair, box, betValue, out msg);
                 //DateTime betdate = DateTime.UtcNow;
 

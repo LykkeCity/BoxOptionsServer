@@ -163,8 +163,6 @@ namespace BoxOptions.Public.Processors
             if (users == null || users.Length < 1)
                 return;
 
-            Console.WriteLine("{0} - DB.InsertUserBatch - Entries:[{1}]", DateTime.UtcNow.ToString("HH:mm:ss.fff"), users.Length);
-
             var usr = from u in users
                       select new UserItem()
                       {
@@ -191,9 +189,7 @@ namespace BoxOptions.Public.Processors
         {
             if (history == null || history.Length < 1)
                 return;
-
-            Console.WriteLine("{0} - DB.InsertHistoryBatch - Entries:[{1}]", DateTime.UtcNow.ToString("HH:mm:ss.fff"), history.Length);
-
+                        
             var hst = from h in history
                       select new UserHistoryItem()
                       {
@@ -220,9 +216,7 @@ namespace BoxOptions.Public.Processors
         {
             if (bets == null || bets.Length < 1)
                 return;
-
-            Console.WriteLine("{0} - DB.InsertGameBetBatch - Entries:[{1}]", DateTime.UtcNow.ToString("HH:mm:ss.fff"), bets.Length);
-
+            
             var bts = from b in bets
                       select new GameBetItem()
                       {

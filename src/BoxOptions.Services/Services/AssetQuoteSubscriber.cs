@@ -28,8 +28,7 @@ namespace BoxOptions.Services
         /// RabbitMQ Subscriber
         /// </summary>
         private RabbitMqSubscriber<AssetQuote> primarySubscriber;
-        private RabbitMqSubscriber<AssetQuote> secondarySubscriber;
-
+        
         Dictionary<string, InstrumentPrice> lastPrices;
 
         /// <summary>
@@ -90,30 +89,7 @@ namespace BoxOptions.Services
                .Subscribe(ProcessPrimaryMessage)
                .Start();                        
             log?.WriteInfoAsync("AssetQuoteSubscriber", "Start", null, $"AssetQuoteSubscriber Started Subscribing [{settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.RabbitMqConnectionString}]");
-
-
-            // Secondary Feed (optional)
-            if (settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.RabbitMqConnectionString != null &&
-                settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.RabbitMqConnectionString != "" &&
-                settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.RabbitMqConnectionString != "null")
-            {
-                secondarySubscriber = new RabbitMqSubscriber<AssetQuote>(new RabbitMqSubscriberSettings
-                {
-                    ConnectionString = settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.RabbitMqConnectionString,
-                    ExchangeName = settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.RabbitMqExchangeName,
-                    QueueName = settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.RabbitMqQueueName,
-                    IsDurable = false
-                })
-                  .SetMessageDeserializer(new MessageDeserializer<AssetQuote>())
-                  .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy())
-                  .SetLogger(log)
-                  .Subscribe(ProcessSecondaryMessage)
-                  .Start();
-                log?.WriteInfoAsync("AssetQuoteSubscriber", "Start", null, $"AssetQuoteSubscriber Started Subscribing Secondary Stream [{settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.RabbitMqConnectionString}]");
-            }
-            else
-                secondarySubscriber = null;
-
+            
             // Start Timer to check incoming dataconnection (checks every 30 seconds)
             int CheckInterval = settings.BoxOptionsApi.PricesSettingsBoxOptions.NoFeedSlackReportInSeconds;
             checkConnectionTimer.Change(CheckInterval * 1000, -1);
@@ -124,8 +100,7 @@ namespace BoxOptions.Services
 
             if (primarySubscriber != null)
                 primarySubscriber.Stop();
-            if (secondarySubscriber != null)
-                secondarySubscriber.Stop();
+            
             checkConnectionTimer.Change(-1, -1);
             checkConnectionTimer.Dispose();
 
@@ -141,26 +116,9 @@ namespace BoxOptions.Services
                 // Not in allowed assets list, discard entry
                 return Task.FromResult(0);
             else
-            {
-                //Console.WriteLine("PRI Stream:{0}", assetQuote);
                 return ProcessMessage(assetQuote);
-            }
         }
-        private Task ProcessSecondaryMessage(AssetQuote assetQuote)
-        {
-            //Message received, update timestamp.
-            secondaryStreamLastMessageTimeStamp = DateTime.UtcNow;
-
-            // Filter Asset from Secondary Stream Configuration File
-            if (!settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets.Contains(assetQuote.AssetPair))
-                // Not in allowed assets list, discard entry
-                return Task.FromResult(0);
-            else
-            {
-                //Console.WriteLine("SEC Stream:{0}",assetQuote);
-                return ProcessMessage(assetQuote);
-            }
-        }
+       
 
         private Task ProcessMessage(AssetQuote assetQuote)
         {
@@ -229,11 +187,7 @@ namespace BoxOptions.Services
                     (lastPrices[assetbid.Instrument].Ask == assetbid.Ask || lastPrices[assetbid.Instrument].Bid == assetbid.Bid))
                 {
                     // One price (Ask or Bid) has not changed. do not publish it
-                    // Must only be published when both Ask Bid prices have changed
-                    //Console.WriteLine("NOT Published [{4}]: {0}/{1} -> {2}/{3}",
-                    //    lastPrices[assetbid.Instrument].Ask, lastPrices[assetbid.Instrument].Bid,
-                    //    assetbid.Ask, assetbid.Bid,
-                    //    assetbid.Instrument);
+                    // Must only be published when both Ask Bid prices have changed                    
                     publish = false;
                 }
                 else
@@ -245,14 +199,12 @@ namespace BoxOptions.Services
             }
 
             if (assetbid.Ask <= 0 || assetbid.Bid <= 0)
-            {
-                //Console.WriteLine("Not Published Zero Price[{0}]: {1}/{2}", assetbid.Instrument, assetbid.Ask, assetbid.Bid);
+            {                
                 publish = false;
             }
 
             if (publish)
             {
-                //Console.WriteLine("Published[{0}]: {1}", assetbid.Instrument, assetbid);
                 MessageReceived?.Invoke(this, (InstrumentPrice)assetbid.ClonePrice());
             }
             return Task.FromResult(0);
@@ -271,7 +223,7 @@ namespace BoxOptions.Services
             if (primarySubscriber != null)
             {
                 double PrimaryStreamLastMessage = (currentdate - primaryStreamLastMessageTimeStamp).TotalSeconds;
-                //Console.WriteLine("Primary Last Message: {0}", PrimaryStreamLastMessage);
+                
                 // Last message receive longer than allowed in IncomingDataCheckInterval
                 if (PrimaryStreamLastMessage > settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.IncomingDataCheckInterval)
                 {
@@ -289,30 +241,7 @@ namespace BoxOptions.Services
             }
             #endregion
 
-            #region Secondary
-            if (secondarySubscriber != null)
-            {
-                double SecondaryStreamLastMessage = (currentdate - secondaryStreamLastMessageTimeStamp).TotalSeconds;
-                //Console.WriteLine("Secondary Last Message: {0}", SecondaryStreamLastMessage);
-
-                // Last message receive longer than allowed in IncomingDataCheckInterval
-                if (SecondaryStreamLastMessage > settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.IncomingDataCheckInterval)
-                {
-                    //Check if current date is in exclusion interval (feeds are not available)
-                    bool InExclusionInterval = CheckExclusionInterval(currentdate,
-                    settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.PricesWeekExclusionStart,
-                    settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.PricesWeekExclusionEnd);
-                    if (!InExclusionInterval)
-                    {
-                        // Not in exclusion interval, report error.                    
-                        string msg = string.Format("BoxOptions Server: No Messages from Secondary Feed for {0}", currentdate - primaryStreamLastMessageTimeStamp);
-                        log.WriteWarningAsync("AssetQuoteSubscriber", "CheckConnectionTimerCallback", "", msg, DateTime.UtcNow);
-                    }
-                }
-            }
-            #endregion
-
-
+          
             // Re-start timer if not disposing.
             if (!isDisposing)
                 checkConnectionTimer.Change(settings.BoxOptionsApi.PricesSettingsBoxOptions.NoFeedSlackReportInSeconds * 1000, -1);
