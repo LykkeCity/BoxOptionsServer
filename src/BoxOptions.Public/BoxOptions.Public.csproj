@@ -26,6 +26,7 @@
   <ItemGroup>
     <PackageReference Include="Flurl.Http" Version="1.1.2" />
     <PackageReference Include="Lykke.Logs" Version="1.0.14" />
+    <PackageReference Include="Lykke.SettingsReader" Version="1.0.35" />
     <PackageReference Include="Lykke.SlackNotification.AzureQueue" Version="1.0.4" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="1.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="1.1.1" />

@@ -24,24 +24,27 @@ namespace BoxOptions.Public
 {
     public class Startup
     {
+        public IConfigurationBuilder Builder { get; }
         public IConfigurationRoot Configuration { get; }
         public IHostingEnvironment Environment { get; }
         public IContainer ApplicationContainer { get; set; }
 
         public Startup(IHostingEnvironment env)
         {
-            var builder = new ConfigurationBuilder()
+            Builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
                 .AddJsonFile("appsettings.json", true, true)
                 .AddJsonFile("appsettings.dev.json", true, true)
                 .AddEnvironmentVariables();
 
-            Configuration = builder.Build();
+            Configuration = Builder.Build();
             Environment = env;
         }
 
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
+            BoxOptionsSettings settings = BuildConfiguration(services);
+
             services.AddMvc(o =>
                 {
                     o.Filters.Add(new HandleAllExceptionsFilterFactory());
@@ -60,13 +63,13 @@ namespace BoxOptions.Public
                 });
                 options.DescribeAllEnumsAsStrings();
             });
-
-            var settings = Environment.IsEnvironment("Development") 
-                ? Configuration.Get<BoxOptionsSettings>() 
-                : Configuration.GetValue<string>("SettingsUrl").GetJsonAsync<BoxOptionsSettings>().Result;
+                                               
+            //var settings = Environment.IsEnvironment("Development")
+            //    ? Configuration.Get<BoxOptionsSettings>()
+            //    : Configuration.GetValue<string>("SettingsUrl").GetJsonAsync<BoxOptionsSettings>().Result;
 
             var builder = new ContainerBuilder();
-
+                        
             builder.RegisterModule(new PublicApiModule(services, settings, Program.Name));
 
             builder.Populate(services);
@@ -74,6 +77,16 @@ namespace BoxOptions.Public
             ApplicationContainer = builder.Build();
 
             return new AutofacServiceProvider(ApplicationContainer);
+        }
+        private BoxOptionsSettings BuildConfiguration(IServiceCollection services)
+        {
+            BoxOptionsSettings settings = null;
+            if (Environment.IsEnvironment("Development"))
+                settings = Lykke.SettingsReader.SettingsReader.ReadGeneralSettings<BoxOptionsSettings>("appsettings.dev.json");
+            else
+                settings = Lykke.SettingsReader.SettingsReader.ReadGeneralSettings<BoxOptionsSettings>(new Uri(Configuration.GetValue<string>("SettingsUrl")));
+
+            return settings;
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, IApplicationLifetime appLifetime)
