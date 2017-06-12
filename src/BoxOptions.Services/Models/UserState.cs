@@ -46,6 +46,8 @@ namespace BoxOptions.Services.Models
         public int CurrentState { get => currentState; }
         public UserHistory[] StatusHistory => statusHistory.ToArray();
         public DateTime LastChange { get; set; }
+        public GameBet[] OpenBets  { get => openBets.ToArray(); }
+    
 
         public void SetBalance(decimal newBalance)
         {
@@ -80,23 +82,23 @@ namespace BoxOptions.Services.Models
             {
                 AssetPair = assetPair,
                 BetAmount = bet,
-                BetStatus = GameBet.BetStates.Waiting,
+                BetStatus = BetStates.Waiting,
                 Box = boxObject,
                 CurrentParameters = boxConfig,
                 Timestamp = DateTime.UtcNow
             };
             openBets.Add(retval);
-            // keep bet cache to 100
-            if (openBets.Count > 100)
+            // keep bet cache to 1000
+            if (openBets.Count > 1000)
                 openBets.RemoveAt(0);
 
             return retval;
         }
-        internal void LoadBets(IEnumerable<GameBet> bets)
-        {
-            openBets = new List<GameBet>(); ;
-            openBets.AddRange(bets);
-        }
+        //internal void LoadBets(IEnumerable<GameBet> bets)
+        //{
+        //    openBets = new List<GameBet>(); ;
+        //    openBets.AddRange(bets);
+        //}
 
         internal void StartWAMP(IWampHostedRealm wampRealm, string topicName)
         {

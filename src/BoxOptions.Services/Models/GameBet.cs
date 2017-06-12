@@ -5,15 +5,7 @@ using System;
 namespace BoxOptions.Services.Models
 {
     public class GameBet : IDisposable
-    {
-        public enum BetStates
-        {
-            Waiting = 0,
-            OnGoing = 1,
-            Lose = 2,
-            Win = 3
-        }
-
+    {        
         readonly string userId;
         UserState user;
 

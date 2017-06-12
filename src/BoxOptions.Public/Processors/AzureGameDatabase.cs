@@ -142,7 +142,7 @@ namespace BoxOptions.Public.Processors
                                 Timestamp = p.Date,
                                 CurrentParameters = p.Parameters.DeserializeJson<BoxSize>(),
                                 AssetPair = p.AssetPair,
-                                BetStatus = (GameBet.BetStates)p.BetStatus
+                                BetStatus = (Services.BetStates)p.BetStatus
                             };
             return converted;
         }

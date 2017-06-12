@@ -419,8 +419,11 @@ namespace BoxOptions.Services
                     if (OlderUser != null)
                     {
                         // Check if user does not have running bets
-                        var userOpenBets = from b in betCache
-                                           where b.UserId == OlderUser.UserId
+                        //var userOpenBets = from b in betCache
+                        //                   where b.UserId == OlderUser.UserId
+                        //                   select b;
+                        var userOpenBets = from b in OlderUser.OpenBets
+                                           where b.BetStatus == BetStates.Waiting || b.BetStatus == BetStates.OnGoing
                                            select b;
 
                         // No running bets. Kill user
@@ -607,7 +610,7 @@ namespace BoxOptions.Services
             // Run Check Asynchronously
             Task.Run(() =>
             {
-                if (bet == null || bet.BetStatus == GameBet.BetStates.Win || bet.BetStatus == GameBet.BetStates.Lose)
+                if (bet == null || bet.BetStatus == BetStates.Win || bet.BetStatus == BetStates.Lose)
                 {
                     // bet already processed;
                     return;
@@ -663,7 +666,7 @@ namespace BoxOptions.Services
         private void ProcessBetWin(GameBet bet)
         {   
             // Set bet to win
-            bet.BetStatus = GameBet.BetStates.Win;
+            bet.BetStatus = BetStates.Win;
             bet.WinStamp = DateTime.UtcNow;
 
             //Update user balance with prize            
@@ -719,10 +722,10 @@ namespace BoxOptions.Services
             }
 
             // If bet was not won previously
-            if (bet.BetStatus != GameBet.BetStates.Win)
+            if (bet.BetStatus != BetStates.Win)
             {                
                 // Set bet Status to lose
-                bet.BetStatus = GameBet.BetStates.Lose;
+                bet.BetStatus = BetStates.Lose;
 
                 // publish LOSE to WAMP topic                
                 var t = Task.Run(() => {
@@ -815,7 +818,7 @@ namespace BoxOptions.Services
 
                 var assetBets = (from b in betCacheSnap
                                  where b.AssetPair == e.Instrument &&
-                                 b.BetStatus != GameBet.BetStates.Win
+                                 b.BetStatus != BetStates.Win
                                  select b).ToList();
                 if (assetBets.Count == 0)
                     return;
