@@ -94,7 +94,8 @@ namespace BoxOptions.Services
 
             // Secondary Feed (optional)
             if (settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.RabbitMqConnectionString != null &&
-                settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.RabbitMqConnectionString != "")
+                settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.RabbitMqConnectionString != "" &&
+                settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.RabbitMqConnectionString != "null")
             {
                 secondarySubscriber = new RabbitMqSubscriber<AssetQuote>(new RabbitMqSubscriberSettings
                 {
