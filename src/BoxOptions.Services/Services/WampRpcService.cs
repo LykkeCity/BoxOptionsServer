@@ -485,7 +485,7 @@ namespace BoxOptions.Services
 
         private void LogInfo(string message, string sender = "this")
         {
-            _log?.WriteInfoAsync("WampRpcService", sender, "", message);
+            _log?.WriteInfoAsync("WampRpcService", sender, null, message);
         }
         private void LogError(Exception ex, string sender = "this")
         {
