@@ -4,7 +4,7 @@ namespace BoxOptions.Client
 {
     class Program
     {
-        const string UserId1 = "204af161-50c5-477b-8375-89bfc715c2cc";
+        const string UserId1 = "2E95B3E8-C9B3-4D66-830E-11922DD21EC0";
         const string UserId2 = "404af161-50c5-477b-8375-89bfc7150001";
         const string UserId3 = "604af161-50c5-477b-8375-89bfc7150001";
 
@@ -59,8 +59,7 @@ namespace BoxOptions.Client
                         Console.WriteLine(" > placebet - place a new bet on a box");
                         Console.WriteLine(" > placebet - place multiple bets at once");
                         Console.WriteLine(" > getbalance - gets user balance");
-                        Console.WriteLine(" > setbalance - sets user balance");
-                        Console.WriteLine(" > setpars - sets user parameters");                        
+                        Console.WriteLine(" > setbalance - sets user balance");                        
                         Console.WriteLine(" > coeff - gets asset coefficients");
 
                         break;
@@ -134,16 +133,11 @@ namespace BoxOptions.Client
                         if (newbal_val >= 0)
                             client.SetBalance(UserId, newbal_val);
                         break;
-                    case "setpars":
-                        Console.Write("\tAsset>");
-                        string sp_asset = Console.ReadLine();
-                        Random r = new Random();
-                        client.ChangeParameter(UserId, sp_asset, r.Next(50000), r.Next(8000), 0.0003d, 16, 17);
-                        break;                   
+                    
                     case "coeff":
                         Console.Write("\tAsset>");
                         string co_asset = Console.ReadLine();
-                        client.RequestCoeff(UserId, co_asset);
+                        client.RequestCoeff("2E95B3E8-C9B3-4D66-830E-11922DD21EC0", co_asset);
                         break;
                 }
             } while (input != "exit");

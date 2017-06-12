@@ -45,7 +45,9 @@ namespace BoxOptions.Services
         /// <returns>'OK' or error string</returns>
         [WampProcedure("user.setbalance")]
         string SetBalance(string userId, decimal balance);
-        
+
+
+
         /// <summary>
         /// Bet Placed
         /// </summary>
@@ -56,22 +58,18 @@ namespace BoxOptions.Services
         /// <returns>'OK' or error string</returns>
         [WampProcedure("game.placebet")]
         Models.PlaceBetResult PlaceBet(string userId, string assetPair ,string box, decimal betValue);
-        
-        /// <summary>
-        /// Coefficient Api Change Parameters
-        /// </summary>
-        /// <param name="userId">User Id</param>
-        /// <param name="pair">Instrument</param>
-        /// <param name="timeToFirstOption">timeToFirstOption</param>
-        /// <param name="optionLen">optionLen</param>
-        /// <param name="priceSize">priceSize</param>
-        /// <param name="nPriceIndex">nPriceIndex</param>
-        /// <param name="nTimeIndex">nTimeIndex</param>
-        /// <returns>'OK' or error string</returns>
-        [WampProcedure("coeffapi.changeparameters")]
-        string ChangeParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex);
-        
 
+        /// <summary>
+        /// Saves log to database
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="eventCode"></param>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        [WampProcedure("game.savelog")]
+        string SaveLog(string userId, string eventCode, string message);
+              
+       
         /// <summary>
         /// Coefficient Api Request Coefficients
         /// </summary>

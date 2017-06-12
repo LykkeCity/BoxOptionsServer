@@ -53,61 +53,7 @@ namespace BoxOptions.AzureRepositories
             };
         }
     }
-
-    public class UserParameterEntity : TableEntity, IUserParameterItem
-    {
-        public string UserId { get; set; }
-        public string AssetPair { get; set; }
-        public int TimeToFirstOption { get; set; }
-        public int OptionLen { get; set; }
-        public double PriceSize { get; set; }
-        public int NPriceIndex { get; set; }
-        public int NTimeIndex { get; set; }
-
-        public static string GetPartitionKey(string userId)
-        {
-            return userId;
-        }
-        public static string GetRowKey(string assetPair)
-        {
-            return $"userparam_{assetPair}";
-        }
-
-        public static UserParameterEntity Create(IUserParameterItem src)
-        {
-            return new UserParameterEntity
-            {
-                PartitionKey = GetPartitionKey(src.UserId),
-                RowKey = GetRowKey(src.AssetPair),
-                UserId = src.UserId,
-                AssetPair = src.AssetPair,
-                TimeToFirstOption = src.TimeToFirstOption,
-                OptionLen = src.OptionLen,
-                PriceSize = src.PriceSize,
-                NPriceIndex = src.NPriceIndex,
-                NTimeIndex = src.NTimeIndex
-                
-            };
-        }
-
-        public static UserParameterItem CreateUserParameterItem(UserParameterEntity src)
-        {
-            if (src == null)
-                return null;
-            return new UserParameterItem
-            {
-                UserId = src.UserId,
-                AssetPair = src.AssetPair,
-                TimeToFirstOption = src.TimeToFirstOption,
-                OptionLen = src.OptionLen,
-                PriceSize = src.PriceSize,
-                NPriceIndex = src.NPriceIndex,
-                NTimeIndex = src.NTimeIndex,
-                ServerTimestamp = src.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)
-            };
-        }
-    }
-
+    
     public class UserHistoryEntity : TableEntity, IUserHistoryItem
     {
         public string UserId { get; set; }
@@ -115,20 +61,27 @@ namespace BoxOptions.AzureRepositories
         public DateTime Date { get; set; }
         public string Message { get; set; }
 
-        
+        static int rowKeyCtr = 0;
 
         public static string GetPartitionKey(string userId, DateTime date)
         {
             return string.Format("{0}_{1}", userId, date.ToString("yyyyMMdd"));
         }
-        
+
+        public static string GetRowKey(DateTime date)
+        {
+            if (rowKeyCtr >= 999)
+                rowKeyCtr = 0;
+            return string.Format("{0}.{1}", date.ToString("yyyyMMdd_HHmmss"), rowKeyCtr++.ToString("D3"));
+        }
+
 
         public static UserHistoryEntity Create(IUserHistoryItem src)
         {
             return new UserHistoryEntity
             {
                 PartitionKey = GetPartitionKey(src.UserId,DateTime.UtcNow),
-                //RowKey = GetRowKey(src.Date),
+                RowKey = GetRowKey(src.Date),
                 UserId = src.UserId,
                 Date = src.Date,
                 Status = src.Status,
@@ -152,21 +105,39 @@ namespace BoxOptions.AzureRepositories
     
     public class UserRepository : IUserRepository
     {
-        private readonly AzureTableStorage<UserEntity> _storage;
-        private readonly AzureTableStorage<UserParameterEntity> _pstorage;
+        private readonly AzureTableStorage<UserEntity> _storage;        
         private readonly AzureTableStorage<UserHistoryEntity> _hstorage;
 
-        public UserRepository(AzureTableStorage<UserEntity> storage, AzureTableStorage<UserParameterEntity> pstorage, AzureTableStorage<UserHistoryEntity> hstorage)
+        public UserRepository(AzureTableStorage<UserEntity> storage, AzureTableStorage<UserHistoryEntity> hstorage)
         {
-            _storage = storage;
-            _pstorage = pstorage;
+            _storage = storage;            
             _hstorage = hstorage;
         }
 
-        public async Task InsertUserAsync(IUserItem olapEntity)
+        public async Task InsertUserAsync(IEnumerable<IUserItem> olapEntity)
         {
-            //await _storage.InsertAndGenerateRowKeyAsDateTimeAsync(UserEntity.Create(olapEntity), DateTime.UtcNow);
-            await _storage.InsertOrReplaceAsync(UserEntity.Create(olapEntity));
+            var total = olapEntity.Select(UserEntity.Create);
+            // Group by partition key
+            var grouping = from e in total
+                           group e by new { e.PartitionKey } into cms
+                           select new { key = cms.Key, val = cms.ToList() };
+
+
+            // Insert grouped baches 
+            foreach (var item in grouping)
+            {
+                var list = item.val;
+                do
+                {
+                    int bufferLen = 128;
+                    if (list.Count < 128)
+                        bufferLen = list.Count;
+                    var buffer = list.Take(bufferLen);
+                    await _storage.InsertOrReplaceBatchAsync(buffer);
+                    list.RemoveRange(0, bufferLen);
+
+                } while (list.Count > 0);
+            }
         }
 
         public async Task<UserItem> GetUser(string userId)
@@ -176,37 +147,32 @@ namespace BoxOptions.AzureRepositories
             return UserEntity.CreateUserItem(entities.FirstOrDefault());
                 
         }
-
-
-        bool insertingParams = false;
-        public async Task InsertManyParametersAsync(IEnumerable<IUserParameterItem> olapEntities)
-        {
-            if (insertingParams)
-            {
-                Console.WriteLine("{0}>Packet Lost: {1}", DateTime.UtcNow.ToString("HH:mm:ss"), olapEntities.Count());
-                return;
-            }
-            insertingParams = true;
-
-            var total = olapEntities.Select(UserParameterEntity.Create);
-
-            await _pstorage.InsertOrMergeBatchAsync(total);
         
-            insertingParams = false;
-        }
-
-        public async Task<IEnumerable<UserParameterItem>> GetUserParameters(string userId)
+        public async Task InsertHistoryAsync(IEnumerable<IUserHistoryItem> olapEntitiy)
         {
-            var entities = (await _pstorage.GetDataAsync(new[] { userId }, int.MaxValue,
-                    entity => entity.RowKey.StartsWith("userparam_") ))
-                .OrderByDescending(item => item.Timestamp);
+            var total = olapEntitiy.Select(UserHistoryEntity.Create);
+            
+            // Group by partition key
+            var grouping = from e in total
+                           group e by new { e.PartitionKey } into cms
+                           select new { key = cms.Key, val = cms.ToList() };
 
-            return entities.Select(UserParameterEntity.CreateUserParameterItem);
-        }
-                
-        public async Task InsertHistoryAsync(IUserHistoryItem olapEntitiy)
-        {            
-            await _hstorage.InsertAndGenerateRowKeyAsDateTimeAsync(UserHistoryEntity.Create(olapEntitiy),DateTime.UtcNow);
+
+            // Insert grouped baches 
+            foreach (var item in grouping)
+            {
+                var list = item.val;
+                do
+                {
+                    int bufferLen = 128;
+                    if (list.Count < 128)
+                        bufferLen = list.Count;
+                    var buffer = list.Take(bufferLen);
+                    await _hstorage.InsertOrReplaceBatchAsync(buffer);
+                    list.RemoveRange(0, bufferLen);
+
+                } while (list.Count > 0);
+            }
         }
 
         public async Task<IEnumerable<UserHistoryItem>> GetUserHistory(string userId, DateTime dateFrom, DateTime dateTo)

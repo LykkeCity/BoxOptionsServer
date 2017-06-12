@@ -28,10 +28,12 @@ namespace BoxOptions.Public.Controllers
         public async Task<IActionResult> Get()
         {
             try
-            {                
+            {
                 // CoefAPI test for slack logging
                 // TODO: remove API test
-                var result = await coefCalculator.RequestAsync("123456", "EURUSD");
+
+                var result = await coefCalculator.RequestAsync("123456", "EURCHF");
+
 
                 var answer = new VersionModel
                 {

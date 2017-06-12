@@ -77,9 +77,33 @@ namespace BoxOptions.AzureRepositories
             _betstorage = betstorage;
         }
 
-        public async Task InsertGameBetAsync(IGameBetItem olapEntity)
+        public async Task InsertGameBetAsync(IEnumerable<IGameBetItem> olapEntity)
         {
-            await _betstorage.InsertOrReplaceAsync(GameBetEntity.Create(olapEntity));
+
+            var total = olapEntity.Select(GameBetEntity.Create);
+
+            // Group by partition key
+            var grouping = from e in total
+                           group e by new { e.PartitionKey } into cms
+                           select new { key = cms.Key, val = cms.ToList() };
+
+
+            // Insert grouped baches 
+            foreach (var item in grouping)
+            {
+                var list = item.val;
+                do
+                {
+                    int bufferLen = 128;
+                    if (list.Count < 128)
+                        bufferLen = list.Count;
+                    var buffer = list.Take(bufferLen);
+                    await _betstorage.InsertOrReplaceBatchAsync(buffer);
+                    list.RemoveRange(0, bufferLen);
+
+                } while (list.Count > 0);
+            }
+            
         }
 
         public async Task<IEnumerable<GameBetItem>> GetGameBetsByUser(string userId, DateTime dateFrom, DateTime dateTo)

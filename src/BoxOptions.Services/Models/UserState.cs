@@ -1,4 +1,5 @@
 ﻿using BoxOptions.Common.Interfaces;
+using BoxOptions.Core.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,25 +15,17 @@ namespace BoxOptions.Services.Models
         decimal balance;
         int currentState;
         List<UserHistory> statusHistory;
-        List<CoeffParameters> userCoeffParameters;  // Coefficient Calculator parameters
         List<GameBet> openBets;                     // Bet cache
         ISubject<BetResult> subject;                // WAMP Subject
 
-        private DateTime lastDbSync;
-        public event EventHandler DbSyncRequest;
-        System.Threading.Timer dbSyncTimer;
-
+        
         public UserState(string userId)
         {
             this.userId = userId;
             statusHistory = new List<UserHistory>();
-            userCoeffParameters = new List<CoeffParameters>();
             openBets = new List<GameBet>();
             subject = null;
             LastChange = DateTime.UtcNow;
-
-            lastDbSync = DateTime.UtcNow;
-            dbSyncTimer = new System.Threading.Timer(new System.Threading.TimerCallback(DbSyncTimerCallback), null, 20 * 1000, 20 * 1000);            
         }
         public UserState(string userId, decimal balance, int currentState)
             : this(userId)
@@ -51,59 +44,9 @@ namespace BoxOptions.Services.Models
         /// </summary>
         public decimal Balance { get => balance; }
         public int CurrentState { get => currentState; }
-        public CoeffParameters[] UserCoeffParameters => userCoeffParameters.ToArray();
         public UserHistory[] StatusHistory => statusHistory.ToArray();
         public DateTime LastChange { get; set; }
 
-        public void SetParameters(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
-        {
-
-            CoeffParameters selectedPair = (from c in userCoeffParameters
-                                            where c.AssetPair == pair
-                                            select c).FirstOrDefault();
-            // Pair does not exist on parameter list, Add It
-            if (selectedPair == null)
-            {
-                selectedPair = new CoeffParameters() { AssetPair = pair };
-                userCoeffParameters.Add(selectedPair);
-            }
-            // Set parameters
-            selectedPair.TimeToFirstOption = timeToFirstOption;
-            selectedPair.OptionLen = optionLen;
-            selectedPair.PriceSize = priceSize;
-            selectedPair.NPriceIndex = nPriceIndex;
-            selectedPair.NTimeIndex = nTimeIndex;
-
-            LastChange = DateTime.UtcNow;
-        }
-        public void LoadParameters(IEnumerable<CoeffParameters> pars)
-        {
-            lastDbSync = DateTime.UtcNow;
-
-            // Ensure no duplicates
-            var distictPairs = (from p in pars
-                                select p.AssetPair).Distinct();
-            if (distictPairs.Count() != pars.Count())
-                throw new ArgumentException("Duplicate Assets found");
-
-
-            userCoeffParameters = new List<CoeffParameters>(pars);
-        }
-
-        public CoeffParameters GetParameters(string pair)
-        {
-            CoeffParameters selectedPair = (from c in userCoeffParameters
-                                            where c.AssetPair == pair
-                                            select c).FirstOrDefault();
-            // Pair does not exist on parameter list, Add It
-            if (selectedPair == null)
-            {
-                selectedPair = new CoeffParameters() { AssetPair = pair };
-                userCoeffParameters.Add(selectedPair);
-            }
-
-            return selectedPair;
-        }
         public void SetBalance(decimal newBalance)
         {
             balance = newBalance;
@@ -111,7 +54,7 @@ namespace BoxOptions.Services.Models
         }
         internal UserHistory SetStatus(int status, string message)
         {
-            UserHistory newEntry = new UserHistory()
+            UserHistory newEntry = new UserHistory(userId)
             {
                 Timestamp = DateTime.UtcNow,
                 Status = status,
@@ -127,10 +70,11 @@ namespace BoxOptions.Services.Models
 
             currentState = status;
             LastChange = DateTime.UtcNow;
+            
             return newEntry;
         }
 
-        internal GameBet PlaceBet(Box boxObject, string assetPair, decimal bet, CoeffParameters coefPars)
+        internal GameBet PlaceBet(Box boxObject, string assetPair, decimal bet, BoxSize boxConfig)
         {
             GameBet retval = new GameBet(this)
             {
@@ -138,7 +82,7 @@ namespace BoxOptions.Services.Models
                 BetAmount = bet,
                 BetStatus = GameBet.BetStates.Waiting,
                 Box = boxObject,
-                CurrentParameters = coefPars,
+                CurrentParameters = boxConfig,
                 Timestamp = DateTime.UtcNow
             };
             openBets.Add(retval);
@@ -160,6 +104,7 @@ namespace BoxOptions.Services.Models
         }
         internal void PublishToWamp(BetResult betResult)
         {
+            //Console.WriteLine("PublishToWamp: {0}", betResult.ToJson());
             if (subject == null)
                 throw new InvalidOperationException("Wamp Subject not set");
 
@@ -176,21 +121,11 @@ namespace BoxOptions.Services.Models
             }
         }
 
-        private void DbSyncTimerCallback(object status)
-        {            
-            if (LastChange < lastDbSync)
-                return; // No changes since last save to db
-            else
-            {
-             //   OnDbSyncRequest
-            }
-            
+       
 
-        }
-
-        private void OnDbSyncRequest(EventArgs e)
+        public override string ToString()
         {
-            DbSyncRequest?.BeginInvoke(this, e, null, null);
+            return userId;
         }
     }
 }

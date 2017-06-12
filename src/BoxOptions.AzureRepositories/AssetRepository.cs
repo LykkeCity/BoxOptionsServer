@@ -83,16 +83,9 @@ namespace BoxOptions.AzureRepositories
             return res;
 
         }
-        bool inserting = false;
+        
         public async Task InsertManyAsync(IEnumerable<IAssetItem> olapEntities)
-        {
-            if (inserting)
-            {
-                Console.WriteLine("{0}>Packet Lost: {1}", DateTime.UtcNow.ToString("HH:mm:ss"), olapEntities.Count());
-                return;
-            }
-            inserting = true;
-
+        {        
             var total = AssetEntity.Create(olapEntities);
 
             var grouping = from e in total
@@ -115,15 +108,8 @@ namespace BoxOptions.AzureRepositories
                     list.RemoveRange(0, bufferLen);
 
                 } while (list.Count > 0);
-
-                //Console.WriteLine("{0}>Inserting: {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), item.val.Count);                
-                
-                //Console.WriteLine("{0}>Inserted: {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), item.val.Count);
+             
             }
-
-            inserting = false;
-
-
         }
 
         public async Task<IEnumerable<AssetItem>> GetRange(DateTime dateFrom, DateTime dateTo, string assetPair)

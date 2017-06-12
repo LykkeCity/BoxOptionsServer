@@ -164,8 +164,8 @@ namespace BoxOptions.Client
 
         internal void PlaceBet(string userId, string assetpair, string box, decimal betAmount)
         {
-            var result = _service.PlaceBet(userId, assetpair, box, betAmount);
-            Console.WriteLine("{0}> PlaceBet({1},{2},{3}) = {4}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, betAmount, result.Status);
+            //var result = _service.PlaceBet(userId, assetpair, box, betAmount);
+            //Console.WriteLine("{0}> PlaceBet({1},{2},{3}) = {4}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, betAmount, result.Status);
         }
 
       
@@ -182,22 +182,17 @@ namespace BoxOptions.Client
             Console.WriteLine("{0}> SetBalance({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, newBalance, result);
         }
 
-        internal void ChangeParameter(string userId, string assetPair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
-        {
-            string result = _service.ChangeParameters(userId, assetPair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
-            Console.WriteLine("{0}> ChangeParameter({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, assetPair, result);
-        }
-       
-
+      
         internal void RequestCoeff(string userId, string pair)
         {
+            _service.SaveLog(userId, ((int)GameStatus.CoeffRequest).ToString(), $"Coeff Request: [{pair}]");
             var res = _service.RequestCoeff(userId, pair);
             Console.WriteLine(res);
         }
 
         internal void PlaceBets(string userId)
         {
-         
+
 
             // {"BoxId":"4E8F0395-7DB5-440F-B434-49217CF9DA89","MinPrice":0.9649558795483333,"MaxPrice":0.9650041204516666,"TimeToGraph":32.0,"TimeLength":6.999999999999992,"Coefficient":1.027643619053309,"BetState":3,"PreviousPrice":{"Instrument":"USDCHF","Bid":0.96499,"Ask":0.96503,"Date":"2017-06-08T04:03:17.673696Z","Time":1496894597673},"CurrentPrice":{"Instrument":"USDCHF","Bid":0.96496,"Ask":0.965,"Date":"2017-06-08T04:03:22.778847Z","Time":1496894602778},"TimeToGraphStamp":"2017-06-08T04:04:42.819815Z","WinStamp":"2017-06-08T04:04:42.819902Z","FinishedStamp":null,"Timestamp":"2017-06-08T04:04:11.208345Z","BetAmount":1.0,"IsWin":true}
             string boxstring = "{{" +
@@ -205,8 +200,8 @@ namespace BoxOptions.Client
                 "\"Coefficient\":{1}," +
                 "\"MinPrice\":0.9649558795483333," +
                 "\"MaxPrice\":0.9650041204516666," +
-                "\"TimeToGraph\":8," +
-                "\"TimeLength\":6.9999999999999973" +                
+                "\"TimeToGraph\":32," +
+                "\"TimeLength\":6.9999999999999973" +
                 "}}";
             // place 20 bets concurrently
             double coef = 1.027643619053309;
@@ -214,7 +209,7 @@ namespace BoxOptions.Client
             List<PlaceBetResult> results = new List<PlaceBetResult>();
             for (int i = 0; i < 100; i++)
             {
-                Task.Run(()=>
+                Task.Run(() =>
                 {
                     string GUID = Guid.NewGuid().ToString().ToLower();
                     try
@@ -222,8 +217,8 @@ namespace BoxOptions.Client
                         string box = string.Format(CI, boxstring, GUID, coef);
                         coef += 0.02;
                         Console.WriteLine("{0} | {1} > Placing Bet", DateTime.UtcNow.ToString("HH:mm:ss.fff"), GUID);
-                        PlaceBetResult result = _service.PlaceBet(userId, "USDCHF", box, 1);
-                        Console.WriteLine("{0} | {1} > Result = {2} ({3})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), GUID, result.BetTimeStamp.ToString("yyyy-MM-dd_HH:mm:ss.fff"), result.Status);                        
+                        PlaceBetResult result = _service.PlaceBet(userId, "BTCUSD", box, 1);
+                        Console.WriteLine("{0} | {1} > Result = {2} ({3})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), GUID, result.BetTimeStamp.ToString("yyyy-MM-dd_HH:mm:ss.fff"), result.Status);
                         results.Add(result);
                     }
                     catch (Exception ex)

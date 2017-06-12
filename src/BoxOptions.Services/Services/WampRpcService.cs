@@ -406,10 +406,12 @@ namespace BoxOptions.Services
         {
             try
             {
-                Console.WriteLine("{0} | PlaceBet > {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), box.Substring(0,20));
-                string msg;
+                string msg = "OK";
+                Console.WriteLine("{0} | PlaceBet > {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), box.Substring(0, 20));
                 DateTime betdate = _gameManager.PlaceBet(userId, assetPair, box, betValue, out msg);
                 //DateTime betdate = DateTime.UtcNow;
+
+
                 return new PlaceBetResult()
                 {
                     BetTimeStamp = betdate,
@@ -453,21 +455,6 @@ namespace BoxOptions.Services
                 return ex.Message;
             }
         }
-
-        public string ChangeParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
-        {
-            try
-            {
-                _gameManager.SetUserParameters(userId, pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
-                return "OK";
-            }
-            catch (Exception ex)
-            {
-                LogError(ex, "ChangeParameters");
-                return ex.Message;
-            }
-        }
-      
         public string RequestCoeff(string userId, string pair)
         {
             try
@@ -480,14 +467,29 @@ namespace BoxOptions.Services
                 return ex.Message;
             }
         }
-               
+
+        public string SaveLog(string userId, string eventCode, string message)
+        {
+            try
+            {                               
+                _gameManager.AddUserLog(userId, eventCode, message);
+
+                return "OK";
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, "RequestCoeff");
+                return ex.Message;
+            }
+        }
+
         private void LogInfo(string message, string sender = "this")
         {
             _log?.WriteInfoAsync("WampRpcService", sender, "", message);
         }
         private void LogError(Exception ex, string sender = "this")
         {
-            _log?.WriteErrorAsync("WampRpcService", sender, "", ex);
+            _log?.WriteErrorAsync("WampRpcService", sender, null, ex);
         }
                 
 
