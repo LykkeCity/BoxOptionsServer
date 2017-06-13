@@ -189,6 +189,16 @@ namespace BoxOptions.Client
             var res = _service.RequestCoeff(userId, pair);
             Console.WriteLine(res);
         }
+        internal void RequestCoeffs(string userId, string pair)
+        {
+            //_service.SaveLog(userId, ((int)GameStatus.CoeffRequest).ToString(), $"Coeff Request: [{pair}]");
+            for (int i = 0; i < 20; i++)
+            {
+                var res = _service.RequestCoeff(userId, pair);
+                Console.WriteLine("{0} > {1}", i, res);
+                System.Threading.Thread.Sleep(999);
+            }
+        }
 
         internal void PlaceBets(string userId)
         {

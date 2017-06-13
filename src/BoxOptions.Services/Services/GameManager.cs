@@ -20,6 +20,7 @@ namespace BoxOptions.Services
         const int NTimeIndex = 8;   // Number of rows hardcoded
         const int CoeffMonitorTimerInterval = 1000; // Coeff cache update interval (milliseconds)
 
+        
 
         #region Vars
         /// <summary>
@@ -96,6 +97,8 @@ namespace BoxOptions.Services
 
         System.Threading.Timer CoeffMonitorTimer = null;
         bool isDisposing = false;
+
+        DateTime lastCoeffChange;
         #endregion
 
         #region Constructor
@@ -129,19 +132,7 @@ namespace BoxOptions.Services
         #endregion
 
         #region Methods
-
-        private void InitializeCoefCalc()
-        {
-            BoxSize[] calculatedParams = CalculatedBoxes(defaultBoxConfig, micrographCache);
-
-            Task t = CoeffCalculatorChangeBatch(GameManagerId, calculatedParams);
-            t.Wait();
-
-            LoadCoefficientCache();
-
-            StartCoefficientCacheMonitor();
-        }
-
+              
         private List<BoxSize> LoadBoxParameters()
         {
             Task<IEnumerable<BoxSize>> t = boxConfigRepository.GetAll();
@@ -242,6 +233,17 @@ namespace BoxOptions.Services
         #region Coefficient Cache Monitor
         Dictionary<string, string> CoefficientCache;
 
+        private void InitializeCoefCalc()
+        {
+            BoxSize[] calculatedParams = CalculatedBoxes(defaultBoxConfig, micrographCache);
+
+            Task t = CoeffCalculatorChangeBatch(GameManagerId, calculatedParams);
+            t.Wait();
+
+            LoadCoefficientCache();
+
+        }
+
         private void LoadCoefficientCache()
         {
             string[] assets = defaultBoxConfig.Select(b => b.AssetPair).ToArray();
@@ -251,7 +253,9 @@ namespace BoxOptions.Services
 
             lock (CoeffCacheLock)
             {
+                //Console.WriteLine("{0} > LOCK A", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                 CoefficientCache = t.Result;
+                //Console.WriteLine("{0} > UNLOCK A", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
             }
         }
 
@@ -260,7 +264,9 @@ namespace BoxOptions.Services
             string retval = "";
             lock (CoeffCacheLock)
             {
+                //Console.WriteLine("{0} > LOCK B", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                 retval = CoefficientCache[assetPair];
+                //Console.WriteLine("{0} > UNLOCK B", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
             }
             return retval;
         }
@@ -275,7 +281,11 @@ namespace BoxOptions.Services
             CoeffMonitorTimer.Change(-1, -1);
             try
             {
-                LoadCoefficientCache();
+                // If more than 1 minute passed since last change, do another change
+                if (lastCoeffChange.AddMinutes(1) < DateTime.UtcNow)
+                    InitializeCoefCalc();
+                else
+                    LoadCoefficientCache();
             }
             catch (Exception ex)
             {
@@ -296,10 +306,15 @@ namespace BoxOptions.Services
                 foreach (var box in boxes)
                 {
                     // Change calculator parameters for current pair with User parameters                    
-                    res = await calculator.ChangeAsync(userId, box.AssetPair, Convert.ToInt32(box.TimeToFirstBox), Convert.ToInt32(box.BoxHeight), box.BoxWidth, NPriceIndex, NTimeIndex);
+                    res = await calculator.ChangeAsync(userId, box.AssetPair, Convert.ToInt32(box.TimeToFirstBox), Convert.ToInt32(box.BoxHeight), box.BoxWidth, NPriceIndex, NTimeIndex);                    
                     if (res != "OK")
                         throw new InvalidOperationException(res);
-                }                
+
+                    string msg = $"Coeff Change:[{box.AssetPair}] TimeToFirstBox={box.TimeToFirstBox}), BoxHeight={box.BoxHeight}, BoxWidth={box.BoxWidth}, NPriceIndex={NPriceIndex}, NTimeIndex={NTimeIndex}";
+                    //Console.WriteLine("{0} > {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), msg);
+                    await appLog?.WriteInfoAsync("Gamemanager", "CoeffCalculatorChangeBatch", null, msg);
+                }
+                lastCoeffChange = DateTime.UtcNow;
                 return res;
             }
             finally { coeffCalculatorSemaphoreSlim.Release(); }
@@ -327,6 +342,7 @@ namespace BoxOptions.Services
                 foreach (var asset in assetPairs)
                 {
                     string res = await calculator.RequestAsync(userId, asset);
+                    //Console.WriteLine("{0} > Coeff Request:[{1}]", DateTime.UtcNow.ToString("HH:mm:ss.fff"), asset);
                     retval.Add(asset, res);
                 }
                 return retval;
@@ -358,6 +374,8 @@ namespace BoxOptions.Services
                                         TimeToFirstBox = c.TimeToFirstBox
                                     }).ToList();
                 InitializeCoefCalc();
+
+                StartCoefficientCacheMonitor();
 
             }
 

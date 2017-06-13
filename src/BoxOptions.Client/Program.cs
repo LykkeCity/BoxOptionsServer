@@ -139,6 +139,9 @@ namespace BoxOptions.Client
                         string co_asset = Console.ReadLine();
                         client.RequestCoeff("2E95B3E8-C9B3-4D66-830E-11922DD21EC0", co_asset);
                         break;
+                    case "coeffs":
+                        client.RequestCoeffs(UserId, "EURCHF");
+                        break;
                 }
             } while (input != "exit");
             client.Stop();
