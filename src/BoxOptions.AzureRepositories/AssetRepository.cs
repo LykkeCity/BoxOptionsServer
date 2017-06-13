@@ -70,6 +70,7 @@ namespace BoxOptions.AzureRepositories
 
     public class AssetRepository : IAssetRepository
     {
+        const int maxbuffer = 100;
         private readonly AzureTableStorage<AssetEntity> _storage;
 
         public AssetRepository(AzureTableStorage<AssetEntity> storage)
@@ -100,10 +101,11 @@ namespace BoxOptions.AzureRepositories
 
                 do
                 {
-                    int bufferLen = 64;
-                    if (list.Count < 64)
+                    int bufferLen = maxbuffer;
+                    if (list.Count < maxbuffer)
                         bufferLen = list.Count;
                     var buffer = list.Take(bufferLen);
+                    //Console.WriteLine("Inserting {0} records", bufferLen);
                     await _storage.InsertOrMergeBatchAsync(buffer);
                     list.RemoveRange(0, bufferLen);
 

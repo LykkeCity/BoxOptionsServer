@@ -13,13 +13,9 @@ namespace BoxOptions.Public.Processors
     {
         IAssetRepository assetRep;
         bool isDisposing = false;
-        int queueMaxSize = 64;
+        int queueMaxSize = 100;
         Dictionary<string, Queue<AssetQuote>> assetCache;
-
-
-        private static object InsertLock = new object();
-
-
+        
         public AzureQuoteDatabase(IAssetRepository assetRep)
         {
             this.assetRep = assetRep;
@@ -42,35 +38,37 @@ namespace BoxOptions.Public.Processors
 
             assetCache[quote.AssetPair].Enqueue(quote);
 
-            
+
 
             if (assetCache[quote.AssetPair].Count >= queueMaxSize)
             {
                 List<AssetQuote> buffer = assetCache[quote.AssetPair].ToList();
                 assetCache[quote.AssetPair].Clear();
-                lock (InsertLock)
-                {
-                    InsertInAzure(buffer);
-                }
-
+                InsertInAzure(buffer);
             }
 
 
          
         }
 
-        private void InsertInAzure(List<AssetQuote> buffer)
-        {
-            List<AssetItem> exportVector = (from q in buffer
-                                            select new AssetItem
-                                            {
-                                                AssetPair = q.AssetPair,
-                                                Date = q.Timestamp,
-                                                IsBuy = q.IsBuy,
-                                                Price = q.Price
-                                            }).ToList();            
-            Task t = assetRep.InsertManyAsync(exportVector);
-            t.Wait();
+        private async void InsertInAzure(List<AssetQuote> buffer)
+        {            
+            try
+            {            
+                List<AssetItem> exportVector = (from q in buffer
+                                                select new AssetItem
+                                                {
+                                                    AssetPair = q.AssetPair,
+                                                    Date = q.Timestamp,
+                                                    IsBuy = q.IsBuy,
+                                                    Price = q.Price
+                                                }).ToList();
+                await assetRep.InsertManyAsync(exportVector);             
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }            
         }
 
         private async Task<IAssetItem> InsertInAzure(AssetQuote quote)
@@ -113,11 +111,8 @@ namespace BoxOptions.Public.Processors
                 {
                     List<AssetQuote> buffer = assetCache[key].ToList();
                     assetCache[key].Clear();
-                    lock (InsertLock)
-                    {
-                        InsertInAzure(buffer);
-                    }
 
+                    InsertInAzure(buffer);
                 }
             }
            

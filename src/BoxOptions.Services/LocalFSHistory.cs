@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 namespace BoxOptions.Services
 {
     public class LocalFSHistory : IAssetDatabase
-    {                           
+    {
         static System.Globalization.CultureInfo Ci = new System.Globalization.CultureInfo("en-us");
         static object AssetFileAccessLock = new object();
         static object UserFileAccessLock = new object();
-                
+
         private Task<LinkedList<AssetQuote>> LoadAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair)
         {
-            LinkedList<AssetQuote> retval = new LinkedList<AssetQuote>();            
+            LinkedList<AssetQuote> retval = new LinkedList<AssetQuote>();
             try
             {
                 lock (AssetFileAccessLock)
@@ -61,10 +61,11 @@ namespace BoxOptions.Services
                 throw;
             }
             return Task.FromResult(retval);
-        }        
-       
-        private Task AddToAssetFile(string line)
+        }
+
+        private Task AddToAssetFile(AssetQuote[] buffer)
         {
+            
             lock (AssetFileAccessLock)
             {
                 string assetHistoryFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"boxoptions.assets{DateTime.UtcNow.ToString("yyyyMMdd")}.hist");
@@ -74,10 +75,15 @@ namespace BoxOptions.Services
                     historystream.Dispose();
                 }
 
-                using (var filestream = new System.IO.FileStream(assetHistoryFile, System.IO.FileMode.Append,System.IO.FileAccess.Write))
+                using (var filestream = new System.IO.FileStream(assetHistoryFile, System.IO.FileMode.Append, System.IO.FileAccess.Write))
                 using (var textstream = new System.IO.StreamWriter(filestream))
-                {                    
-                    textstream.WriteLine(line);
+                {
+                    foreach (var quote in buffer)
+                    {
+                        string line = string.Format("{0}|{1}|{2}|{3}", quote.Timestamp.ToString("yyyyMMdd_HHmmssff", Ci), quote.AssetPair, quote.IsBuy ? "1" : "0", quote.Price.ToString(Ci));
+                        textstream.WriteLine(line);
+                    }
+                    
                 }
             }
             return Task.FromResult(0);
@@ -87,13 +93,20 @@ namespace BoxOptions.Services
         {
             return LoadAssetHistory(dateFrom, dateTo, assetPair);
         }
-
+        Queue<AssetQuote> AssetQueue = new Queue<AssetQuote>();
         Task IAssetDatabase.AddToAssetHistory(AssetQuote quote)
-        {
-            string line = string.Format("{0}|{1}|{2}|{3}", quote.Timestamp.ToString("yyyyMMdd_HHmmssff", Ci), quote.AssetPair, quote.IsBuy ? "1" : "0", quote.Price.ToString(Ci));
+        {            
+            AssetQueue.Enqueue(quote);
             try
             {
-                return AddToAssetFile(line);
+                if (AssetQueue.Count >= 512)
+                {
+                    AssetQuote[] buffer = AssetQueue.ToArray();
+                    AssetQueue.Clear();
+                    AddToAssetFile(buffer);
+                }
+                return Task.FromResult(0);
+
             }
             catch
             {
