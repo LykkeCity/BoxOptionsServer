@@ -12,9 +12,9 @@ namespace BoxOptions.Services
         static object AssetFileAccessLock = new object();
         static object UserFileAccessLock = new object();
 
-        private Task<LinkedList<AssetQuote>> LoadAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair)
+        private Task<LinkedList<BestBidAsk>> LoadAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair)
         {
-            LinkedList<AssetQuote> retval = new LinkedList<AssetQuote>();
+            LinkedList<BestBidAsk> retval = new LinkedList<BestBidAsk>();
             try
             {
                 lock (AssetFileAccessLock)
@@ -40,12 +40,13 @@ namespace BoxOptions.Services
                                         DateTime dt = DateTime.ParseExact(values[0], "yyyyMMdd_HHmmssff", Ci);
                                         if (dt >= dateFrom && dt <= dateTo)
                                         {
-                                            retval.AddLast(new AssetQuote()
+                                            retval.AddLast(new BestBidAsk()
                                             {
                                                 Timestamp = dt,
-                                                AssetPair = values[1],
-                                                IsBuy = values[2] == "1" ? true : false,
-                                                Price = double.Parse(values[3], Ci)
+                                                Asset = values[1],
+                                                BestBid = double.Parse(values[2], Ci),
+                                                BestAsk = double.Parse(values[3], Ci),
+                                                Source = values[4]
                                             });
                                         }
                                     }
@@ -63,7 +64,7 @@ namespace BoxOptions.Services
             return Task.FromResult(retval);
         }
 
-        private Task AddToAssetFile(AssetQuote[] buffer)
+        private Task AddToAssetFile(BestBidAsk[] buffer)
         {
             
             lock (AssetFileAccessLock)
@@ -80,7 +81,13 @@ namespace BoxOptions.Services
                 {
                     foreach (var quote in buffer)
                     {
-                        string line = string.Format("{0}|{1}|{2}|{3}", quote.Timestamp.ToString("yyyyMMdd_HHmmssff", Ci), quote.AssetPair, quote.IsBuy ? "1" : "0", quote.Price.ToString(Ci));
+                        string line = string.Format("{0}|{1}|{2}|{3}|{4}",
+                            quote.Timestamp.ToString("yyyyMMdd_HHmmssff", Ci),
+                            quote.Asset,
+                            quote.BestBid.Value.ToString(Ci),
+                            quote.BestAsk.Value.ToString(Ci),
+                            quote.Source
+                            );
                         textstream.WriteLine(line);
                     }
                     
@@ -89,19 +96,19 @@ namespace BoxOptions.Services
             return Task.FromResult(0);
         }
 
-        public Task<LinkedList<AssetQuote>> GetAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair)
+        public Task<LinkedList<BestBidAsk>> GetAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair)
         {
             return LoadAssetHistory(dateFrom, dateTo, assetPair);
         }
-        Queue<AssetQuote> AssetQueue = new Queue<AssetQuote>();
-        Task IAssetDatabase.AddToAssetHistory(AssetQuote quote)
+        Queue<BestBidAsk> AssetQueue = new Queue<BestBidAsk>();
+        Task IAssetDatabase.AddToAssetHistory(BestBidAsk quote)
         {            
             AssetQueue.Enqueue(quote);
             try
             {
                 if (AssetQueue.Count >= 512)
                 {
-                    AssetQuote[] buffer = AssetQueue.ToArray();
+                    BestBidAsk[] buffer = AssetQueue.ToArray();
                     AssetQueue.Clear();
                     AddToAssetFile(buffer);
                 }

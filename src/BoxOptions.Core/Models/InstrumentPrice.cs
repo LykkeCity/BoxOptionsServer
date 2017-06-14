@@ -5,6 +5,7 @@ namespace BoxOptions.Core.Models
     public class InstrumentPrice:Price
     {
         public string Instrument { get; set; }
+        public string Source { get; set; }
 
         public override Price ClonePrice()
         {
@@ -14,6 +15,7 @@ namespace BoxOptions.Core.Models
                 InstrumentPrice retval = new InstrumentPrice()
                 {
                     Instrument = this.Instrument,
+                    Source = this.Source,
                     Ask = res.Ask,
                     Bid = res.Bid,
                     Date = res.Date

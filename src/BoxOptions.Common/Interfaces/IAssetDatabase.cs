@@ -7,7 +7,7 @@ namespace BoxOptions.Common.Interfaces
 {
     public interface IAssetDatabase
     {
-        Task<LinkedList<AssetQuote>> GetAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair);
-        Task AddToAssetHistory(AssetQuote quote);
+        Task<LinkedList<BestBidAsk>> GetAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair);
+        Task AddToAssetHistory(BestBidAsk bidask);
     }
 }

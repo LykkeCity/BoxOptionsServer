@@ -12,58 +12,50 @@ using System.Threading.Tasks;
 
 namespace BoxOptions.AzureRepositories
 {
-    public class AssetEntity : TableEntity, IAssetItem
+    public class BestBidAskEntity : TableEntity, IBestBidAsk
     {
-        public string AssetPair { get; set; }
-        public bool IsBuy { get; set; }
-        public double Price { get; set; }
-        public DateTime Date { get; set; }
+        public string Asset { get; set; }
+        public double? BestAsk { get; set; }
+        public double? BestBid { get; set; }
+        public string Source { get; set; }
 
-        public static string GetPartitionKey(IAssetItem src)
+        DateTime IBestBidAsk.Timestamp { get; }
+
+        public static string GetPartitionKey(IBestBidAsk src)
         {
-            string key = string.Format("{0}_{1}", src.AssetPair, src.Date.ToString("yyyyMMdd_HH"));
+            string key = string.Format("{0}_{1}", src.Asset, src.Timestamp.ToString("yyyyMMdd_HH"));
+            return key;
+        }
+        public static string GetRowKey(IBestBidAsk src)
+        {
+            string key = src.Timestamp.Ticks.ToString();
             return key;
         }
 
-        public static AssetEntity Create(IAssetItem src)
+        public static BestBidAskEntity Create(IBestBidAsk src)
         {
-            return new AssetEntity
+            return new BestBidAskEntity
             {
                 PartitionKey = GetPartitionKey(src),
-                AssetPair = src.AssetPair,
-                IsBuy = src.IsBuy,
-                Price = src.Price,
-                Date = src.Date
+                RowKey = GetRowKey(src),
+                Asset = src.Asset,
+                BestAsk = src.BestAsk,
+                BestBid = src.BestBid,
+                Timestamp = src.Timestamp,
+                Source = src.Source
             };
         }
-
-        public static IEnumerable<AssetEntity> Create(IEnumerable<IAssetItem> src)
+        
+        public static BestBidAsk CreateBestBidAsk(BestBidAskEntity src)
         {
-            int ctr = 0;
-            var res = from s in src
-                      select new AssetEntity
-                      {
-
-                          PartitionKey = GetPartitionKey(s),
-                          RowKey = string.Format("{0}.{1}", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm.ss"), ctr++.ToString("D3")),
-                          AssetPair = s.AssetPair,
-                          IsBuy = s.IsBuy,
-                          Price = s.Price,
-                          Date = s.Date
-                      };
-            return res;
-
-        }
-
-        public static AssetItem CreateAssetItem(AssetEntity src)
-        {
-            return new AssetItem
+            long ticks = long.Parse(src.RowKey);
+            return new BestBidAsk
             {
-                AssetPair = src.AssetPair,
-                Date = src.Date,
-                Price = src.Price,
-                IsBuy = src.IsBuy,
-                ServerTimestamp = src.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)
+                Asset = src.Asset,
+                BestAsk = src.BestAsk,
+                BestBid = src.BestBid,
+                Timestamp = new DateTime(ticks, DateTimeKind.Utc),
+                Source = src.Source
             };
         }
     }
@@ -71,23 +63,17 @@ namespace BoxOptions.AzureRepositories
     public class AssetRepository : IAssetRepository
     {
         const int maxbuffer = 100;
-        private readonly AzureTableStorage<AssetEntity> _storage;
+        private readonly AzureTableStorage<BestBidAskEntity> _storage;
 
-        public AssetRepository(AzureTableStorage<AssetEntity> storage)
+        public AssetRepository(AzureTableStorage<BestBidAskEntity> storage)
         {
             _storage = storage;
         }
 
-        public async Task<IAssetItem> InsertAsync(IAssetItem olapEntity)
+                
+        public async Task InsertManyAsync(IEnumerable<IBestBidAsk> olapEntities)
         {
-            IAssetItem res = await _storage.InsertAndGenerateRowKeyAsDateTimeAsync(AssetEntity.Create(olapEntity), DateTime.UtcNow);
-            return res;
-
-        }
-        
-        public async Task InsertManyAsync(IEnumerable<IAssetItem> olapEntities)
-        {        
-            var total = AssetEntity.Create(olapEntities);
+            var total = olapEntities.Select(BestBidAskEntity.Create);
 
             var grouping = from e in total
                            group e by new { e.PartitionKey } into cms
@@ -105,7 +91,7 @@ namespace BoxOptions.AzureRepositories
                     if (list.Count < maxbuffer)
                         bufferLen = list.Count;
                     var buffer = list.Take(bufferLen);
-                    //Console.WriteLine("Inserting {0} records", bufferLen);
+                    Console.WriteLine("Inserting {0} records", bufferLen);
                     await _storage.InsertOrMergeBatchAsync(buffer);
                     list.RemoveRange(0, bufferLen);
 
@@ -114,35 +100,23 @@ namespace BoxOptions.AzureRepositories
             }
         }
 
-        public async Task<IEnumerable<AssetItem>> GetRange(DateTime dateFrom, DateTime dateTo, string assetPair)
+        public async Task<IEnumerable<BestBidAsk>> GetRange(DateTime dateFrom, DateTime dateTo, string assetPair)
         {
             DateTime currentDate = dateFrom.Date;
-            List<AssetEntity> retval = new List<AssetEntity>();
-            Console.WriteLine("{0} > Getting Assets {1} > {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), dateFrom, dateTo);
+            List<BestBidAskEntity> retval = new List<BestBidAskEntity>();            
             do
             {
                 string PartitionKey = string.Format("{0}_{1}", assetPair, currentDate.ToString("yyyyMMdd_HH"));
-                //Console.WriteLine("{0} > Key = {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), PartitionKey);
-
-
+                
                 var entities = (await _storage.GetDataAsync(new[] { PartitionKey }, int.MaxValue))
                 .OrderByDescending(item => item.Timestamp);
-
-                //Console.WriteLine("{0} > Retrieved {1} entities", DateTime.UtcNow.ToString("HH:mm:ss.fff"), entities.Count());
                 retval.AddRange(entities);
-
-                //var entities = (await _storage.GetDataAsync(new[] { PartitionKey }, int.MaxValue,
-                //    entity => entity.Timestamp >= dateFrom && entity.Timestamp < dateTo))
-                //.OrderByDescending(item => item.Timestamp);
-
-
-
+                // Next partition key (hours)
                 currentDate = currentDate.AddHours(1);
 
             } while (currentDate < dateTo.Date.AddDays(1));
-
-            Console.WriteLine("{0} > Finished. Returning {1} entities", DateTime.UtcNow.ToString("HH:mm:ss.fff"), retval.Count);
-            return retval.Select(AssetEntity.CreateAssetItem);
+                        
+            return retval.Select(BestBidAskEntity.CreateBestBidAsk);
         }
 
 

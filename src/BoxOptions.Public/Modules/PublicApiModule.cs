@@ -84,8 +84,8 @@ namespace BoxOptions.Public.Modules
                 "ClientEventLogs", log)))
                 .As<ILogRepository>();
             // Quote Feed Repository
-            builder.RegisterInstance(new AssetRepository(new AzureTableStorage<AzureRepositories.AssetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "QuoteFeedHistory", log)))
+            builder.RegisterInstance(new AssetRepository(new AzureTableStorage<AzureRepositories.BestBidAskEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "BestBidAskHistory", log)))
                 .As<IAssetRepository>();
             //builder.RegisterInstance(new OldAssetRepository(new AzureTableStorage<AzureRepositories.OldAssetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
             //    "QuoteFeed", log)))

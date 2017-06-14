@@ -13,89 +13,64 @@ namespace BoxOptions.Public.Processors
     {
         IAssetRepository assetRep;
         bool isDisposing = false;
-        int queueMaxSize = 100;
-        Dictionary<string, Queue<AssetQuote>> assetCache;
+        const int queueMaxSize = 100;
+        Dictionary<string, Queue<BestBidAsk>> assetCache;
         
         public AzureQuoteDatabase(IAssetRepository assetRep)
         {
             this.assetRep = assetRep;
-            assetCache = new Dictionary<string, Queue<AssetQuote>>();
+            assetCache = new Dictionary<string, Queue<BestBidAsk>>();
         }
 
-        public Task AddToAssetHistory(AssetQuote quote)
+        public Task AddToAssetHistory(BestBidAsk bidask)
         {
 
-            AddToHistory(quote);
+            AddToHistory(bidask);
             return Task.FromResult(0);
         }
-
-        
-        private void AddToHistory(AssetQuote quote)
+                
+        private void AddToHistory(BestBidAsk bidask)
         {
 
-            if (!assetCache.ContainsKey(quote.AssetPair))
-                assetCache.Add(quote.AssetPair, new Queue<AssetQuote>());
+            if (!assetCache.ContainsKey(bidask.Asset))
+                assetCache.Add(bidask.Asset, new Queue<BestBidAsk>());
 
-            assetCache[quote.AssetPair].Enqueue(quote);
+            assetCache[bidask.Asset].Enqueue(bidask);
 
 
 
-            if (assetCache[quote.AssetPair].Count >= queueMaxSize)
+            if (assetCache[bidask.Asset].Count >= queueMaxSize)
             {
-                List<AssetQuote> buffer = assetCache[quote.AssetPair].ToList();
-                assetCache[quote.AssetPair].Clear();
+                List<BestBidAsk> buffer = assetCache[bidask.Asset].ToList();
+                assetCache[bidask.Asset].Clear();
+                //Console.WriteLine("{0} > Buffer Full Inserting {1} items [{2}]", DateTime.UtcNow.ToString("HH:mm:ss.fff"), buffer.Count, buffer[0].Asset);
                 InsertInAzure(buffer);
+                //Console.WriteLine("{0} > DONE [{1}]", DateTime.UtcNow.ToString("HH:mm:ss.fff"), buffer[0].Asset);
             }
 
 
          
         }
 
-        private async void InsertInAzure(List<AssetQuote> buffer)
+        private async void InsertInAzure(List<BestBidAsk> buffer)
         {            
             try
-            {            
-                List<AssetItem> exportVector = (from q in buffer
-                                                select new AssetItem
-                                                {
-                                                    AssetPair = q.AssetPair,
-                                                    Date = q.Timestamp,
-                                                    IsBuy = q.IsBuy,
-                                                    Price = q.Price
-                                                }).ToList();
-                await assetRep.InsertManyAsync(exportVector);             
+            {  
+                await assetRep.InsertManyAsync(buffer);             
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
             }            
         }
-
-        private async Task<IAssetItem> InsertInAzure(AssetQuote quote)
-        {
-            var res = await assetRep.InsertAsync(new AssetItem
-            {
-                AssetPair = quote.AssetPair,
-                Date = quote.Timestamp,
-                IsBuy = quote.IsBuy,
-                Price = quote.Price
-            });
-            return res;
-        }
-
-        public async Task<LinkedList<AssetQuote>> GetAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair)
+              
+        public async Task<LinkedList<BestBidAsk>> GetAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair)
         {
             var history = await assetRep.GetRange(dateFrom, dateTo, assetPair); ;
-            var converted = from h in history
-                            orderby h.Date
-                            select new AssetQuote()
-                            {
-                                AssetPair = h.AssetPair,
-                                IsBuy = h.IsBuy,
-                                Price = h.Price,
-                                Timestamp = h.Date
-                            };
-            return new LinkedList<AssetQuote>(converted);
+            var sorted = from h in history
+                            orderby h.Timestamp
+                            select h;
+            return new LinkedList<BestBidAsk>(sorted);
         }
 
         public void Dispose()
@@ -109,7 +84,7 @@ namespace BoxOptions.Public.Processors
             {
                 if (assetCache[key].Count > 0)
                 {
-                    List<AssetQuote> buffer = assetCache[key].ToList();
+                    List<BestBidAsk> buffer = assetCache[key].ToList();
                     assetCache[key].Clear();
 
                     InsertInAzure(buffer);

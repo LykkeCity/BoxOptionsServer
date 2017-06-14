@@ -32,6 +32,53 @@ namespace BoxOptions.Public.Controllers
             if (history != null)
             {
                 try
+                {
+
+                    string HistoryRequestLog = string.Format("BidHistory> From:[{0}] To:[{1}] Pair:[{2}]", dtFrom.Date.ToString("yyyy-MM-dd"), dtTo.Date.ToString("yyyy-MM-dd"), assetPair);
+                    HistoryRequestLog += string.Format("\n\r{0}>Get Data From Azure", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+                    var his = await history.GetAssetHistory(dtFrom, dtTo, assetPair);
+                    HistoryRequestLog += string.Format("\n\r{0}>Finished Getting Data From Azure", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+
+                    if (his.Count > 0)
+                    {
+                        HistoryRequestLog += string.Format("\n\r{0}>Creating Bid History", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+                        LinkedList<Price> bidhistory = new LinkedList<Price>(
+                            from b in his
+                            select new Price()
+                            {
+                                Ask = b.BestAsk.Value,
+                                Bid = b.BestBid.Value,
+                                Date = b.Timestamp
+                            });
+                        HistoryRequestLog += string.Format("\n\r{0}>Finished Creating Bid History", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+                        Console.WriteLine(HistoryRequestLog);
+                        await appLog.WriteInfoAsync("HistoryController", "BidHistory", null, HistoryRequestLog);
+
+                        return Ok(bidhistory);
+                    }
+                    else
+                        return Ok("history is empty");
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, ex.Message);
+                }
+            }
+            else
+                return StatusCode(500, "History Not Available");
+
+        }
+
+
+        /*
+        [HttpGet]
+        [Route("bidhistoryold")]
+        public async Task<IActionResult> BidHistoryOld(DateTime dtFrom, DateTime dtTo, string assetPair)
+        {
+
+            if (history != null)
+            {
+                try
                 {                    
                     AssetQuote[] res = null;
                     string HistoryRequestLog = string.Format("BidHistory> From:[{0}] To:[{1}] Pair:[{2}]", dtFrom.Date.ToString("yyyy-MM-dd"), dtTo.Date.ToString("yyyy-MM-dd"), assetPair);
@@ -62,33 +109,35 @@ namespace BoxOptions.Public.Controllers
                 return StatusCode(500, "History Not Available");
 
         }
+        */
 
-        [HttpGet]
-        [Route("assethistory")]
-        public async Task<IActionResult> AssetHistory(DateTime dtFrom, DateTime dtTo, string assetPair)
-        {
-            if (history != null)
-            {
-                try
-                {
-                    string HistoryRequestLog = string.Format("AssetHistory> From:[{0}] To:[{1}] Pair:[{2}]", dtFrom.Date.ToString("yyyy-MM-dd"), dtTo.Date.ToString("yyyy-MM-dd"), assetPair);
-                    HistoryRequestLog += string.Format("\n\r{0}>Get Data From Azure", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
-                    var his = await history.GetAssetHistory(dtFrom, dtTo, assetPair);
-                    HistoryRequestLog += string.Format("\n\r{0}>Finished Getting Data From Azure", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
 
-                    await appLog.WriteInfoAsync("HistoryController", "AssetHistory", null, HistoryRequestLog);
+        //[HttpGet]
+        //[Route("assethistory")]
+        //public async Task<IActionResult> AssetHistory(DateTime dtFrom, DateTime dtTo, string assetPair)
+        //{
+        //    if (history != null)
+        //    {
+        //        try
+        //        {
+        //            string HistoryRequestLog = string.Format("AssetHistory> From:[{0}] To:[{1}] Pair:[{2}]", dtFrom.Date.ToString("yyyy-MM-dd"), dtTo.Date.ToString("yyyy-MM-dd"), assetPair);
+        //            HistoryRequestLog += string.Format("\n\r{0}>Get Data From Azure", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+        //            var his = await history.GetAssetHistory(dtFrom, dtTo, assetPair);
+        //            HistoryRequestLog += string.Format("\n\r{0}>Finished Getting Data From Azure", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
 
-                    return Ok(his);                    
-                }
-                catch (Exception ex)
-                {
-                    return StatusCode(500, ex.Message);
-                }
-            }
-            else
-                return StatusCode(500, "History Not Available");
+        //            await appLog.WriteInfoAsync("HistoryController", "AssetHistory", null, HistoryRequestLog);
 
-        }
+        //            return Ok(his);                    
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            return StatusCode(500, ex.Message);
+        //        }
+        //    }
+        //    else
+        //        return StatusCode(500, "History Not Available");
+
+        //}
 
         //[HttpGet]
         //[Route("migrate")]

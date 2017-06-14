@@ -27,7 +27,7 @@ namespace BoxOptions.Services
         /// <summary>
         /// RabbitMQ Subscriber
         /// </summary>
-        private RabbitMqSubscriber<AssetQuote> primarySubscriber;
+        private RabbitMqSubscriber<BestBidAsk> primarySubscriber;
         
         Dictionary<string, InstrumentPrice> lastPrices;
 
@@ -76,17 +76,17 @@ namespace BoxOptions.Services
         public void Start()
         {
             // Start Primary Subscriber.
-            primarySubscriber = new RabbitMqSubscriber<AssetQuote>(new RabbitMqSubscriberSettings
+            primarySubscriber = new RabbitMqSubscriber<BestBidAsk>(new RabbitMqSubscriberSettings
             {
                 ConnectionString = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.RabbitMqConnectionString,
                 ExchangeName = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.RabbitMqExchangeName,
                 QueueName = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.RabbitMqQueueName,
                 IsDurable = false
             })
-               .SetMessageDeserializer(new MessageDeserializer<AssetQuote>())
+               .SetMessageDeserializer(new MessageDeserializer<BestBidAsk>())
                .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy())
                .SetLogger(log)
-               .Subscribe(ProcessPrimaryMessage)
+               .Subscribe(PrimaryMessageReceived_BestBidAsk)
                .Start();                        
             log?.WriteInfoAsync("AssetQuoteSubscriber", "Start", null, $"AssetQuoteSubscriber Started Subscribing [{settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.RabbitMqConnectionString}]");
             
@@ -106,7 +106,21 @@ namespace BoxOptions.Services
 
         }
 
-        private Task ProcessPrimaryMessage(AssetQuote assetQuote)
+        private Task PrimaryMessageReceived_BestBidAsk(BestBidAsk bestBidAsk)
+        {
+            //Message received, update timestamp.
+            primaryStreamLastMessageTimeStamp = DateTime.UtcNow;
+
+            //Console.WriteLine(bestBidAsk);
+            
+            // Filter Asset from Primary Stream Configuration File
+            if (!settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets.Contains(bestBidAsk.Asset))
+                // Not in allowed assets list, discard entry
+                return Task.FromResult(0);
+            else
+                return ProcessBestBidAsk(bestBidAsk);
+        }
+        private Task PrimaryMessageReceived_AssetQuote(AssetQuote assetQuote)
         {
             //Message received, update timestamp.
             primaryStreamLastMessageTimeStamp = DateTime.UtcNow;
@@ -116,11 +130,44 @@ namespace BoxOptions.Services
                 // Not in allowed assets list, discard entry
                 return Task.FromResult(0);
             else
-                return ProcessMessage(assetQuote);
+                return ProcessAssetQuote(assetQuote);
         }
        
 
-        private Task ProcessMessage(AssetQuote assetQuote)
+        private Task ProcessBestBidAsk(BestBidAsk bestBidAsk)
+        {
+
+            // If Price is zero/null publish exception to support slack channel
+            // and discard entry
+            if (bestBidAsk.BestAsk == null || bestBidAsk.BestAsk <= 0 
+                || bestBidAsk.BestBid == null ||bestBidAsk.BestBid<= 0)
+            {
+                //log
+                ArgumentException ex = new ArgumentException(
+                    string.Format("Received BestBidAsk with price zero [0], BestBidAsk discarded. {0}", bestBidAsk),
+                    "Price");
+                log.WriteErrorAsync("ProcessBestBidAsk", "ProcessMessage", "", ex, DateTime.UtcNow);
+                
+                // Discard it
+                return Task.FromResult(0);
+            }
+            
+            // TODO: clear date override
+            InstrumentPrice assetbid = new InstrumentPrice()
+            {
+                Instrument = bestBidAsk.Asset,
+                Source = bestBidAsk.Source,
+                Ask = bestBidAsk.BestAsk.Value,
+                Bid = bestBidAsk.BestBid.Value,
+                Date = DateTime.UtcNow
+            };
+                                    
+            OnMessageReceived(assetbid);
+                        
+            return Task.FromResult(0);
+
+        }
+        private Task ProcessAssetQuote(AssetQuote assetQuote)
         {
 
             // If Price is zero publish exception to support slack channel
@@ -136,11 +183,6 @@ namespace BoxOptions.Services
             }
 
 
-#if !DEBUG  // DO NOT WRITE ON ASSET DATABASE DURING DEBUG
-            // Add to Asset History
-            history?.AddToAssetHistory(assetQuote);
-#endif
-
             // Get Asset from cache
             InstrumentPrice assetbid = (from a in assetCache
                                         where a.Instrument == assetQuote.AssetPair
@@ -152,9 +194,10 @@ namespace BoxOptions.Services
                 assetbid = new InstrumentPrice()
                 {
                     Instrument = assetQuote.AssetPair,
+                    Source = "AssetQuote",
                     Date = assetQuote.Timestamp,
                     Ask = assetQuote.IsBuy == Statics.ASK ? assetQuote.Price : 0,
-                    Bid = assetQuote.IsBuy == Statics.ASK ? 0 : assetQuote.Price
+                    Bid = assetQuote.IsBuy == Statics.ASK ? 0 : assetQuote.Price                    
                 };
                 assetCache.Add(assetbid);
             }
@@ -199,16 +242,32 @@ namespace BoxOptions.Services
             }
 
             if (assetbid.Ask <= 0 || assetbid.Bid <= 0)
-            {                
+            {
                 publish = false;
             }
 
             if (publish)
             {
-                MessageReceived?.Invoke(this, (InstrumentPrice)assetbid.ClonePrice());
+                OnMessageReceived(assetbid);
             }
             return Task.FromResult(0);
 
+        }
+
+        private void OnMessageReceived(InstrumentPrice bestBidAsk)
+        {
+            //#if !DEBUG  // DO NOT WRITE ON ASSET DATABASE DURING DEBUG
+            // Add to Asset History
+            history?.AddToAssetHistory(new BestBidAsk()
+            {
+                Asset = bestBidAsk.Instrument,
+                BestAsk = bestBidAsk.Ask,
+                BestBid = bestBidAsk.Bid,
+                Source = bestBidAsk.Source,
+                Timestamp = bestBidAsk.Date
+            });
+            //#endif
+            MessageReceived?.Invoke(this, (InstrumentPrice)bestBidAsk.ClonePrice());
         }
 
         private void CheckConnectionTimerCallback(object status)
