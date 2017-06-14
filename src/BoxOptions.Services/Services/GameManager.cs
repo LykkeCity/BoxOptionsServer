@@ -281,8 +281,8 @@ namespace BoxOptions.Services
             CoeffMonitorTimer.Change(-1, -1);
             try
             {
-                // If more than 1 minute passed since last change, do another change
-                if (lastCoeffChange.AddMinutes(1) < DateTime.UtcNow)
+                // If more than 10 minute passed since last change, do another change
+                if (lastCoeffChange.AddMinutes(10) < DateTime.UtcNow)
                     InitializeCoefCalc();
                 else
                     LoadCoefficientCache();
