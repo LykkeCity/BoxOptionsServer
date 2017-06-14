@@ -27,9 +27,15 @@ namespace BoxOptions.Services
         /// <summary>
         /// RabbitMQ Subscriber
         /// </summary>
+
         private RabbitMqSubscriber<BestBidAsk> primarySubscriber;
-        
+        private RabbitMqSubscriber<AssetQuote> secondarySubscriber;
+
+
         Dictionary<string, InstrumentPrice> lastPrices;
+
+        List<string> PrimaryGameInstruments = null;
+        List<string> SecondaryGameInstruments = null;
 
         /// <summary>
         /// Logger Object
@@ -70,26 +76,29 @@ namespace BoxOptions.Services
             this.history = history;
             lastPrices = new Dictionary<string, InstrumentPrice>();
             checkConnectionTimer = new System.Threading.Timer(CheckConnectionTimerCallback, null, -1, -1);
-            
+
+            PrimaryGameInstruments = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets.ToList();
+            if (settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed != null)
+                SecondaryGameInstruments = settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets.ToList();
         }
 
         public void Start()
         {
-            // Start Primary Subscriber.
-            primarySubscriber = new RabbitMqSubscriber<BestBidAsk>(new RabbitMqSubscriberSettings
+            // Start Primary Subscriber. Uses BestBidAsk Model
+            primarySubscriber = CreateBestBidSubscriber(settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed,
+                PrimaryMessageReceived_BestBidAsk);            
+            log?.WriteInfoAsync("AssetQuoteSubscriber", "Start", null, $"AssetQuoteSubscriber Primary Feed [{settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.RabbitMqConnectionString}]");
+
+            if (settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed != null)
             {
-                ConnectionString = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.RabbitMqConnectionString,
-                ExchangeName = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.RabbitMqExchangeName,
-                QueueName = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.RabbitMqQueueName,
-                IsDurable = false
-            })
-               .SetMessageDeserializer(new MessageDeserializer<BestBidAsk>())
-               .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy())
-               .SetLogger(log)
-               .Subscribe(PrimaryMessageReceived_BestBidAsk)
-               .Start();                        
-            log?.WriteInfoAsync("AssetQuoteSubscriber", "Start", null, $"AssetQuoteSubscriber Started Subscribing [{settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.RabbitMqConnectionString}]");
-            
+                // Start Secondary Subscriber. Uses Asset quote model
+                secondarySubscriber = CreateAssetSubscriber(
+                    settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed,
+                    SecondaryMessageReceived_AssetQuote);
+                if (secondarySubscriber != null)
+                    log?.WriteInfoAsync("AssetQuoteSubscriber", "Start", null, $"AssetQuoteSubscriber Secondary Feed [{settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.RabbitMqConnectionString}]");
+            }
+
             // Start Timer to check incoming dataconnection (checks every 30 seconds)
             int CheckInterval = settings.BoxOptionsApi.PricesSettingsBoxOptions.NoFeedSlackReportInSeconds;
             checkConnectionTimer.Change(CheckInterval * 1000, -1);
@@ -100,12 +109,58 @@ namespace BoxOptions.Services
 
             if (primarySubscriber != null)
                 primarySubscriber.Stop();
-            
+            if (secondarySubscriber != null)
+                secondarySubscriber.Stop();
+
             checkConnectionTimer.Change(-1, -1);
             checkConnectionTimer.Dispose();
 
         }
 
+        #region Create Subscribers
+        private RabbitMqSubscriber<AssetQuote> CreateAssetSubscriber(FeedSettings settings, Func<AssetQuote, Task> callback)
+        {
+            if (settings.RabbitMqConnectionString == null || settings.RabbitMqConnectionString == "" || settings.RabbitMqConnectionString == "null")
+                return null;
+
+            RabbitMqSubscriber<AssetQuote> subscriber = new RabbitMqSubscriber<AssetQuote>(new RabbitMqSubscriberSettings
+            {
+                ConnectionString = settings.RabbitMqConnectionString,
+                ExchangeName = settings.RabbitMqExchangeName,
+                QueueName = settings.RabbitMqQueueName,
+                IsDurable = false
+            })
+              .SetMessageDeserializer(new MessageDeserializer<AssetQuote>())
+              .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy())
+              .SetLogger(log)
+              .Subscribe(callback)
+              .Start();
+
+            return subscriber;
+        }
+        private RabbitMqSubscriber<BestBidAsk> CreateBestBidSubscriber(FeedSettings settings, Func<BestBidAsk, Task> callback)
+        {
+            if (settings.RabbitMqConnectionString == null || settings.RabbitMqConnectionString == "" || settings.RabbitMqConnectionString == "null")
+                return null;
+
+            RabbitMqSubscriber<BestBidAsk> subscriber = new RabbitMqSubscriber<BestBidAsk>(new RabbitMqSubscriberSettings
+            {
+                ConnectionString = settings.RabbitMqConnectionString,
+                ExchangeName = settings.RabbitMqExchangeName,
+                QueueName = settings.RabbitMqQueueName,
+                IsDurable = false
+            })
+              .SetMessageDeserializer(new MessageDeserializer<BestBidAsk>())
+              .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy())
+              .SetLogger(log)
+              .Subscribe(callback)
+              .Start();
+
+            return subscriber;
+        }
+        #endregion
+
+        #region Process Subscriber Incoming Message
         private Task PrimaryMessageReceived_BestBidAsk(BestBidAsk bestBidAsk)
         {
             //Message received, update timestamp.
@@ -120,19 +175,31 @@ namespace BoxOptions.Services
             else
                 return ProcessBestBidAsk(bestBidAsk);
         }
-        private Task PrimaryMessageReceived_AssetQuote(AssetQuote assetQuote)
+        private Task PrimaryMessageReceived_AssetQuote(AssetQuote assetQuote)        
         {
             //Message received, update timestamp.
             primaryStreamLastMessageTimeStamp = DateTime.UtcNow;
-
+            
             // Filter Asset from Primary Stream Configuration File
-            if (!settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets.Contains(assetQuote.AssetPair))
+            if (!PrimaryGameInstruments.Contains(assetQuote.AssetPair))
                 // Not in allowed assets list, discard entry
                 return Task.FromResult(0);
             else
                 return ProcessAssetQuote(assetQuote);
         }
-       
+        private Task SecondaryMessageReceived_AssetQuote(AssetQuote assetQuote)
+        {
+            //Message received, update timestamp.
+            secondaryStreamLastMessageTimeStamp = DateTime.UtcNow;
+            
+            // Filter Asset from Primary Stream Configuration File
+            if (!SecondaryGameInstruments.Contains(assetQuote.AssetPair))
+                // Not in allowed assets list, discard entry
+                return Task.FromResult(0);
+            else
+                return ProcessAssetQuote(assetQuote);
+        }
+        #endregion
 
         private Task ProcessBestBidAsk(BestBidAsk bestBidAsk)
         {
@@ -294,19 +361,40 @@ namespace BoxOptions.Services
                     {
                         // Not in exclusion interval, report error.                                            
                         string msg = string.Format("BoxOptions Server: No Messages from Primary Feed for {0}", currentdate - primaryStreamLastMessageTimeStamp);
-                        log.WriteWarningAsync("AssetQuoteSubscriber", "CheckConnectionTimerCallback", "", msg, DateTime.UtcNow);
+                        log?.WriteWarningAsync("AssetQuoteSubscriber", "CheckConnectionTimerCallback", "", msg, DateTime.UtcNow);
                     }
                 }
             }
             #endregion
 
-          
+            // Check Secondary Stream
+            #region Secondary
+            if (secondarySubscriber != null)
+            {
+                double SecondaryStreamLastMessage = (currentdate - secondaryStreamLastMessageTimeStamp).TotalSeconds;
+
+                // Last message receive longer than allowed in IncomingDataCheckInterval
+                if (SecondaryStreamLastMessage > settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.IncomingDataCheckInterval)
+                {
+                    //Check if current date is in exclusion interval (feeds are not available)
+                    bool InExclusionInterval = CheckExclusionInterval(currentdate,
+                        settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.PricesWeekExclusionStart,
+                        settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.PricesWeekExclusionEnd);
+                    if (!InExclusionInterval)
+                    {
+                        // Not in exclusion interval, report error.                                            
+                        string msg = string.Format("BoxOptions Server: No Messages from Secondary Feed for {0}", currentdate - primaryStreamLastMessageTimeStamp);
+                        log?.WriteWarningAsync("AssetQuoteSubscriber", "CheckConnectionTimerCallback", "", msg, DateTime.UtcNow);
+                    }
+                }
+            }
+            #endregion
+
             // Re-start timer if not disposing.
             if (!isDisposing)
                 checkConnectionTimer.Change(settings.BoxOptionsApi.PricesSettingsBoxOptions.NoFeedSlackReportInSeconds * 1000, -1);
 
         }
-
         private bool CheckExclusionInterval(DateTime utcNow, string WeekExclusionStart, string WeekExclusionEnd)
         {
             try
