@@ -209,11 +209,9 @@ namespace BoxOptions.Services
             if (bestBidAsk.BestAsk == null || bestBidAsk.BestAsk <= 0 
                 || bestBidAsk.BestBid == null ||bestBidAsk.BestBid<= 0)
             {
-                //log
-                ArgumentException ex = new ArgumentException(
-                    string.Format("Received BestBidAsk with price zero [0], BestBidAsk discarded. {0}", bestBidAsk),
-                    "Price");
-                log.WriteErrorAsync("ProcessBestBidAsk", "ProcessMessage", "", ex, DateTime.UtcNow);
+                //log                
+                
+                log?.WriteWarningAsync("AssetQuoteSubscriber", "ProcessBestBidAsk",null, string.Format("Received BestBidAsk with price zero [0], BestBidAsk discarded. {0}", bestBidAsk), DateTime.UtcNow);
                 
                 // Discard it
                 return Task.FromResult(0);
@@ -240,11 +238,7 @@ namespace BoxOptions.Services
             // If Price is zero publish exception to support slack channel
             if (assetQuote.Price <= 0)
             {
-                //log
-                ArgumentException ex = new ArgumentException(
-                    string.Format("Received quote with price zero [0], quote discarded. Instrument:[{0}], IsBuy:[{1}], Timestamp:[{2}]", assetQuote.AssetPair, assetQuote.IsBuy, assetQuote.Timestamp),
-                    "Price");
-                log.WriteErrorAsync("AssetQuoteSubscriber", "ProcessMessage", "", ex, DateTime.UtcNow);
+                log?.WriteWarningAsync("AssetQuoteSubscriber", "ProcessAssetQuote", null, string.Format("Received AssetQuote with price zero [0], AssetQuote discarded. {0}", assetQuote), DateTime.UtcNow);
 
                 return Task.FromResult(0);
             }

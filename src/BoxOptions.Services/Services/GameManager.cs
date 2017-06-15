@@ -351,6 +351,7 @@ namespace BoxOptions.Services
                     string msg = $"Coeff Change:[{box.AssetPair}] TimeToFirstBox={box.TimeToFirstBox}, BoxHeight={box.BoxHeight}, BoxWidth={box.BoxWidth}, NPriceIndex={NPriceIndex}, NTimeIndex={NTimeIndex}";
                     //Console.WriteLine("{0} > {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), msg);
                     await appLog?.WriteInfoAsync("Gamemanager", "CoeffCalculatorChangeBatch", null, msg);
+                    System.Threading.Thread.Sleep(500);
                 }
                 lastCoeffChange = DateTime.UtcNow;
                 return res;
