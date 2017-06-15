@@ -128,7 +128,7 @@ namespace BoxOptions.Services
 
             this.quoteFeed.MessageReceived += QuoteFeed_MessageReceived;
 
-            defaultBoxConfig = null;
+            defaultBoxConfig = null;            
         }
 
 
@@ -136,7 +136,15 @@ namespace BoxOptions.Services
 
         #region Methods
 
-        
+        private async void ReportInfo(string process, string info)
+        {
+            await appLog?.WriteInfoAsync("GameManager", process, null, info, DateTime.UtcNow);
+        }
+        private async void ReportWarning(string process, string warning)
+        {
+            await appLog?.WriteWarningAsync("GameManager", process, null, warning, DateTime.UtcNow);
+          
+        }
         private async void ReportError(string process, Exception ex)
         {
             Exception innerEx;
@@ -350,7 +358,7 @@ namespace BoxOptions.Services
 
                     string msg = $"Coeff Change:[{box.AssetPair}] TimeToFirstBox={box.TimeToFirstBox}, BoxHeight={box.BoxHeight}, BoxWidth={box.BoxWidth}, NPriceIndex={NPriceIndex}, NTimeIndex={NTimeIndex}";
                     //Console.WriteLine("{0} > {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), msg);
-                    await appLog?.WriteInfoAsync("Gamemanager", "CoeffCalculatorChangeBatch", null, msg);
+                    ReportInfo("CoeffCalculatorChangeBatch", msg);
                     System.Threading.Thread.Sleep(500);
                 }
                 lastCoeffChange = DateTime.UtcNow;
@@ -606,9 +614,10 @@ namespace BoxOptions.Services
             double previousDelta = (double)previousPrice - dPreviousPrice;
 
             if (currentDelta > 0.000001 || currentDelta < -0.000001)
-                appLog.WriteWarningAsync("GameManager", "CheckWinOngoing", "", $"Double to Decimal conversion Fail! CurrDelta={currentDelta} double:{dCurrentPrice} decimal:{currentPrice}");
+                ReportWarning("CheckWinOngoing", $"Double to Decimal conversion Fail! CurrDelta={currentDelta} double:{dCurrentPrice} decimal:{currentPrice}");                
             if (previousDelta > 0.000001 || previousDelta < -0.000001)
-                appLog.WriteWarningAsync("GameManager", "CheckWinOngoing", "", $"Double to Decimal conversion Fail! PrevDelta={previousDelta} double:{dPreviousPrice} decimal:{previousPrice}");
+                ReportWarning("CheckWinOngoing", $"Double to Decimal conversion Fail! PrevDelta={previousDelta} double:{dPreviousPrice} decimal:{previousPrice}");
+            
 
 
             if ((currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice) ||       // currentPrice> minPrice and currentPrice<maxPrice
@@ -622,12 +631,10 @@ namespace BoxOptions.Services
         {
             decimal currentPrice = Convert.ToDecimal(dCurrentPrice);
             
-            double currentDelta = (double)currentPrice - dCurrentPrice;            
+            double currentDelta = (double)currentPrice - dCurrentPrice;
 
             if (currentDelta > 0.000001 || currentDelta < -0.000001)
-                appLog.WriteWarningAsync("GameManager", "CheckWinOnstarted", "", $"Double to Decimal conversion Fail! CurrDelta={currentDelta} double:{dCurrentPrice} decimal:{currentPrice}");
-            
-
+                ReportWarning("CheckWinOnstarted", $"Double to Decimal conversion Fail! CurrDelta={currentDelta} double:{dCurrentPrice} decimal:{currentPrice}");
 
             if (currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice)
                 return true;

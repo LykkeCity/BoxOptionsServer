@@ -89,7 +89,7 @@ namespace BoxOptions.Public
             return settings;
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, IApplicationLifetime appLifetime)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILog appLog, IApplicationLifetime appLifetime)
         {
             IWampHost host = ApplicationContainer.Resolve<IWampHost>();
             IWampHostedRealm realm = ApplicationContainer.Resolve<IWampHostedRealm>();
@@ -119,6 +119,10 @@ namespace BoxOptions.Public
             });
 
             host.Open();
+
+            appLog.WriteInfoAsync("BoxOptionsServer", "Startup.Configure", null, string.Format("Lykke.BoxOptionsServer [{0}] started.", Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion));
+
+
         }
     }
 }
