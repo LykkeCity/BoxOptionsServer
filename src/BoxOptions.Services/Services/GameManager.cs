@@ -129,19 +129,53 @@ namespace BoxOptions.Services
         #endregion
 
         #region Methods
+        DateTime LastErrorDate = DateTime.MinValue;
+        string LastErrorMessage = "";
+        private async void ReportError(string process, Exception ex)
+        {
+            Exception innerEx;
+            if (ex.InnerException != null)
+                innerEx = ex.InnerException;
+            else
+                innerEx = ex;
+                        
+            bool LogError;
+            if (LastErrorMessage != innerEx.Message)
+            {
+                LogError = true;
+            }
+            else
+            {
+                if (DateTime.UtcNow > LastErrorDate.AddMinutes(1))
+                    LogError = true;
+                else
+                    LogError = false;
+            }
+
+
+            if (LogError)
+            {
+                LastErrorMessage = innerEx.Message;
+                LastErrorDate = DateTime.UtcNow;
+                await appLog.WriteErrorAsync("GameManager", process, null, innerEx);
+                //Console.WriteLine("Logged: {0}", innerEx.Message);
+            }
+        }
 
         private void InitializeCoefCalc()
         {
             BoxSize[] calculatedParams = CalculatedBoxes(defaultBoxConfig, micrographCache);
-
-            Task t = CoeffCalculatorChangeBatch(GameManagerId, calculatedParams);
-            t.Wait();
-
+            try
+            {
+                Task t = CoeffCalculatorChangeBatch(GameManagerId, calculatedParams);
+                t.Wait();
+            }
+            catch (Exception ex) { ReportError("InitializeCoefCalc",ex); }
             LoadCoefficientCache();
 
             StartCoefficientCacheMonitor();
         }
-
+                
         private List<BoxSize> LoadBoxParameters()
         {
             Task<IEnumerable<BoxSize>> t = boxConfigRepository.GetAll();
@@ -243,16 +277,19 @@ namespace BoxOptions.Services
         Dictionary<string, string> CoefficientCache;
 
         private void LoadCoefficientCache()
-        {
-            string[] assets = defaultBoxConfig.Select(b => b.AssetPair).ToArray();
-
-            Task<Dictionary<string, string>> t = CoeffCalculatorRequestBatch(GameManagerId, assets);
-            t.Wait();
-
-            lock (CoeffCacheLock)
+        {            
+            try
             {
-                CoefficientCache = t.Result;
+                string[] assets = defaultBoxConfig.Select(b => b.AssetPair).ToArray();
+                Task<Dictionary<string, string>> t = CoeffCalculatorRequestBatch(GameManagerId, assets);
+                t.Wait();
+
+                lock (CoeffCacheLock)
+                {
+                    CoefficientCache = t.Result;
+                }
             }
+            catch (Exception ex) { ReportError("LoadCoefficientCache", ex); }
         }
 
         private string GetCoefficients(string assetPair)
@@ -273,15 +310,9 @@ namespace BoxOptions.Services
         private void CoeffMonitorTimerCallback(object status)
         {
             CoeffMonitorTimer.Change(-1, -1);
-            try
-            {
-                LoadCoefficientCache();
-            }
-            catch (Exception ex)
-            {
-                appLog.WriteErrorAsync("GameManager", "CoeffMonitorTimerCallback", null, ex);
-            }
-
+            
+            LoadCoefficientCache();
+            
             if (!isDisposing)
                 CoeffMonitorTimer.Change(CoeffMonitorTimerInterval, -1);
         }
@@ -318,7 +349,7 @@ namespace BoxOptions.Services
         /// <param name="nTimeIndex">NTime Index</param>
         /// <returns>CoeffCalc result</returns>
         private async Task<Dictionary<string, string>> CoeffCalculatorRequestBatch(string userId, string[] assetPairs)
-        {
+        {            
             //Activate Mutual Exclusion Semaphor
             await coeffCalculatorSemaphoreSlim.WaitAsync();
             try
@@ -801,16 +832,12 @@ namespace BoxOptions.Services
                     ProcessBetCheck(bet, false);
                 }
             }
-            catch (Exception ex)
-            {
-                await appLog.WriteErrorAsync("GameManager", "QuoteFeed_MessageReceived", null, ex);
-                throw;
-            }
+            catch (Exception ex) { ReportError("QuoteFeed_MessageReceived", ex); }
             finally { quoteReceivedSemaphoreSlim.Release(); }
 
         }
 
-        private async void Bet_TimeToGraphReached(object sender, EventArgs e)
+        private void Bet_TimeToGraphReached(object sender, EventArgs e)
         {
             try
             {
@@ -837,11 +864,7 @@ namespace BoxOptions.Services
                     betCache.Add(bet);
                 }
             }
-            catch (Exception ex)
-            {
-                await appLog.WriteErrorAsync("GameManager", "Bet_TimeToGraphReached", null, ex);
-                throw;
-            }
+            catch (Exception ex) { ReportError("Bet_TimeToGraphReached", ex); }
         }
         private void Bet_TimeLenghFinished(object sender, EventArgs e)
         {
