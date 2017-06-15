@@ -323,7 +323,7 @@ namespace BoxOptions.Services
 
         private void OnMessageReceived(InstrumentPrice bestBidAsk)
         {
-            //#if !DEBUG  // DO NOT WRITE ON ASSET DATABASE DURING DEBUG
+#if !DEBUG  // DO NOT WRITE ON ASSET DATABASE DURING DEBUG
             // Add to Asset History
             history?.AddToAssetHistory(new BestBidAsk()
             {
@@ -333,7 +333,7 @@ namespace BoxOptions.Services
                 Source = bestBidAsk.Source,
                 Timestamp = bestBidAsk.Date
             });
-            //#endif
+#endif
             MessageReceived?.Invoke(this, (InstrumentPrice)bestBidAsk.ClonePrice());
         }
 

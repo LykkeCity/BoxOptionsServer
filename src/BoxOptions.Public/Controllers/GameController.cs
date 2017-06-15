@@ -2,32 +2,54 @@
 using BoxOptions.Common.Interfaces;
 using BoxOptions.Core;
 using BoxOptions.Core.Models;
+using BoxOptions.Services.Interfaces;
 using Common.Log;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace BoxOptions.Public.Controllers
 {
     [Route("api/[controller]")]
-    public class CoefController : Controller
+    public class GameController : Controller
     {
         private readonly BoxOptionsSettings _settings;
-        ICoefficientCalculator coefCalculator;
-        private readonly ILogRepository logRepository;
-        private readonly ILog log;
-        private readonly IAssetDatabase history;
+        IGameManager gameManager;
 
-        public CoefController(BoxOptionsSettings settings, IAssetDatabase history, ILogRepository logRepository, ILog log, ICoefficientCalculator coefCalculator)
+        public GameController(BoxOptionsSettings settings, IGameManager gameManager)
         {
             _settings = settings;
-            this.logRepository = logRepository;
-            this.history = history;
-            this.log = log;
-            this.coefCalculator = coefCalculator;
-            
+            this.gameManager = gameManager;
         }
-        
+        [HttpGet]
+        [Route("setassetdefaultconfig")]
+        public IActionResult SetAssetDefaultConfig()
+        {
+            List<string> assets = new List<string>();
+            assets.AddRange(_settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets);
+            assets.AddRange(_settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets);
+
+            List<string> distict = assets.Distinct().ToList();
+            List<BoxSize> defaultcfg = new List<BoxSize>();
+            foreach (var asset in distict)
+            {
+                defaultcfg.Add(new BoxSize()
+                {
+                    AssetPair = asset,
+                    BoxesPerRow = 7,
+                    BoxHeight = 7000,
+                    BoxWidth = 0.00003,
+                    TimeToFirstBox = 4000
+                });
+
+            }
+
+            gameManager.SetBoxConfig(defaultcfg.ToArray());
+
+            return Ok();
+        }
         /*[HttpGet]
         [Route("change")]
         public async Task<IActionResult> ChangeAsync(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex, string userId="0")

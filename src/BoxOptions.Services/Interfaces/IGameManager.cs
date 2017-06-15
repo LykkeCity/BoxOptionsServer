@@ -1,4 +1,5 @@
-﻿using BoxOptions.Services.Models;
+﻿using BoxOptions.Core.Models;
+using BoxOptions.Services.Models;
 using System;
 
 namespace BoxOptions.Services.Interfaces
@@ -26,6 +27,8 @@ namespace BoxOptions.Services.Interfaces
         string RequestUserCoeff(string userId, string pair);
 
         void AddUserLog(string userId, string eventCode, string message);
+
+        void SetBoxConfig(BoxSize[] boxes);
 
     }
 }

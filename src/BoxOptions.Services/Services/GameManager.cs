@@ -193,9 +193,9 @@ namespace BoxOptions.Services
                         {
                             AssetPair = item,
                             BoxesPerRow = 7,
-                            BoxHeight = 7,
+                            BoxHeight = 7000,
                             BoxWidth = 0.00003,
-                            TimeToFirstBox = 4
+                            TimeToFirstBox = 4000
                         });
                     }
                 }
@@ -348,7 +348,7 @@ namespace BoxOptions.Services
                     if (res != "OK")
                         throw new InvalidOperationException(res);
 
-                    string msg = $"Coeff Change:[{box.AssetPair}] TimeToFirstBox={box.TimeToFirstBox}), BoxHeight={box.BoxHeight}, BoxWidth={box.BoxWidth}, NPriceIndex={NPriceIndex}, NTimeIndex={NTimeIndex}";
+                    string msg = $"Coeff Change:[{box.AssetPair}] TimeToFirstBox={box.TimeToFirstBox}, BoxHeight={box.BoxHeight}, BoxWidth={box.BoxWidth}, NPriceIndex={NPriceIndex}, NTimeIndex={NTimeIndex}";
                     //Console.WriteLine("{0} > {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), msg);
                     await appLog?.WriteInfoAsync("Gamemanager", "CoeffCalculatorChangeBatch", null, msg);
                 }
@@ -862,7 +862,7 @@ namespace BoxOptions.Services
 
         }
 
-        private async void Bet_TimeToGraphReached(object sender, EventArgs e)
+        private void Bet_TimeToGraphReached(object sender, EventArgs e)
         {
             try
             {
@@ -906,10 +906,24 @@ namespace BoxOptions.Services
         #region IGameManager
         public BoxSize[] InitUser(string userId)
         {
-            return InitializeUser(userId);
-        }      
+            BoxSize[] result = InitializeUser(userId);
 
-        
+            List<BoxSize> clientBoxes = new List<BoxSize>();
+            // Send answer to client im seconds instead milliseconds
+            foreach (var item in result)
+            {
+                clientBoxes.Add(new BoxSize()
+                {
+                    AssetPair = item.AssetPair,
+                    BoxesPerRow = item.BoxesPerRow,
+                    BoxWidth = item.BoxWidth,
+                    BoxHeight = item.BoxHeight / 1000,
+                    TimeToFirstBox = item.TimeToFirstBox / 1000
+                });
+            }
+
+            return clientBoxes.ToArray();
+        }      
          
         public DateTime PlaceBet(string userId, string assetPair, string box, decimal bet,  out string message)
         {            
@@ -962,9 +976,27 @@ namespace BoxOptions.Services
             int.TryParse(eventCode, out ecode);
             SetUserStatus(userState, (GameStatus)ecode, message);
         }
-        
+
+        public void SetBoxConfig(BoxSize[] boxes)
+        {
+            List<BoxSize> AssetsToAdd = new List<BoxSize>();
+            foreach (var box in boxes)
+            {
+                AssetsToAdd.Add(new BoxSize()
+                {
+                    AssetPair = box.AssetPair,
+                    BoxesPerRow = box.BoxesPerRow,
+                    BoxHeight = box.BoxHeight,
+                    BoxWidth = box.BoxWidth,
+                    TimeToFirstBox = box.TimeToFirstBox
+                });
+            }
+            
+            boxConfigRepository.InsertManyAsync(AssetsToAdd);
+        }
+
         #endregion
-                
+
         #region Nested Class
         private class PriceCache
         {
