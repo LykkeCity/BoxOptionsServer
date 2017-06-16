@@ -43,13 +43,10 @@ namespace BoxOptions.Public.Processors
             {
                 List<BestBidAsk> buffer = assetCache[bidask.Asset].ToList();
                 assetCache[bidask.Asset].Clear();
-                //Console.WriteLine("{0} > Buffer Full Inserting {1} items [{2}]", DateTime.UtcNow.ToString("HH:mm:ss.fff"), buffer.Count, buffer[0].Asset);
+#if !DEBUG
                 InsertInAzure(buffer);
-                //Console.WriteLine("{0} > DONE [{1}]", DateTime.UtcNow.ToString("HH:mm:ss.fff"), buffer[0].Asset);
+#endif
             }
-
-
-         
         }
 
         private async void InsertInAzure(List<BestBidAsk> buffer)

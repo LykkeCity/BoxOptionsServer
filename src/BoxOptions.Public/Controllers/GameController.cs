@@ -17,15 +17,17 @@ namespace BoxOptions.Public.Controllers
     {
         private readonly BoxOptionsSettings _settings;
         IGameManager gameManager;
+        ILog log;
 
-        public GameController(BoxOptionsSettings settings, IGameManager gameManager)
+        public GameController(BoxOptionsSettings settings, IGameManager gameManager,ILog log)
         {
             _settings = settings;
             this.gameManager = gameManager;
+            this.log = log;
         }
         [HttpGet]
         [Route("setassetdefaultconfig")]
-        public IActionResult SetAssetDefaultConfig()
+        public async Task<IActionResult> SetAssetDefaultConfig()
         {
             List<string> assets = new List<string>();
             assets.AddRange(_settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets);
@@ -47,6 +49,8 @@ namespace BoxOptions.Public.Controllers
             }
 
             gameManager.SetBoxConfig(defaultcfg.ToArray());
+
+            await log?.WriteInfoAsync("BoxOptions.Public.GameController", "SetAssetDefaultConfig", HttpContext.Connection.ToString(), string.Format("Box configuration set to defaults for assets {0}", string.Join(",", distict)));
 
             return Ok();
         }

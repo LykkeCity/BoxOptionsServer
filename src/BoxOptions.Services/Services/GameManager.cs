@@ -136,16 +136,16 @@ namespace BoxOptions.Services
 
         #region Methods
 
-        private async void ReportInfo(string process, string info)
+        private async void LogInfo(string process, string info)
         {
-            await appLog?.WriteInfoAsync("GameManager", process, null, info, DateTime.UtcNow);
+            await appLog?.WriteInfoAsync("BoxOptions.Services.GameManager", process, null, info, DateTime.UtcNow);
         }
-        private async void ReportWarning(string process, string warning)
+        private async void LogWarning(string process, string warning)
         {
-            await appLog?.WriteWarningAsync("GameManager", process, null, warning, DateTime.UtcNow);
+            await appLog?.WriteWarningAsync("BoxOptions.Services.GameManager", process, null, warning, DateTime.UtcNow);
           
         }
-        private async void ReportError(string process, Exception ex)
+        private async void LogError(string process, Exception ex)
         {
             Exception innerEx;
             if (ex.InnerException != null)
@@ -171,7 +171,7 @@ namespace BoxOptions.Services
             {
                 LastErrorMessage = innerEx.Message;
                 LastErrorDate = DateTime.UtcNow;
-                await appLog?.WriteErrorAsync("GameManager", process, null, innerEx);
+                await appLog?.WriteErrorAsync("BoxOptions.Services.GameManager", process, null, innerEx);
                 //Console.WriteLine("Logged: {0}", innerEx.Message);
             }
         }
@@ -284,7 +284,7 @@ namespace BoxOptions.Services
                 Task t = CoeffCalculatorChangeBatch(GameManagerId, calculatedParams);
                 t.Wait();
             }
-            catch (Exception ex) { ReportError("LoadCoefficientCache", ex); }
+            catch (Exception ex) { LogError("LoadCoefficientCache", ex); }
 
             LoadCoefficientCache();
         }
@@ -305,7 +305,7 @@ namespace BoxOptions.Services
                     //Console.WriteLine("{0} > UNLOCK A", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                 }
             }
-            catch (Exception ex) { ReportError("LoadCoefficientCache", ex); }
+            catch (Exception ex) { LogError("LoadCoefficientCache", ex); }
         }
 
         private string GetCoefficients(string assetPair)
@@ -336,7 +336,7 @@ namespace BoxOptions.Services
                 else
                     LoadCoefficientCache();
             }
-            catch (Exception ex) { ReportError("CoeffMonitorTimerCallback", ex); }
+            catch (Exception ex) { LogError("CoeffMonitorTimerCallback", ex); }
 
             if (!isDisposing)
                 CoeffMonitorTimer.Change(CoeffMonitorTimerInterval, -1);
@@ -358,7 +358,7 @@ namespace BoxOptions.Services
 
                     string msg = $"Coeff Change:[{box.AssetPair}] TimeToFirstBox={box.TimeToFirstBox}, BoxHeight={box.BoxHeight}, BoxWidth={box.BoxWidth}, NPriceIndex={NPriceIndex}, NTimeIndex={NTimeIndex}";
                     //Console.WriteLine("{0} > {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), msg);
-                    ReportInfo("CoeffCalculatorChangeBatch", msg);
+                    LogInfo("CoeffCalculatorChangeBatch", msg);
                     System.Threading.Thread.Sleep(500);
                 }
                 lastCoeffChange = DateTime.UtcNow;
@@ -614,9 +614,9 @@ namespace BoxOptions.Services
             double previousDelta = (double)previousPrice - dPreviousPrice;
 
             if (currentDelta > 0.000001 || currentDelta < -0.000001)
-                ReportWarning("CheckWinOngoing", $"Double to Decimal conversion Fail! CurrDelta={currentDelta} double:{dCurrentPrice} decimal:{currentPrice}");                
+                LogWarning("CheckWinOngoing", $"Double to Decimal conversion Fail! CurrDelta={currentDelta} double:{dCurrentPrice} decimal:{currentPrice}");                
             if (previousDelta > 0.000001 || previousDelta < -0.000001)
-                ReportWarning("CheckWinOngoing", $"Double to Decimal conversion Fail! PrevDelta={previousDelta} double:{dPreviousPrice} decimal:{previousPrice}");
+                LogWarning("CheckWinOngoing", $"Double to Decimal conversion Fail! PrevDelta={previousDelta} double:{dPreviousPrice} decimal:{previousPrice}");
             
 
 
@@ -634,7 +634,7 @@ namespace BoxOptions.Services
             double currentDelta = (double)currentPrice - dCurrentPrice;
 
             if (currentDelta > 0.000001 || currentDelta < -0.000001)
-                ReportWarning("CheckWinOnstarted", $"Double to Decimal conversion Fail! CurrDelta={currentDelta} double:{dCurrentPrice} decimal:{currentPrice}");
+                LogWarning("CheckWinOnstarted", $"Double to Decimal conversion Fail! CurrDelta={currentDelta} double:{dCurrentPrice} decimal:{currentPrice}");
 
             if (currentPrice > bet.Box.MinPrice && currentPrice < bet.Box.MaxPrice)
                 return true;
@@ -865,7 +865,7 @@ namespace BoxOptions.Services
                     ProcessBetCheck(bet, false);
                 }
             }
-            catch (Exception ex) { ReportError("QuoteFeed_MessageReceived", ex); }
+            catch (Exception ex) { LogError("QuoteFeed_MessageReceived", ex); }
             finally { quoteReceivedSemaphoreSlim.Release(); }
 
         }
@@ -897,7 +897,7 @@ namespace BoxOptions.Services
                     betCache.Add(bet);
                 }
             }
-            catch (Exception ex) { ReportError("Bet_TimeToGraphReached", ex); }
+            catch (Exception ex) { LogError("Bet_TimeToGraphReached", ex); }
         }
         private void Bet_TimeLenghFinished(object sender, EventArgs e)
         {

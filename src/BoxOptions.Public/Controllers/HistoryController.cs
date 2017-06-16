@@ -52,7 +52,7 @@ namespace BoxOptions.Public.Controllers
                             });
                         HistoryRequestLog += string.Format("\n\r{0}>Finished Creating Bid History", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                         Console.WriteLine(HistoryRequestLog);
-                        await appLog.WriteInfoAsync("HistoryController", "BidHistory", null, HistoryRequestLog);
+                        await appLog?.WriteInfoAsync("HistoryController", "BidHistory", null, HistoryRequestLog);
 
                         return Ok(bidhistory);
                     }

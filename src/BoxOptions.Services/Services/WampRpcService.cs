@@ -18,17 +18,20 @@ namespace BoxOptions.Services
     {
         private readonly IMicrographCache _micrographCacheService;
         private readonly IGameManager _gameManager;
-        private readonly ILog _log;
+        private readonly ILog appLog;
         private readonly ILogRepository _logRepository;
+
+        DateTime LastErrorDate = DateTime.MinValue;
+        string LastErrorMessage = "";
 
         public WampRpcService(IMicrographCache micrographCacheService, IGameManager gameManager, ILog log, ILogRepository logRepository)
         {
             _micrographCacheService = micrographCacheService;
             _gameManager = gameManager;
-            _log = log;
+            appLog = log;
             _logRepository = logRepository;
 
-            LogInfo("Wamp Rpc Service Started");
+            LogInfo("Constructor", "Wamp Rpc Service Started");
         }
 
         public Dictionary<string, Price[]> InitChartData()
@@ -41,7 +44,7 @@ namespace BoxOptions.Services
             }
             catch (Exception ex)
             {
-                LogError(ex, "InitChartData");
+                LogError("InitChartData", ex);
                 return null;
             }
         }
@@ -397,7 +400,7 @@ namespace BoxOptions.Services
             }
             catch (Exception ex)
             {
-                LogError(ex, "InitUser");
+                LogError("InitUser", ex);                
                 return ex.Message;
             }            
         }
@@ -419,7 +422,7 @@ namespace BoxOptions.Services
             }
             catch (Exception ex)
             {
-                LogError(ex, "PlaceBet");
+                LogError("PlaceBet", ex);                
                 return new PlaceBetResult()
                 {
                     BetTimeStamp = DateTime.MinValue,
@@ -436,7 +439,7 @@ namespace BoxOptions.Services
             }
             catch (Exception ex)
             {
-                LogError(ex, "GetBalance");
+                LogError("GetBalance", ex);                
                 return -1;
             }
         }
@@ -450,7 +453,7 @@ namespace BoxOptions.Services
             }
             catch (Exception ex)
             {
-                LogError(ex, "SetBalance");
+                LogError("SetBalance", ex);
                 return ex.Message;
             }
         }
@@ -462,7 +465,7 @@ namespace BoxOptions.Services
             }
             catch (Exception ex)
             {
-                LogError(ex, "RequestCoeff");
+                LogError("RequestCoeff", ex);
                 return ex.Message;
             }
         }
@@ -477,20 +480,50 @@ namespace BoxOptions.Services
             }
             catch (Exception ex)
             {
-                LogError(ex, "RequestCoeff");
+                LogError("SaveLog", ex);                
                 return ex.Message;
             }
         }
 
-        private void LogInfo(string message, string sender = "this")
+        private async void LogInfo(string process, string info)
         {
-            _log?.WriteInfoAsync("WampRpcService", sender, null, message);
+            await appLog?.WriteInfoAsync("BoxOptions.Services.WampRpcService", process, null, info, DateTime.UtcNow);
         }
-        private void LogError(Exception ex, string sender = "this")
+        private async void LogWarning(string process, string warning)
         {
-            _log?.WriteErrorAsync("WampRpcService", sender, null, ex);
+            await appLog?.WriteWarningAsync("BoxOptions.Services.WampRpcService", process, null, warning, DateTime.UtcNow);
+
         }
-                
+        private async void LogError(string process, Exception ex)
+        {
+            Exception innerEx;
+            if (ex.InnerException != null)
+                innerEx = ex.InnerException;
+            else
+                innerEx = ex;
+
+            bool LogError;
+            if (LastErrorMessage != innerEx.Message)
+            {
+                LogError = true;
+            }
+            else
+            {
+                if (DateTime.UtcNow > LastErrorDate.AddMinutes(1))
+                    LogError = true;
+                else
+                    LogError = false;
+            }
+
+
+            if (LogError)
+            {
+                LastErrorMessage = innerEx.Message;
+                LastErrorDate = DateTime.UtcNow;
+                await appLog?.WriteErrorAsync("BoxOptions.Services.WampRpcService", process, null, innerEx);
+                //Console.WriteLine("Logged: {0}", innerEx.Message);
+            }
+        }
 
 
 

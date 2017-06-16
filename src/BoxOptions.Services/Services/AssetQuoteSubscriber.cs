@@ -40,7 +40,7 @@ namespace BoxOptions.Services
         /// <summary>
         /// Logger Object
         /// </summary>
-        ILog log;
+        ILog appLog;
 
         /// <summary>
         /// Time stamp of last received message from Primary Stream
@@ -61,6 +61,9 @@ namespace BoxOptions.Services
 
         IAssetDatabase history;
 
+        DateTime LastErrorDate = DateTime.MinValue;
+        string LastErrorMessage = "";
+
         /// <summary>
         /// Thrown when a new message is received from RabbitMQ Queue
         /// </summary>
@@ -72,7 +75,7 @@ namespace BoxOptions.Services
             primaryStreamLastMessageTimeStamp = secondaryStreamLastMessageTimeStamp = DateTime.UtcNow;            
             assetCache = new List<InstrumentPrice>();
             this.settings = settings;
-            this.log = log;
+            this.appLog = log;
             this.history = history;
             lastPrices = new Dictionary<string, InstrumentPrice>();
             checkConnectionTimer = new System.Threading.Timer(CheckConnectionTimerCallback, null, -1, -1);
@@ -87,8 +90,8 @@ namespace BoxOptions.Services
             // Start Primary Subscriber. Uses BestBidAsk Model
             primarySubscriber = CreateBestBidSubscriber(settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed,
                 PrimaryMessageReceived_BestBidAsk);            
-            log?.WriteInfoAsync("AssetQuoteSubscriber", "Start", null, $"AssetQuoteSubscriber Primary Feed [{settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.RabbitMqConnectionString}]");
-
+            
+            LogInfo("Start", $"AssetQuoteSubscriber Primary Feed [{settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.RabbitMqConnectionString}]");
             if (settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed != null)
             {
                 // Start Secondary Subscriber. Uses Asset quote model
@@ -96,7 +99,7 @@ namespace BoxOptions.Services
                     settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed,
                     SecondaryMessageReceived_AssetQuote);
                 if (secondarySubscriber != null)
-                    log?.WriteInfoAsync("AssetQuoteSubscriber", "Start", null, $"AssetQuoteSubscriber Secondary Feed [{settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.RabbitMqConnectionString}]");
+                    LogInfo("Start", $"AssetQuoteSubscriber Secondary Feed [{settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.RabbitMqConnectionString}]");                    
             }
 
             // Start Timer to check incoming dataconnection (checks every 30 seconds)
@@ -117,6 +120,46 @@ namespace BoxOptions.Services
 
         }
 
+        private async void LogInfo(string process, string info)
+        {
+            await appLog?.WriteInfoAsync("BoxOptions.Services.AssetQuoteSubscriber", process, null, info, DateTime.UtcNow);
+        }
+        private async void LogWarning(string process, string warning)
+        {
+            await appLog?.WriteWarningAsync("BoxOptions.Services.AssetQuoteSubscriber", process, null, warning, DateTime.UtcNow);
+
+        }
+        private async void LogError(string process, Exception ex)
+        {
+            Exception innerEx;
+            if (ex.InnerException != null)
+                innerEx = ex.InnerException;
+            else
+                innerEx = ex;
+
+            bool LogError;
+            if (LastErrorMessage != innerEx.Message)
+            {
+                LogError = true;
+            }
+            else
+            {
+                if (DateTime.UtcNow > LastErrorDate.AddMinutes(1))
+                    LogError = true;
+                else
+                    LogError = false;
+            }
+
+
+            if (LogError)
+            {
+                LastErrorMessage = innerEx.Message;
+                LastErrorDate = DateTime.UtcNow;
+                await appLog?.WriteErrorAsync("BoxOptions.Services.AssetQuoteSubscriber", process, null, innerEx);
+                //Console.WriteLine("Logged: {0}", innerEx.Message);
+            }
+        }
+
         #region Create Subscribers
         private RabbitMqSubscriber<AssetQuote> CreateAssetSubscriber(FeedSettings settings, Func<AssetQuote, Task> callback)
         {
@@ -132,7 +175,7 @@ namespace BoxOptions.Services
             })
               .SetMessageDeserializer(new MessageDeserializer<AssetQuote>())
               .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy())
-              .SetLogger(log)
+              .SetLogger(appLog)
               .Subscribe(callback)
               .Start();
 
@@ -152,7 +195,7 @@ namespace BoxOptions.Services
             })
               .SetMessageDeserializer(new MessageDeserializer<BestBidAsk>())
               .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy())
-              .SetLogger(log)
+              .SetLogger(appLog)
               .Subscribe(callback)
               .Start();
 
@@ -210,8 +253,7 @@ namespace BoxOptions.Services
                 || bestBidAsk.BestBid == null ||bestBidAsk.BestBid<= 0)
             {
                 //log                
-                
-                log?.WriteWarningAsync("AssetQuoteSubscriber", "ProcessBestBidAsk",null, string.Format("Received BestBidAsk with price zero [0], BestBidAsk discarded. {0}", bestBidAsk), DateTime.UtcNow);
+                LogWarning("ProcessBestBidAsk", string.Format("Received BestBidAsk with price zero [0], BestBidAsk discarded. {0}", bestBidAsk));                
                 
                 // Discard it
                 return Task.FromResult(0);
@@ -237,9 +279,8 @@ namespace BoxOptions.Services
 
             // If Price is zero publish exception to support slack channel
             if (assetQuote.Price <= 0)
-            {
-                log?.WriteWarningAsync("AssetQuoteSubscriber", "ProcessAssetQuote", null, string.Format("Received AssetQuote with price zero [0], AssetQuote discarded. {0}", assetQuote), DateTime.UtcNow);
-
+            {                
+                LogWarning("ProcessAssetQuote", string.Format("Received AssetQuote with price zero [0], AssetQuote discarded. {0}", assetQuote));
                 return Task.FromResult(0);
             }
 
@@ -317,7 +358,6 @@ namespace BoxOptions.Services
 
         private void OnMessageReceived(InstrumentPrice bestBidAsk)
         {
-#if !DEBUG  // DO NOT WRITE ON ASSET DATABASE DURING DEBUG
             // Add to Asset History
             history?.AddToAssetHistory(new BestBidAsk()
             {
@@ -327,7 +367,6 @@ namespace BoxOptions.Services
                 Source = bestBidAsk.Source,
                 Timestamp = bestBidAsk.Date
             });
-#endif
             MessageReceived?.Invoke(this, (InstrumentPrice)bestBidAsk.ClonePrice());
         }
 
@@ -354,8 +393,7 @@ namespace BoxOptions.Services
                     if (!InExclusionInterval)
                     {
                         // Not in exclusion interval, report error.                                            
-                        string msg = string.Format("BoxOptions Server: No Messages from Primary Feed for {0}", currentdate - primaryStreamLastMessageTimeStamp);
-                        log?.WriteWarningAsync("AssetQuoteSubscriber", "CheckConnectionTimerCallback", "", msg, DateTime.UtcNow);
+                        LogWarning("CheckConnectionTimerCallback", string.Format("No Messages from Primary Feed for {0}", currentdate - primaryStreamLastMessageTimeStamp));
                     }
                 }
             }
@@ -376,9 +414,8 @@ namespace BoxOptions.Services
                         settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.PricesWeekExclusionEnd);
                     if (!InExclusionInterval)
                     {
-                        // Not in exclusion interval, report error.                                            
-                        string msg = string.Format("BoxOptions Server: No Messages from Secondary Feed for {0}", currentdate - primaryStreamLastMessageTimeStamp);
-                        log?.WriteWarningAsync("AssetQuoteSubscriber", "CheckConnectionTimerCallback", "", msg, DateTime.UtcNow);
+                        // Not in exclusion interval, report error.                                                                    
+                        LogWarning("CheckConnectionTimerCallback", string.Format("No Messages from Secondary Feed for {0}", currentdate - primaryStreamLastMessageTimeStamp));
                     }
                 }
             }
@@ -429,7 +466,7 @@ namespace BoxOptions.Services
             }
             catch (Exception ex)
             {
-                log.WriteErrorAsync("AssetQuoteSubscriber", "CheckExclusionInterval", "", ex);
+                LogError("CheckExclusionInterval", ex);                
                 return true;
             }
         }

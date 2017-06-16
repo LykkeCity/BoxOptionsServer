@@ -87,9 +87,6 @@ namespace BoxOptions.Public.Modules
             builder.RegisterInstance(new AssetRepository(new AzureTableStorage<AzureRepositories.BestBidAskEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
                 "BestBidAskHistory", log)))
                 .As<IAssetRepository>();
-            //builder.RegisterInstance(new OldAssetRepository(new AzureTableStorage<AzureRepositories.OldAssetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-            //    "QuoteFeed", log)))
-            //    .AsSelf();
             // User Data Repository
             builder.RegisterInstance(new UserRepository(
                 new AzureTableStorage<AzureRepositories.UserEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
@@ -108,16 +105,17 @@ namespace BoxOptions.Public.Modules
                 "BoxConfig", log)))
                 .As<IBoxConfigRepository>();
 
-            
+#if DEBUG
             // Local File System Asset Database
-            //builder.RegisterType<LocalFSHistory>()
-            //    .As<IAssetDatabase>()
-            //    .SingleInstance();
-
+            builder.RegisterType<LocalFSHistory>()
+                .As<IAssetDatabase>()
+                .SingleInstance();
+#else
+            // Azure Storage Asset Database
             builder.RegisterType<Processors.AzureQuoteDatabase>()
                 .As<IAssetDatabase>()
                 .SingleInstance();
-
+#endif
             // Coefficient Calculator Interface
             ICoefficientCalculator coefCalculator;
             if (_settings.BoxOptionsApi.CoefApiUrl.ToLower() == "mock")

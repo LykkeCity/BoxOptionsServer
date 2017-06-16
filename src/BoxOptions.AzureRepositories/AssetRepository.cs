@@ -91,7 +91,7 @@ namespace BoxOptions.AzureRepositories
                     if (list.Count < maxbuffer)
                         bufferLen = list.Count;
                     var buffer = list.Take(bufferLen);
-                    Console.WriteLine("Inserting {0} records", bufferLen);
+                    //Console.WriteLine("Inserting {0} records", bufferLen);
                     await _storage.InsertOrMergeBatchAsync(buffer);
                     list.RemoveRange(0, bufferLen);
 
