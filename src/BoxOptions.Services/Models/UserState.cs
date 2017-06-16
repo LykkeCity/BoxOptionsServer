@@ -16,7 +16,7 @@ namespace BoxOptions.Services.Models
         int currentState;
         List<UserHistory> statusHistory;
         List<GameBet> openBets;                     // Bet cache
-        ISubject<BetResult> subject;                // WAMP Subject
+        ISubject<GameEvent> subject;                // WAMP Subject
 
         
         public UserState(string userId)
@@ -53,6 +53,13 @@ namespace BoxOptions.Services.Models
         {
             balance = newBalance;
             LastChange = DateTime.UtcNow;
+
+            PublishToWamp(new GameEvent()
+            {
+                EventType = (int)GameEventType.BalanceChanged,
+                EventParameters = string.Format("NewBalance:{0}", balance)
+            });
+
         }
         internal UserHistory SetStatus(int status, string message)
         {
@@ -102,14 +109,14 @@ namespace BoxOptions.Services.Models
 
         internal void StartWAMP(IWampHostedRealm wampRealm, string topicName)
         {
-            subject = wampRealm.Services.GetSubject<BetResult>(topicName + "." + userId);
+            subject = wampRealm.Services.GetSubject<GameEvent>(topicName + "." + userId);
         }
-        internal void PublishToWamp(BetResult betResult)
+        internal void PublishToWamp(GameEvent gameEvent)
         {
             if (subject == null)
                 throw new InvalidOperationException("Wamp Subject not set");
 
-            subject.OnNext(betResult);
+            subject.OnNext(gameEvent);
         }
 
         public void Dispose()

@@ -690,9 +690,14 @@ namespace BoxOptions.Services
                         BetState = (int)bet.BetStatus,
                         IsWin = IsWin
                     };
-                    
+
                     // Report Not WIN to WAMP
-                    bet.User.PublishToWamp(checkres);                    
+                    GameEvent ev = new GameEvent()
+                    {
+                        EventType = (int)GameEventType.BetResult,
+                        EventParameters = checkres.ToJson()
+                    };
+                    bet.User.PublishToWamp(ev);                    
                 }
                 
             });
@@ -735,7 +740,12 @@ namespace BoxOptions.Services
                     IsWin = true
                 };
                 // Publish to WAMP topic
-                bet.User.PublishToWamp(checkres);
+                GameEvent ev = new GameEvent()
+                {
+                    EventType = (int)GameEventType.BetResult,
+                    EventParameters = checkres.ToJson()
+                };
+                bet.User.PublishToWamp(ev);
                 
                 // Save bet to Database
                 database.SaveGameBet(bet);
@@ -787,7 +797,12 @@ namespace BoxOptions.Services
                         IsWin = false
                     };
                     // Publish to WAMP topic
-                    bet.User.PublishToWamp(checkres);
+                    GameEvent ev = new GameEvent()
+                    {
+                        EventType = (int)GameEventType.BetResult,
+                        EventParameters = checkres.ToJson()
+                    };
+                    bet.User.PublishToWamp(ev);
                     
                     // Save bet to Database
                     database.SaveGameBet(bet);
