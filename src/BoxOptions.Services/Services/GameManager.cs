@@ -184,7 +184,9 @@ namespace BoxOptions.Services
             List<BoxSize> AssetsToAdd = new List<BoxSize>();
 
             List<string> AllAssets = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets.ToList();
-            
+            AllAssets.AddRange(settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets.ToList());
+
+
             string[] DistictAssets = AllAssets.Distinct().ToArray();
             // Validate Allowed Assets
             foreach (var item in DistictAssets)

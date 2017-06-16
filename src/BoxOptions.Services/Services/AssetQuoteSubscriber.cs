@@ -212,7 +212,7 @@ namespace BoxOptions.Services
             //Console.WriteLine(bestBidAsk);
             
             // Filter Asset from Primary Stream Configuration File
-            if (!settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets.Contains(bestBidAsk.Asset))
+            if (!PrimaryGameInstruments.Contains(bestBidAsk.Asset))
                 // Not in allowed assets list, discard entry
                 return Task.FromResult(0);
             else
