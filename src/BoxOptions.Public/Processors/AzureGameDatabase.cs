@@ -15,7 +15,7 @@ namespace BoxOptions.Public.Processors
         IUserRepository userRep;
         IGameRepository gameRep;
 
-        int maxBuffer = 64;
+        int maxBuffer = 100;
 
 
 

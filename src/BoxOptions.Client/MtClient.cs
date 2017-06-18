@@ -11,6 +11,7 @@ using BoxOptions.Core.Models;
 using Lykke.Common;
 using BoxOptions.Services.Models;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace BoxOptions.Client
 {
@@ -101,6 +102,7 @@ namespace BoxOptions.Client
 
         }
 
+        public List<BetInfo> RunningBets { get; private set; } = null;
 
         #region Rpc methods
 
@@ -139,16 +141,27 @@ namespace BoxOptions.Client
                 subscription2.Dispose();
                 subscription2 = null;
             }
-            subscription2 = _realmProxy.Services.GetSubject<BetResult>("game.events." + Program.UserId)
+            subscription2 = _realmProxy.Services.GetSubject<GameEvent>("game.events." + Program.UserId)
                 .Subscribe(OnGameResult);
             //info =>
             //{
             //    Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > INFO[{info.ToJson()}");
             //});
         }
-        void OnGameResult(BetResult info)
+        void OnGameResult(GameEvent info)
         {
-            Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > INFO[{info.ToJson()}");
+            Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] > Type={info.EventType} pars={info.EventParameters}");
+            if (RunningBets  != null && info.EventType == 1)
+            {
+                BetInfo binfo = (from b in RunningBets
+                                 where info.EventParameters.Contains(b.BetId)
+                                 select b).FirstOrDefault();
+                if (binfo == null)
+                    throw new InvalidOperationException("bet not in cache");
+
+                binfo.Events.Add(info.EventParameters);
+
+            }
         }
 
         public void Stop()
@@ -199,10 +212,10 @@ namespace BoxOptions.Client
                 System.Threading.Thread.Sleep(999);
             }
         }
-
+        int BetCtr = 20;
         internal void PlaceBets(string userId)
         {
-
+            RunningBets = new List<BetInfo>();
 
             // {"BoxId":"4E8F0395-7DB5-440F-B434-49217CF9DA89","MinPrice":0.9649558795483333,"MaxPrice":0.9650041204516666,"TimeToGraph":32.0,"TimeLength":6.999999999999992,"Coefficient":1.027643619053309,"BetState":3,"PreviousPrice":{"Instrument":"USDCHF","Bid":0.96499,"Ask":0.96503,"Date":"2017-06-08T04:03:17.673696Z","Time":1496894597673},"CurrentPrice":{"Instrument":"USDCHF","Bid":0.96496,"Ask":0.965,"Date":"2017-06-08T04:03:22.778847Z","Time":1496894602778},"TimeToGraphStamp":"2017-06-08T04:04:42.819815Z","WinStamp":"2017-06-08T04:04:42.819902Z","FinishedStamp":null,"Timestamp":"2017-06-08T04:04:11.208345Z","BetAmount":1.0,"IsWin":true}
             string boxstring = "{{" +
@@ -210,26 +223,30 @@ namespace BoxOptions.Client
                 "\"Coefficient\":{1}," +
                 "\"MinPrice\":0.9649558795483333," +
                 "\"MaxPrice\":0.9650041204516666," +
-                "\"TimeToGraph\":32," +
-                "\"TimeLength\":6.9999999999999973" +
+                "\"TimeToGraph\":4," +
+                "\"TimeLength\":7" +
                 "}}";
             // place 20 bets concurrently
             double coef = 1.027643619053309;
             System.Globalization.CultureInfo CI = new System.Globalization.CultureInfo("en-us");
-            List<PlaceBetResult> results = new List<PlaceBetResult>();
-            for (int i = 0; i < 100; i++)
+            
+            for (int i = 0; i < BetCtr; i++)
             {
                 Task.Run(() =>
                 {
+                    
+                    
                     string GUID = Guid.NewGuid().ToString().ToLower();
+                    BetInfo b = new BetInfo(GUID);
                     try
                     {
                         string box = string.Format(CI, boxstring, GUID, coef);
                         coef += 0.02;
                         Console.WriteLine("{0} | {1} > Placing Bet", DateTime.UtcNow.ToString("HH:mm:ss.fff"), GUID);
-                        PlaceBetResult result = _service.PlaceBet(userId, "BTCUSD", box, 1);
+                        PlaceBetResult result = _service.PlaceBet(userId, "EURCHF", box, 1);
                         Console.WriteLine("{0} | {1} > Result = {2} ({3})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), GUID, result.BetTimeStamp.ToString("yyyy-MM-dd_HH:mm:ss.fff"), result.Status);
-                        results.Add(result);
+                        b.Result = result;
+                        RunningBets.Add(b);
                     }
                     catch (Exception ex)
                     {
@@ -238,13 +255,31 @@ namespace BoxOptions.Client
                 });
                 Thread.Sleep(10);
             }
-
-            Console.WriteLine(results.Count);
-
         }
-
+        internal void CheckBets()
+        {
+            int ctr = 0;
+            foreach (var bet in RunningBets)
+            {                
+                Console.WriteLine("{0} > {1} has {2} events", ++ctr, bet.BetId, bet.Events.Count);
+            }
+        }
         #endregion
 
+        public class BetInfo
+        {
+            public string BetId { get; private set; }
+            public PlaceBetResult Result { get; set; }
+
+            public List<string> Events { get; set; }
+
+            public BetInfo(string betId)
+            {
+                BetId = betId;
+                Events = new List<string>();
+            }
+            
+        }
 
         //internal void Launch(string userId)
         //{

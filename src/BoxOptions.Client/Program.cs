@@ -1,4 +1,6 @@
-﻿using System;
+﻿using BoxOptions.Services.Models;
+using Newtonsoft.Json;
+using System;
 
 namespace BoxOptions.Client
 {
@@ -122,6 +124,9 @@ namespace BoxOptions.Client
                     case "placebets":
                         client.PlaceBets(UserId);
                         break;
+                    case "checkbets":
+                        client.CheckBets();
+                        break;
                     case "getbalance":
                         client.GetBalance(UserId);
                         break;
@@ -147,5 +152,14 @@ namespace BoxOptions.Client
             client.Stop();
 
         }
+    }
+    static class Extensions
+    {
+        //public static BetResult FromJson (this string json)
+        //{
+        //    BetResult retval = JsonConvert.DeserializeObject< BetResult>(json);
+        //    return retval;
+
+        //}
     }
 }

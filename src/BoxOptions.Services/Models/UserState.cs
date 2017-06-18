@@ -18,6 +18,7 @@ namespace BoxOptions.Services.Models
         List<GameBet> openBets;                     // Bet cache
         ISubject<GameEvent> subject;                // WAMP Subject
 
+        System.Globalization.CultureInfo Ci = new System.Globalization.CultureInfo("en-us");
         
         public UserState(string userId)
         {
@@ -57,7 +58,7 @@ namespace BoxOptions.Services.Models
             PublishToWamp(new GameEvent()
             {
                 EventType = (int)GameEventType.BalanceChanged,
-                EventParameters = string.Format("NewBalance:{0}", balance)
+                EventParameters = string.Format(Ci,"{0}", balance)
             });
 
         }
@@ -116,6 +117,7 @@ namespace BoxOptions.Services.Models
             if (subject == null)
                 throw new InvalidOperationException("Wamp Subject not set");
 
+            Console.WriteLine("PublishToWamp > {0}", gameEvent.EventTypeEnum);
             subject.OnNext(gameEvent);
         }
 

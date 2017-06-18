@@ -88,10 +88,12 @@ namespace BoxOptions.Services
         /// </summary>
         private Dictionary<string, PriceCache> assetCache;
 
+
+        bool IsCoeffStarted;
         /// <summary>
         /// Box configuration
         /// </summary>
-        List<BoxSize> defaultBoxConfig;
+        List<BoxSize> dbBoxConfig;
 
         Queue<string> appLogInfoQueue = new Queue<string>();
 
@@ -126,9 +128,13 @@ namespace BoxOptions.Services
             betCache = new List<GameBet>();
             assetCache = new Dictionary<string, PriceCache>();
 
+            IsCoeffStarted = false;
+
             this.quoteFeed.MessageReceived += QuoteFeed_MessageReceived;
 
-            defaultBoxConfig = null;            
+            //calculateBoxConfig = null;
+            dbBoxConfig = Task.Run(() => LoadBoxParameters()).Result;
+            Console.WriteLine("Db Box Config = {0}", dbBoxConfig.Count);
         }
 
 
@@ -175,12 +181,9 @@ namespace BoxOptions.Services
                 //Console.WriteLine("Logged: {0}", innerEx.Message);
             }
         }
-        private List<BoxSize> LoadBoxParameters()
+        private async Task<List<BoxSize>> LoadBoxParameters()
         {
-            Task<IEnumerable<BoxSize>> t = boxConfigRepository.GetAll();
-            t.Wait();
-
-            List<BoxSize> boxConfig = t.Result.ToList();
+            var dbConfig = await boxConfigRepository.GetAll();
             List<BoxSize> AssetsToAdd = new List<BoxSize>();
 
             List<string> AllAssets = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets.ToList();
@@ -193,7 +196,7 @@ namespace BoxOptions.Services
             {
 
                 // If database does not contain allowed asset then add it
-                if (!boxConfig.Select(config => config.AssetPair).Contains(item))
+                if (!dbConfig.Select(config => config.AssetPair).Contains(item))
                 {
                     // Check if it was not added before to avoid duplicates
                     if (!AssetsToAdd.Select(config => config.AssetPair).Contains(item))
@@ -210,9 +213,10 @@ namespace BoxOptions.Services
                     }
                 }
             }
+            List<BoxSize> boxConfig = dbConfig.ToList();
             if (AssetsToAdd.Count > 0)
             {
-                boxConfigRepository.InsertManyAsync(AssetsToAdd);
+                await boxConfigRepository.InsertManyAsync(AssetsToAdd);
                 boxConfig.AddRange(AssetsToAdd);
             }
 
@@ -269,7 +273,7 @@ namespace BoxOptions.Services
             lock (BetCacheLock)
             {
                 retval = new GameBet[betCache.Count];
-                betCache.CopyTo(retval);
+                betCache.CopyTo(retval);                
             }
             return retval;
         }
@@ -277,34 +281,29 @@ namespace BoxOptions.Services
         #region Coefficient Cache Monitor
         Dictionary<string, string> CoefficientCache;
 
-        private void InitializeCoefCalc()
+        private async void InitializeCoefCalc()
         {
             try
             {
-                BoxSize[] calculatedParams = CalculatedBoxes(defaultBoxConfig, micrographCache);
+                BoxSize[] calculatedParams = CalculatedBoxes(dbBoxConfig, micrographCache);
 
-                Task t = CoeffCalculatorChangeBatch(GameManagerId, calculatedParams);
-                t.Wait();
+                await CoeffCalculatorChangeBatch(GameManagerId, calculatedParams);
+                
             }
             catch (Exception ex) { LogError("LoadCoefficientCache", ex); }
 
             LoadCoefficientCache();
         }
 
-        private void LoadCoefficientCache()
+        private async void LoadCoefficientCache()
         {
             try
             {
-                string[] assets = defaultBoxConfig.Select(b => b.AssetPair).ToArray();
-
-                Task<Dictionary<string, string>> t = CoeffCalculatorRequestBatch(GameManagerId, assets);
-                t.Wait();
-
+                string[] assets = dbBoxConfig.Select(b => b.AssetPair).ToArray();
+                Dictionary<string, string> temp = await CoeffCalculatorRequestBatch(GameManagerId, assets);
                 lock (CoeffCacheLock)
-                {
-                    //Console.WriteLine("{0} > LOCK A", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
-                    CoefficientCache = t.Result;
-                    //Console.WriteLine("{0} > UNLOCK A", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+                {                    
+                    CoefficientCache = temp;                 
                 }
             }
             catch (Exception ex) { LogError("LoadCoefficientCache", ex); }
@@ -406,31 +405,29 @@ namespace BoxOptions.Services
 
         private BoxSize[] InitializeUser(string userId)
         {
-            UserState userState = GetUserState(userId);
-
-            //
-            List<BoxSize> boxConfig = LoadBoxParameters();
-
-            if (defaultBoxConfig == null)
+            try
             {
-                defaultBoxConfig = (from c in boxConfig
-                                    select new BoxSize()
-                                    {
-                                        AssetPair = c.AssetPair,
-                                        BoxesPerRow = c.BoxesPerRow,
-                                        BoxHeight = c.BoxHeight,
-                                        BoxWidth = c.BoxWidth,
-                                        TimeToFirstBox = c.TimeToFirstBox
-                                    }).ToList();
-                InitializeCoefCalc();
+                UserState userState = GetUserState(userId);
+                
+                if (!IsCoeffStarted)
+                {
+                    IsCoeffStarted = true;
 
-                StartCoefficientCacheMonitor();
+                    InitializeCoefCalc();
 
+                    StartCoefficientCacheMonitor();
+
+                }
+                BoxSize[] retval = CalculatedBoxes(dbBoxConfig, micrographCache);
+                // Return Calculate Price Sizes
+                return retval;
             }
-
-            // Return Calculate Price Sizes
-            BoxSize[] retval = CalculatedBoxes(boxConfig, micrographCache);
-            return retval;
+            catch (Exception ex01)
+            {
+                Console.WriteLine("ERROR: {0}", ex01.Message);
+                throw;
+            }            
+            
         }
 
         /// <summary>
@@ -565,10 +562,10 @@ namespace BoxOptions.Services
 
             // TODO: Get Box from... somewhere            
             Box boxObject = Box.FromJson(box);
-
+            Console.WriteLine("{0} > Placing Bet. TimetoGraph={1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), boxObject.TimeToGraph);
 
             // Get Current Coeffs for Game's Assetpair
-            var assetConfig = defaultBoxConfig.Where(b => b.AssetPair == assetPair).FirstOrDefault();
+            var assetConfig = dbBoxConfig.Where(b => b.AssetPair == assetPair).FirstOrDefault();
             if (assetConfig == null)
             {
                 message = $"Box Size parameters are not set for Asset Pair[{ assetPair}].";
@@ -650,15 +647,15 @@ namespace BoxOptions.Services
         /// <param name="bet">Bet</param>
         private void ProcessBetCheck(GameBet bet, bool IsFirstCheck)
         {
+            Console.WriteLine("ProcessBetCheck({0})={1}", IsFirstCheck, bet.Box.Id);
+            if (bet == null || bet.BetStatus == BetStates.Win || bet.BetStatus == BetStates.Lose)
+            {
+                // bet already processed;
+                return;
+            }
             // Run Check Asynchronously
             Task.Run(() =>
-            {
-                if (bet == null || bet.BetStatus == BetStates.Win || bet.BetStatus == BetStates.Lose)
-                {
-                    // bet already processed;
-                    return;
-                }
-
+            {                
                 var assetHist = assetCache[bet.AssetPair];
                 bool IsWin = false;
                 if (IsFirstCheck)
@@ -673,35 +670,39 @@ namespace BoxOptions.Services
                 }
                 else
                 {
-                    BetResult checkres = new BetResult(bet.Box.Id)
+                    //BetResult checkres = new BetResult(bet.Box.Id)
+                    //{
+                    //    BetAmount = bet.BetAmount,
+                    //    Coefficient = bet.Box.Coefficient,
+                    //    MinPrice = bet.Box.MinPrice,
+                    //    MaxPrice = bet.Box.MaxPrice,
+                    //    TimeToGraph = bet.Box.TimeToGraph,
+                    //    TimeLength = bet.Box.TimeLength,
+
+                    //    PreviousPrice = assetHist.PreviousPrice,
+                    //    CurrentPrice = assetHist.CurrentPrice,
+
+                    //    Timestamp = bet.Timestamp,
+                    //    TimeToGraphStamp = bet.TimeToGraphStamp,
+                    //    WinStamp = bet.WinStamp,
+                    //    FinishedStamp = bet.FinishedStamp,
+                    //    BetState = (int)bet.BetStatus,
+                    //    IsWin = IsWin
+                    //};
+
+                    if (IsFirstCheck)
                     {
-                        BetAmount = bet.BetAmount,
-                        Coefficient = bet.Box.Coefficient,
-                        MinPrice = bet.Box.MinPrice,
-                        MaxPrice = bet.Box.MaxPrice,
-                        TimeToGraph = bet.Box.TimeToGraph,
-                        TimeLength = bet.Box.TimeLength,
-
-                        PreviousPrice = assetHist.PreviousPrice,
-                        CurrentPrice = assetHist.CurrentPrice,
-
-                        Timestamp = bet.Timestamp,
-                        TimeToGraphStamp = bet.TimeToGraphStamp,
-                        WinStamp = bet.WinStamp,
-                        FinishedStamp = bet.FinishedStamp,
-                        BetState = (int)bet.BetStatus,
-                        IsWin = IsWin
-                    };
-
-                    // Report Not WIN to WAMP
-                    GameEvent ev = new GameEvent()
-                    {
-                        EventType = (int)GameEventType.BetResult,
-                        EventParameters = checkres.ToJson()
-                    };
-                    bet.User.PublishToWamp(ev);                    
+                        // Report TimeTograph Reached
+                        GameEvent ev = new GameEvent()
+                        {
+                            EventType = (int)GameEventType.BetResult,
+                            EventParameters = string.Format("{0};{1}", bet.Box.Id, (int)bet.BetStatus)
+                            //EventParameters = checkres.ToJson()
+                        };
+                        bet.User.PublishToWamp(ev);
+                    }
                 }
-                
+
             });
         }
                         
@@ -722,30 +723,31 @@ namespace BoxOptions.Services
 
             // Publish WIN to WAMP topic            
             var t = Task.Run(() => {
-                BetResult checkres = new BetResult(bet.Box.Id)
-                {
-                    BetAmount = bet.BetAmount,
-                    Coefficient = bet.Box.Coefficient,
-                    MinPrice = bet.Box.MinPrice,
-                    MaxPrice = bet.Box.MaxPrice,
-                    TimeToGraph = bet.Box.TimeToGraph,
-                    TimeLength = bet.Box.TimeLength,
+                //BetResult checkres = new BetResult(bet.Box.Id)
+                //{
+                //    BetAmount = bet.BetAmount,
+                //    Coefficient = bet.Box.Coefficient,
+                //    MinPrice = bet.Box.MinPrice,
+                //    MaxPrice = bet.Box.MaxPrice,
+                //    TimeToGraph = bet.Box.TimeToGraph,
+                //    TimeLength = bet.Box.TimeLength,
 
-                    PreviousPrice = assetCache[bet.AssetPair].PreviousPrice,
-                    CurrentPrice = assetCache[bet.AssetPair].CurrentPrice,
+                //    PreviousPrice = assetCache[bet.AssetPair].PreviousPrice,
+                //    CurrentPrice = assetCache[bet.AssetPair].CurrentPrice,
 
-                    Timestamp = bet.Timestamp,
-                    TimeToGraphStamp = bet.TimeToGraphStamp,
-                    WinStamp = bet.WinStamp,
-                    FinishedStamp = bet.FinishedStamp,
-                    BetState = (int)bet.BetStatus,
-                    IsWin = true
-                };
+                //    Timestamp = bet.Timestamp,
+                //    TimeToGraphStamp = bet.TimeToGraphStamp,
+                //    WinStamp = bet.WinStamp,
+                //    FinishedStamp = bet.FinishedStamp,
+                //    BetState = (int)bet.BetStatus,
+                //    IsWin = true
+                //};
                 // Publish to WAMP topic
                 GameEvent ev = new GameEvent()
                 {
                     EventType = (int)GameEventType.BetResult,
-                    EventParameters = checkres.ToJson()
+                    EventParameters = string.Format("{0};{1}", bet.Box.Id, (int)bet.BetStatus)
+                    //EventParameters = checkres.ToJson()
                 };
                 bet.User.PublishToWamp(ev);
                 
@@ -764,13 +766,15 @@ namespace BoxOptions.Services
         /// <param name="bet">Bet</param>
         private void ProcessBetTimeOut(GameBet bet)
         {
+            Console.WriteLine("ProcessBetTimeOut={0}", bet.Box.Id);
             // Remove bet from cache
             // Remove bet from cache
             lock (BetCacheLock)
             {
                 bool res = betCache.Remove(bet);
+                Console.WriteLine("Cache Size={0}", betCache.Count);
             }
-
+            
             // If bet was not won previously
             if (bet.BetStatus != BetStates.Win)
             {                
@@ -779,30 +783,31 @@ namespace BoxOptions.Services
 
                 // publish LOSE to WAMP topic                
                 var t = Task.Run(() => {
-                    BetResult checkres = new BetResult(bet.Box.Id)
-                    {
-                        BetAmount = bet.BetAmount,
-                        Coefficient = bet.Box.Coefficient,
-                        MinPrice = bet.Box.MinPrice,
-                        MaxPrice = bet.Box.MaxPrice,
-                        TimeToGraph = bet.Box.TimeToGraph,
-                        TimeLength = bet.Box.TimeLength,
+                    //BetResult checkres = new BetResult(bet.Box.Id)
+                    //{
+                    //    BetAmount = bet.BetAmount,
+                    //    Coefficient = bet.Box.Coefficient,
+                    //    MinPrice = bet.Box.MinPrice,
+                    //    MaxPrice = bet.Box.MaxPrice,
+                    //    TimeToGraph = bet.Box.TimeToGraph,
+                    //    TimeLength = bet.Box.TimeLength,
 
-                        PreviousPrice = assetCache.ContainsKey(bet.AssetPair) ? assetCache[bet.AssetPair].PreviousPrice : new InstrumentPrice(),    // BUG: No Prices on Cache 
-                        CurrentPrice = assetCache.ContainsKey(bet.AssetPair) ? assetCache[bet.AssetPair].CurrentPrice: new InstrumentPrice(),       // check if there are any prices on cache
+                    //    PreviousPrice = assetCache.ContainsKey(bet.AssetPair) ? assetCache[bet.AssetPair].PreviousPrice : new InstrumentPrice(),    // BUG: No Prices on Cache 
+                    //    CurrentPrice = assetCache.ContainsKey(bet.AssetPair) ? assetCache[bet.AssetPair].CurrentPrice: new InstrumentPrice(),       // check if there are any prices on cache
 
-                        Timestamp = bet.Timestamp,
-                        TimeToGraphStamp = bet.TimeToGraphStamp,
-                        WinStamp = bet.WinStamp,
-                        FinishedStamp = bet.FinishedStamp,
-                        BetState = (int)bet.BetStatus,
-                        IsWin = false
-                    };
-                    // Publish to WAMP topic
+                    //    Timestamp = bet.Timestamp,
+                    //    TimeToGraphStamp = bet.TimeToGraphStamp,
+                    //    WinStamp = bet.WinStamp,
+                    //    FinishedStamp = bet.FinishedStamp,
+                    //    BetState = (int)bet.BetStatus,
+                    //    IsWin = false
+                    //};
+                    // Publish LOSE to WAMP topic
                     GameEvent ev = new GameEvent()
                     {
                         EventType = (int)GameEventType.BetResult,
-                        EventParameters = checkres.ToJson()
+                        EventParameters = string.Format("{0};{1}", bet.Box.Id, (int)bet.BetStatus)
+                        //EventParameters = checkres.ToJson()
                     };
                     bet.User.PublishToWamp(ev);
                     
@@ -856,8 +861,7 @@ namespace BoxOptions.Services
             //Activate Mutual Exclusion Semaphore
             await quoteReceivedSemaphoreSlim.WaitAsync();
             try
-            {
-
+            {                
                 // Add price to cache
                 if (!assetCache.ContainsKey(e.Instrument))
                     assetCache.Add(e.Instrument, new PriceCache());
@@ -873,10 +877,9 @@ namespace BoxOptions.Services
                 var assetBets = (from b in betCacheSnap
                                  where b.AssetPair == e.Instrument &&
                                  b.BetStatus != BetStates.Win
-                                 select b).ToList();
+                                 select b).ToList();                               
                 if (assetBets.Count == 0)
                     return;
-
                 foreach (var bet in assetBets)
                 {
                     ProcessBetCheck(bet, false);
@@ -895,6 +898,7 @@ namespace BoxOptions.Services
                 if (bet == null)
                     return;
 
+                Console.WriteLine("{0} > Bet_TimeToGraphReached. TimeLength={1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), bet.Box.TimeLength);
 
                 // Do initial Check            
                 if (assetCache.ContainsKey(bet.AssetPair))
@@ -912,6 +916,7 @@ namespace BoxOptions.Services
                 lock (BetCacheLock)
                 {
                     betCache.Add(bet);
+                    //Console.WriteLine("{0} > Added Bet To cache. {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), bet.Box.Id);
                 }
             }
             catch (Exception ex) { LogError("Bet_TimeToGraphReached", ex); }
@@ -921,6 +926,8 @@ namespace BoxOptions.Services
             GameBet sdr = sender as GameBet;
             if (sdr == null)
                 return;
+
+            Console.WriteLine("{0} > Bet_TimeLenghFinished.", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
             ProcessBetTimeOut(sdr);
 
 
@@ -931,8 +938,9 @@ namespace BoxOptions.Services
         #region IGameManager
         public BoxSize[] InitUser(string userId)
         {
+            Console.WriteLine("InitializeUser");            
             BoxSize[] result = InitializeUser(userId);
-
+            Console.WriteLine("InitializeUser BoxSizeConfig = {0}", result.Length);
             List<BoxSize> clientBoxes = new List<BoxSize>();
             // Send answer to client im seconds instead milliseconds
             foreach (var item in result)
