@@ -59,17 +59,18 @@ namespace BoxOptions.Services
         
         bool isDisposing;
 
-        IAssetDatabase history;
+        private readonly IAssetDatabase history;
+        private readonly IBoxConfigRepository boxRepo;
 
         DateTime LastErrorDate = DateTime.MinValue;
         string LastErrorMessage = "";
-
+        private BoxSize[] AssetConfiguration;
         /// <summary>
         /// Thrown when a new message is received from RabbitMQ Queue
         /// </summary>
         public event EventHandler<InstrumentPrice> MessageReceived;
 
-        public AssetQuoteSubscriber(BoxOptionsSettings settings, ILog log, IAssetDatabase history)
+        public AssetQuoteSubscriber(BoxOptionsSettings settings, ILog log, IAssetDatabase history, IBoxConfigRepository boxRepo)
         {
             isDisposing = false;
             primaryStreamLastMessageTimeStamp = secondaryStreamLastMessageTimeStamp = DateTime.UtcNow;            
@@ -77,6 +78,7 @@ namespace BoxOptions.Services
             this.settings = settings;
             this.appLog = log;
             this.history = history;
+            this.boxRepo = boxRepo;
             lastPrices = new Dictionary<string, InstrumentPrice>();
             checkConnectionTimer = new System.Threading.Timer(CheckConnectionTimerCallback, null, -1, -1);
 
@@ -85,8 +87,10 @@ namespace BoxOptions.Services
                 SecondaryGameInstruments = settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets.ToList();
         }
 
-        public void Start()
+        public async void Start()
         {
+            var boxes = await boxRepo.GetAll();
+            AssetConfiguration = boxes.ToArray();
             // Start Primary Subscriber. Uses BestBidAsk Model
             primarySubscriber = CreateBestBidSubscriber(settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed,
                 PrimaryMessageReceived_BestBidAsk);            
@@ -358,16 +362,26 @@ namespace BoxOptions.Services
 
         private void OnMessageReceived(InstrumentPrice bestBidAsk)
         {
-            // Add to Asset History
-            history?.AddToAssetHistory(new BestBidAsk()
-            {
-                Asset = bestBidAsk.Instrument,
-                BestAsk = bestBidAsk.Ask,
-                BestBid = bestBidAsk.Bid,
-                Source = bestBidAsk.Source,
-                Timestamp = bestBidAsk.Date
-            });
-            MessageReceived?.Invoke(this, (InstrumentPrice)bestBidAsk.ClonePrice());
+            var assetCfg = AssetConfiguration.Where(a => a.AssetPair == bestBidAsk.Instrument).FirstOrDefault();
+            if (assetCfg == null)
+                return;
+
+            // If asset configured to save history, add it to history
+            if (assetCfg.SaveHistory)
+            {                
+                history?.AddToAssetHistory(new BestBidAsk()
+                {
+                    Asset = bestBidAsk.Instrument,
+                    BestAsk = bestBidAsk.Ask,
+                    BestBid = bestBidAsk.Bid,
+                    Source = bestBidAsk.Source,
+                    Timestamp = bestBidAsk.Date
+                });
+            }
+
+            // If asset allowed in game, raise event
+            if (assetCfg.GameAllowed)
+                MessageReceived?.Invoke(this, (InstrumentPrice)bestBidAsk.ClonePrice());
         }
 
         private void CheckConnectionTimerCallback(object status)

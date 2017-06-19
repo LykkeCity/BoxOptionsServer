@@ -26,5 +26,14 @@ namespace BoxOptions.Core.Interfaces
         /// Number of boxes in one row
         /// </summary>
         int BoxesPerRow { get; }
+        /// <summary>
+        /// Save asset bids in history
+        /// </summary>
+        bool SaveHistory { get; }
+        /// <summary>
+        /// Allowed to play in game
+        /// </summary>
+        bool GameAllowed { get; }
+
     }
 }

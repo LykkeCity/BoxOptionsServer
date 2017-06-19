@@ -1,4 +1,6 @@
-﻿namespace BoxOptions.Core.Models
+﻿using System;
+
+namespace BoxOptions.Core.Models
 {
     public class BoxSize:Interfaces.IBoxSize
     {
@@ -22,5 +24,13 @@
         /// Number of boxes in one row
         /// </summary>
         public int BoxesPerRow { get; set; }
+        /// <summary>
+        /// Save asset bids in history
+        /// </summary>
+        public bool SaveHistory { get; set; }
+        /// <summary>
+        /// Allowed to play in game
+        /// </summary>
+        public bool GameAllowed { get; set; }
     }
 }

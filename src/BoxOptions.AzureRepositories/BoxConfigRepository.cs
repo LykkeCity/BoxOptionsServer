@@ -19,6 +19,8 @@ namespace BoxOptions.AzureRepositories
         public double BoxHeight { get; set; }
         public double BoxWidth { get; set; }
         public int BoxesPerRow { get; set; }
+        public bool SaveHistory { get; set; }
+        public bool GameAllowed { get; set; }
 
         public static string GetPartitionKey()
         {
@@ -35,7 +37,9 @@ namespace BoxOptions.AzureRepositories
                 BoxesPerRow = src.BoxesPerRow,
                 BoxHeight = src.BoxHeight,
                 BoxWidth = src.BoxWidth,
-                TimeToFirstBox = src.TimeToFirstBox
+                TimeToFirstBox = src.TimeToFirstBox,
+                SaveHistory = src.SaveHistory,
+                GameAllowed = src.GameAllowed
             };
         }
 
@@ -47,7 +51,9 @@ namespace BoxOptions.AzureRepositories
                 BoxesPerRow = src.BoxesPerRow,
                 BoxHeight = src.BoxHeight,
                 BoxWidth = src.BoxWidth,
-                TimeToFirstBox = src.TimeToFirstBox
+                TimeToFirstBox = src.TimeToFirstBox,
+                SaveHistory = src.SaveHistory,
+                GameAllowed = src.GameAllowed
             };
         }
     }

@@ -209,7 +209,9 @@ namespace BoxOptions.Services
                             BoxesPerRow = 7,
                             BoxHeight = 7000,
                             BoxWidth = 0.00003,
-                            TimeToFirstBox = 4000
+                            TimeToFirstBox = 4000,
+                            GameAllowed = false,
+                            SaveHistory = false
                         });
                     }
                 }
@@ -231,7 +233,9 @@ namespace BoxOptions.Services
                     BoxesPerRow = box.BoxesPerRow,
                     BoxHeight = box.BoxHeight,
                     BoxWidth = box.BoxWidth,
-                    TimeToFirstBox = box.TimeToFirstBox
+                    TimeToFirstBox = box.TimeToFirstBox,
+                    GameAllowed = box.GameAllowed,
+                    SaveHistory = box.SaveHistory
                 });
 
             }
@@ -263,7 +267,9 @@ namespace BoxOptions.Services
                                     BoxesPerRow = c.BoxesPerRow,
                                     BoxHeight = c.BoxHeight,
                                     TimeToFirstBox = c.TimeToFirstBox,
-                                    BoxWidth = gdata[c.AssetPair].Average(price => price.MidPrice()) * c.BoxWidth
+                                    BoxWidth = gdata[c.AssetPair].Average(price => price.MidPrice()) * c.BoxWidth,
+                                    SaveHistory = c.SaveHistory,
+                                    GameAllowed = c.GameAllowed
                                 }).ToArray();
             return retval;
         }
@@ -286,7 +292,7 @@ namespace BoxOptions.Services
         {
             try
             {
-                BoxSize[] calculatedParams = CalculatedBoxes(dbBoxConfig, micrographCache);
+                BoxSize[] calculatedParams = CalculatedBoxes(dbBoxConfig.Where(b => b.GameAllowed).ToList(), micrographCache);
 
                 await CoeffCalculatorChangeBatch(GameManagerId, calculatedParams);
                 
@@ -303,7 +309,7 @@ namespace BoxOptions.Services
         {
             try
             {
-                string[] assets = dbBoxConfig.Select(b => b.AssetPair).ToArray();
+                string[] assets = dbBoxConfig.Where(a => a.GameAllowed).Select(b => b.AssetPair).ToArray();
                 Dictionary<string, string> temp = await CoeffCalculatorRequestBatch(GameManagerId, assets);
                 lock (CoeffCacheLock)
                 {                    
@@ -353,7 +359,7 @@ namespace BoxOptions.Services
             try
             {
                 string res = "EMPTY BOXES";
-                Console.WriteLine("{0} > Coeff Change", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+                //Console.WriteLine("{0} > Coeff Change", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                 foreach (var box in boxes)
                 {
                     // Change calculator parameters for current pair with User parameters
@@ -362,7 +368,7 @@ namespace BoxOptions.Services
                         throw new InvalidOperationException(res);
 
                     string msg = $"Coeff Change:[{box.AssetPair}] TimeToFirstBox={box.TimeToFirstBox}, BoxHeight={box.BoxHeight}, BoxWidth={box.BoxWidth}, NPriceIndex={NPriceIndex}, NTimeIndex={NTimeIndex}";
-                    Console.WriteLine("{0} > {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), msg);
+                    //Console.WriteLine("{0} > {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), msg);
                     LogInfo("CoeffCalculatorChangeBatch", msg);
                     System.Threading.Thread.Sleep(500);
                 }
@@ -390,7 +396,7 @@ namespace BoxOptions.Services
             await coeffCalculatorSemaphoreSlim.WaitAsync();
             try
             {
-                Console.WriteLine("{0} > Coeff Request", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+                //Console.WriteLine("{0} > Coeff Request", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                 Dictionary<string, string> retval = new Dictionary<string, string>();                
                 foreach (var asset in assetPairs)
                 {
@@ -420,7 +426,7 @@ namespace BoxOptions.Services
                     InitializeCoefCalc(true);
 
                 }
-                BoxSize[] retval = CalculatedBoxes(dbBoxConfig, micrographCache);
+                BoxSize[] retval = CalculatedBoxes(dbBoxConfig.Where(b => b.GameAllowed).ToList(), micrographCache);
 
                 // Add Launch to user history 
                 string launchMsg = "User Initialization. BoxSizes:";
@@ -428,7 +434,7 @@ namespace BoxOptions.Services
                 {
                     launchMsg += string.Format(Ci, "[{0};BoxWidth:{1};BoxHeight:{2};TimeToFirstBox:{3};BoxesPerRow:{4}]", boxSize.AssetPair, boxSize.BoxWidth, boxSize.BoxHeight, boxSize.TimeToFirstBox, boxSize.BoxesPerRow);
                 }
-                Console.WriteLine("{0} > SetUserStatus", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+                //Console.WriteLine("{0} > SetUserStatus", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                 SetUserStatus(userState, GameStatus.Launch, launchMsg);
 
                 // Return Calculate Price Sizes
@@ -574,10 +580,10 @@ namespace BoxOptions.Services
 
             // TODO: Get Box from... somewhere            
             Box boxObject = Box.FromJson(box);
-            Console.WriteLine("{0} > Placing Bet. TimetoGraph={1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), boxObject.TimeToGraph);
+            //Console.WriteLine("{0} > Placing Bet. TimetoGraph={1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), boxObject.TimeToGraph);
 
             // Get Current Coeffs for Game's Assetpair
-            var assetConfig = dbBoxConfig.Where(b => b.AssetPair == assetPair).FirstOrDefault();
+            var assetConfig = dbBoxConfig.Where(b => b.GameAllowed).Where(b => b.AssetPair == assetPair).FirstOrDefault();
             if (assetConfig == null)
             {
                 message = $"Box Size parameters are not set for Asset Pair[{ assetPair}].";
@@ -659,7 +665,7 @@ namespace BoxOptions.Services
         /// <param name="bet">Bet</param>
         private void ProcessBetCheck(GameBet bet, bool IsFirstCheck)
         {
-            Console.WriteLine("ProcessBetCheck({0})={1}", IsFirstCheck, bet.Box.Id);
+            //Console.WriteLine("ProcessBetCheck({0})={1}", IsFirstCheck, bet.Box.Id);
             if (bet == null || bet.BetStatus == BetStates.Win || bet.BetStatus == BetStates.Lose)
             {
                 // bet already processed;
@@ -778,13 +784,13 @@ namespace BoxOptions.Services
         /// <param name="bet">Bet</param>
         private void ProcessBetTimeOut(GameBet bet)
         {
-            Console.WriteLine("ProcessBetTimeOut={0}", bet.Box.Id);
+            //Console.WriteLine("ProcessBetTimeOut={0}", bet.Box.Id);
             // Remove bet from cache
             // Remove bet from cache
             lock (BetCacheLock)
             {
                 bool res = betCache.Remove(bet);
-                Console.WriteLine("Cache Size={0}", betCache.Count);
+                //Console.WriteLine("Cache Size={0}", betCache.Count);
             }
             
             // If bet was not won previously
@@ -910,7 +916,7 @@ namespace BoxOptions.Services
                 if (bet == null)
                     return;
 
-                Console.WriteLine("{0} > Bet_TimeToGraphReached. TimeLength={1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), bet.Box.TimeLength);
+                //Console.WriteLine("{0} > Bet_TimeToGraphReached. TimeLength={1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), bet.Box.TimeLength);
 
                 // Do initial Check            
                 if (assetCache.ContainsKey(bet.AssetPair))
@@ -939,7 +945,7 @@ namespace BoxOptions.Services
             if (sdr == null)
                 return;
 
-            Console.WriteLine("{0} > Bet_TimeLenghFinished.", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+            //Console.WriteLine("{0} > Bet_TimeLenghFinished.", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
             ProcessBetTimeOut(sdr);
 
 
@@ -950,9 +956,9 @@ namespace BoxOptions.Services
         #region IGameManager
         public BoxSize[] InitUser(string userId)
         {
-            Console.WriteLine("InitializeUser");            
+            //Console.WriteLine("InitializeUser");            
             BoxSize[] result = InitializeUser(userId);
-            Console.WriteLine("InitializeUser BoxSizeConfig = {0}", result.Length);
+            //Console.WriteLine("InitializeUser BoxSizeConfig = {0}", result.Length);
             List<BoxSize> clientBoxes = new List<BoxSize>();
             // Send answer to client im seconds instead milliseconds
             foreach (var item in result)
@@ -963,7 +969,9 @@ namespace BoxOptions.Services
                     BoxesPerRow = item.BoxesPerRow,
                     BoxWidth = item.BoxWidth,
                     BoxHeight = item.BoxHeight / 1000,
-                    TimeToFirstBox = item.TimeToFirstBox / 1000
+                    TimeToFirstBox = item.TimeToFirstBox / 1000,
+                    GameAllowed = item.GameAllowed,
+                    SaveHistory = item.SaveHistory
                 });
             }
 
@@ -1034,7 +1042,9 @@ namespace BoxOptions.Services
                     BoxesPerRow = box.BoxesPerRow,
                     BoxHeight = box.BoxHeight,
                     BoxWidth = box.BoxWidth,
-                    TimeToFirstBox = box.TimeToFirstBox
+                    TimeToFirstBox = box.TimeToFirstBox,
+                    SaveHistory = box.SaveHistory,
+                    GameAllowed = box.GameAllowed
                 });
             }
             

@@ -30,25 +30,117 @@ namespace BoxOptions.Public.Modules
             _appName = appName;
         }
 
-        
+
 
         protected override void Load(ContainerBuilder builder)
         {
             var host = new WampHost();
             var realm = host.RealmContainer.GetRealmByName("box-options");
 
-            builder.RegisterInstance(host)
-                .As<IWampHost>()
+            builder.RegisterInstance(_settings)
+                .AsSelf()
                 .SingleInstance();
+
+
+
+#if DEBUG
+            var logAggregate = new LogAggregate();
+            var log = logAggregate.CreateLogger();
+            var slackSender = _services.UseSlackNotificationsSenderViaAzureQueue(_settings.SlackNotifications.AzureQueue, log);
+            var azureLog = new LykkeLogToAzureStorage(_appName,
+                new AzureTableStorage<Lykke.Logs.LogEntity>(_settings.BoxOptionsApi.ConnectionStrings.LogsConnString, "DEV" +_appName.Replace(".", string.Empty) + "Logs", log),
+                slackSender);
+            logAggregate.AddLogger(azureLog);
+            log = logAggregate.CreateLogger();
+            builder.RegisterInstance(log).As<ILog>();
+
+
+            // Client Logs Repository
+            builder.RegisterInstance(new LogRepository(new AzureTableStorage<AzureRepositories.LogEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "DEVClientEventLogs", log)))
+                .As<ILogRepository>();
+
+            // User Data Repository
+            builder.RegisterInstance(new UserRepository(
+                new AzureTableStorage<AzureRepositories.UserEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "DEVUserRepo", log),
+                new AzureTableStorage<AzureRepositories.UserHistoryEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "DEVUserHistory", log)))
+                .As<IUserRepository>();
+
+            // Game Manager Repository
+            builder.RegisterInstance(new GameRepository(
+                new AzureTableStorage<AzureRepositories.GameBetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "DEVGameRepo", log)))
+                .As<IGameRepository>();
+
+            // BoxConfig Repository
+            builder.RegisterInstance(new BoxConfigRepository(
+                new AzureTableStorage<AzureRepositories.BoxSizeEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "DEVBoxConfig", log)))
+                .As<IBoxConfigRepository>();
+
+            // Local File System Asset Database
+            builder.RegisterType<LocalFSHistory>()
+                .As<IAssetDatabase>()
+                .SingleInstance();
+#else
+
+            var logAggregate = new LogAggregate();
+            var log = logAggregate.CreateLogger();
+            var slackSender = _services.UseSlackNotificationsSenderViaAzureQueue(_settings.SlackNotifications.AzureQueue, log);
+            var azureLog = new LykkeLogToAzureStorage(_appName,
+                new AzureTableStorage<Lykke.Logs.LogEntity>(_settings.BoxOptionsApi.ConnectionStrings.LogsConnString, _appName.Replace(".", string.Empty) + "Logs", log),
+                slackSender);
+            logAggregate.AddLogger(azureLog);
+            log = logAggregate.CreateLogger();
+            builder.RegisterInstance(log).As<ILog>();
+
+            // Client Logs Repository
+            builder.RegisterInstance(new LogRepository(new AzureTableStorage<AzureRepositories.LogEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "ClientEventLogs", log)))
+                .As<ILogRepository>();
+
+            // Quote Feed Repository
+            builder.RegisterInstance(new AssetRepository(new AzureTableStorage<AzureRepositories.BestBidAskEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "BestBidAskHistory", log)))
+                .As<IAssetRepository>();
+
+            // User Data Repository
+            builder.RegisterInstance(new UserRepository(
+                new AzureTableStorage<AzureRepositories.UserEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "UserRepo", log),
+                new AzureTableStorage<AzureRepositories.UserHistoryEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "UserHistory", log)))
+                .As<IUserRepository>();
+
+            // Game Manager Repository
+            builder.RegisterInstance(new GameRepository(
+                new AzureTableStorage<AzureRepositories.GameBetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "GameRepo", log)))
+                .As<IGameRepository>();
+
+            // BoxConfig Repository
+            builder.RegisterInstance(new BoxConfigRepository(
+                new AzureTableStorage<AzureRepositories.BoxSizeEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "BoxConfig", log)))
+                .As<IBoxConfigRepository>();
+
+            // Azure Storage Asset Database
+            builder.RegisterType<Processors.AzureQuoteDatabase>()
+                .As<IAssetDatabase>()
+                .SingleInstance();
+#endif
+
+
+            builder.RegisterInstance(host)
+              .As<IWampHost>()
+              .SingleInstance();
 
             builder.RegisterInstance(realm)
                 .As<IWampHostedRealm>()
                 .SingleInstance();
 
-            builder.RegisterInstance(_settings)
-                .AsSelf()
-                .SingleInstance();
-            
             builder.RegisterType<AssetQuoteSubscriber>()
                 .As<IAssetQuoteSubscriber>()
                 .As<IStartable>()
@@ -67,55 +159,6 @@ namespace BoxOptions.Public.Modules
                 .As<IRpcMethods>()
                 .SingleInstance();
 
-
-            var logAggregate = new LogAggregate();
-
-            var log = logAggregate.CreateLogger();
-            var slackSender = _services.UseSlackNotificationsSenderViaAzureQueue(_settings.SlackNotifications.AzureQueue, log);
-            var azureLog = new LykkeLogToAzureStorage(_appName,
-                new AzureTableStorage<Lykke.Logs.LogEntity>(_settings.BoxOptionsApi.ConnectionStrings.LogsConnString, _appName.Replace(".", string.Empty) + "Logs", log),
-                slackSender);
-            logAggregate.AddLogger(azureLog);
-            log = logAggregate.CreateLogger();
-            builder.RegisterInstance(log).As<ILog>();
-
-            // Client Logs Repository
-            builder.RegisterInstance(new LogRepository(new AzureTableStorage<AzureRepositories.LogEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage, 
-                "ClientEventLogs", log)))
-                .As<ILogRepository>();
-            // Quote Feed Repository
-            builder.RegisterInstance(new AssetRepository(new AzureTableStorage<AzureRepositories.BestBidAskEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "BestBidAskHistory", log)))
-                .As<IAssetRepository>();
-            // User Data Repository
-            builder.RegisterInstance(new UserRepository(
-                new AzureTableStorage<AzureRepositories.UserEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "UserRepo", log),
-                new AzureTableStorage<AzureRepositories.UserHistoryEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "UserHistory", log)))
-                .As<IUserRepository>();
-            // Game Manager Repository
-            builder.RegisterInstance(new GameRepository(                
-                new AzureTableStorage<AzureRepositories.GameBetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "GameRepo", log)))
-                .As<IGameRepository>();
-            // BoxConfig Repository
-            builder.RegisterInstance(new BoxConfigRepository(
-                new AzureTableStorage<AzureRepositories.BoxSizeEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "BoxConfig", log)))
-                .As<IBoxConfigRepository>();
-
-#if DEBUG
-            // Local File System Asset Database
-            builder.RegisterType<LocalFSHistory>()
-                .As<IAssetDatabase>()
-                .SingleInstance();
-#else
-            // Azure Storage Asset Database
-            builder.RegisterType<Processors.AzureQuoteDatabase>()
-                .As<IAssetDatabase>()
-                .SingleInstance();
-#endif
             // Coefficient Calculator Interface
             ICoefficientCalculator coefCalculator;
             if (_settings.BoxOptionsApi.CoefApiUrl.ToLower() == "mock")

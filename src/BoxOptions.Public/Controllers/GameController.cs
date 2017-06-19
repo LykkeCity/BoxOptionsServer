@@ -43,7 +43,9 @@ namespace BoxOptions.Public.Controllers
                     BoxesPerRow = 7,
                     BoxHeight = 7000,
                     BoxWidth = 0.00003,
-                    TimeToFirstBox = 4000
+                    TimeToFirstBox = 4000,
+                    SaveHistory = true,
+                    GameAllowed = true
                 });
 
             }

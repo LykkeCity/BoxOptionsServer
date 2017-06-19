@@ -30,8 +30,6 @@ namespace BoxOptions.Services
             _gameManager = gameManager;
             appLog = log;
             _logRepository = logRepository;
-
-            LogInfo("Constructor", "Wamp Rpc Service Started");
         }
 
         public Dictionary<string, Price[]> InitChartData()
