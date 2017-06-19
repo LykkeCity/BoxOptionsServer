@@ -198,7 +198,7 @@ namespace BoxOptions.Client
       
         internal void RequestCoeff(string userId, string pair)
         {
-            _service.SaveLog(userId, ((int)GameStatus.CoeffRequest).ToString(), $"Coeff Request: [{pair}]");
+            //_service.SaveLog(userId, ((int)GameStatus.CoeffRequest).ToString(), $"Coeff Request: [{pair}]");
             var res = _service.RequestCoeff(userId, pair);
             Console.WriteLine(res);
         }

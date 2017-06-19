@@ -1,9 +1,6 @@
-﻿using BoxOptions.Common.Interfaces;
-using BoxOptions.Core.Models;
+﻿using BoxOptions.Core.Models;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reactive.Subjects;
 using WampSharp.V2.Realm;
 
@@ -117,7 +114,7 @@ namespace BoxOptions.Services.Models
             if (subject == null)
                 throw new InvalidOperationException("Wamp Subject not set");
 
-            Console.WriteLine("PublishToWamp > {0}", gameEvent.EventTypeEnum);
+            //Console.WriteLine("PublishToWamp > {0}", gameEvent.EventTypeEnum);
             subject.OnNext(gameEvent);
         }
 

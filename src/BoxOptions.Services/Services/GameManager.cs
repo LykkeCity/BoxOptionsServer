@@ -20,36 +20,28 @@ namespace BoxOptions.Services
         const int NTimeIndex = 8;   // Number of rows hardcoded
         const int CoeffMonitorTimerInterval = 1000; // Coeff cache update interval (milliseconds)
 
-        
+
 
         #region Vars
         /// <summary>
         /// Coefficient Calculator Request Semaphore
         /// Mutual Exclusion Process
         /// </summary>
-        static System.Threading.SemaphoreSlim coeffCalculatorSemaphoreSlim = new System.Threading.SemaphoreSlim(1, 1);
+        private static readonly System.Threading.SemaphoreSlim coeffCalculatorSemaphoreSlim = new System.Threading.SemaphoreSlim(1, 1);
         /// <summary>
         /// Process AssetQuote Received Semaphore.
         /// Mutual Exclusion Process
         /// </summary>
-        static System.Threading.SemaphoreSlim quoteReceivedSemaphoreSlim = new System.Threading.SemaphoreSlim(1, 1);
+        private static readonly System.Threading.SemaphoreSlim quoteReceivedSemaphoreSlim = new System.Threading.SemaphoreSlim(1, 1);
 
-        static int MaxUserBuffer = 128;
-        static object CoeffCacheLock = new object();
-        static object BetCacheLock = new object();
+        private static readonly object CoeffCacheLock = new object();
+        private static readonly object BetCacheLock = new object();
 
+        private static readonly System.Globalization.CultureInfo Ci = new System.Globalization.CultureInfo("en-us");
 
-        string GameManagerId;
-
-        /// <summary>
-        /// Ongoing Bets Cache
-        /// </summary>
-        List<GameBet> betCache;
-        /// <summary>
-        /// Users Cache
-        /// </summary>
-        List<UserState> userList;
-
+        private readonly int MaxUserBuffer = 128;
+        private readonly string GameManagerId;
+                
         /// <summary>
         /// Database Object
         /// </summary>
@@ -88,21 +80,30 @@ namespace BoxOptions.Services
         /// </summary>
         private Dictionary<string, PriceCache> assetCache;
 
+        /// <summary>
+        /// Ongoing Bets Cache
+        /// </summary>
+        private List<GameBet> betCache;
+        /// <summary>
+        /// Users Cache
+        /// </summary>
+        private List<UserState> userList;
 
-        bool IsCoeffStarted;
+        private bool IsCoeffStarted;
+
         /// <summary>
         /// Box configuration
         /// </summary>
-        List<BoxSize> dbBoxConfig;
+        private List<BoxSize> dbBoxConfig;
 
-        Queue<string> appLogInfoQueue = new Queue<string>();
+        private Queue<string> appLogInfoQueue = new Queue<string>();
 
-        System.Threading.Timer CoeffMonitorTimer = null;
-        bool isDisposing = false;
+        private System.Threading.Timer CoeffMonitorTimer = null;
+        private bool isDisposing = false;
 
-        DateTime lastCoeffChange;
-        DateTime LastErrorDate = DateTime.MinValue;
-        string LastErrorMessage = "";
+        private DateTime lastCoeffChange;
+        private DateTime LastErrorDate = DateTime.MinValue;
+        private string LastErrorMessage = "";
 
         #endregion
 
@@ -281,7 +282,7 @@ namespace BoxOptions.Services
         #region Coefficient Cache Monitor
         Dictionary<string, string> CoefficientCache;
 
-        private async void InitializeCoefCalc()
+        private async void InitializeCoefCalc(bool StartMonitor)
         {
             try
             {
@@ -293,6 +294,9 @@ namespace BoxOptions.Services
             catch (Exception ex) { LogError("LoadCoefficientCache", ex); }
 
             LoadCoefficientCache();
+
+            if (StartMonitor)
+                StartCoefficientCacheMonitor();
         }
 
         private async void LoadCoefficientCache()
@@ -323,7 +327,7 @@ namespace BoxOptions.Services
 
         private void StartCoefficientCacheMonitor()
         {
-            CoeffMonitorTimer = new System.Threading.Timer(new System.Threading.TimerCallback(CoeffMonitorTimerCallback), null, CoeffMonitorTimerInterval, -1);
+            CoeffMonitorTimer = new System.Threading.Timer(new System.Threading.TimerCallback(CoeffMonitorTimerCallback), null, 30 * 1000, -1);
 
         }
         private void CoeffMonitorTimerCallback(object status)
@@ -333,7 +337,7 @@ namespace BoxOptions.Services
             {
                 // If more than 10 minute passed since last change, do another change
                 if (lastCoeffChange.AddMinutes(10) < DateTime.UtcNow)
-                    InitializeCoefCalc();
+                    InitializeCoefCalc(false);
                 else
                     LoadCoefficientCache();
             }
@@ -349,16 +353,16 @@ namespace BoxOptions.Services
             try
             {
                 string res = "EMPTY BOXES";
-                                
+                Console.WriteLine("{0} > Coeff Change", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                 foreach (var box in boxes)
                 {
-                    // Change calculator parameters for current pair with User parameters                    
+                    // Change calculator parameters for current pair with User parameters
                     res = await calculator.ChangeAsync(userId, box.AssetPair, Convert.ToInt32(box.TimeToFirstBox), Convert.ToInt32(box.BoxHeight), box.BoxWidth, NPriceIndex, NTimeIndex);                    
                     if (res != "OK")
                         throw new InvalidOperationException(res);
 
                     string msg = $"Coeff Change:[{box.AssetPair}] TimeToFirstBox={box.TimeToFirstBox}, BoxHeight={box.BoxHeight}, BoxWidth={box.BoxWidth}, NPriceIndex={NPriceIndex}, NTimeIndex={NTimeIndex}";
-                    //Console.WriteLine("{0} > {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), msg);
+                    Console.WriteLine("{0} > {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), msg);
                     LogInfo("CoeffCalculatorChangeBatch", msg);
                     System.Threading.Thread.Sleep(500);
                 }
@@ -386,11 +390,11 @@ namespace BoxOptions.Services
             await coeffCalculatorSemaphoreSlim.WaitAsync();
             try
             {
+                Console.WriteLine("{0} > Coeff Request", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                 Dictionary<string, string> retval = new Dictionary<string, string>();                
                 foreach (var asset in assetPairs)
                 {
-                    string res = await calculator.RequestAsync(userId, asset);
-                    //Console.WriteLine("{0} > Coeff Request:[{1}]", DateTime.UtcNow.ToString("HH:mm:ss.fff"), asset);
+                    string res = await calculator.RequestAsync(userId, asset);                    
                     retval.Add(asset, res);
                 }
                 return retval;
@@ -413,12 +417,20 @@ namespace BoxOptions.Services
                 {
                     IsCoeffStarted = true;
 
-                    InitializeCoefCalc();
-
-                    StartCoefficientCacheMonitor();
+                    InitializeCoefCalc(true);
 
                 }
                 BoxSize[] retval = CalculatedBoxes(dbBoxConfig, micrographCache);
+
+                // Add Launch to user history 
+                string launchMsg = "User Initialization. BoxSizes:";
+                foreach (var boxSize in retval)
+                {
+                    launchMsg += string.Format(Ci, "[{0};BoxWidth:{1};BoxHeight:{2};TimeToFirstBox:{3};BoxesPerRow:{4}]", boxSize.AssetPair, boxSize.BoxWidth, boxSize.BoxHeight, boxSize.TimeToFirstBox, boxSize.BoxesPerRow);
+                }
+                Console.WriteLine("{0} > SetUserStatus", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+                SetUserStatus(userState, GameStatus.Launch, launchMsg);
+
                 // Return Calculate Price Sizes
                 return retval;
             }
@@ -986,9 +998,10 @@ namespace BoxOptions.Services
                
         public string RequestUserCoeff(string userId, string pair)
         {
-
+            UserState user = GetUserState(userId);
             // Request Coeffcalculator Data            
             string result = GetCoefficients(pair);
+            SetUserStatus(user, GameStatus.CoeffRequest, string.Format("[{0}]={1}", pair, result));
             return result;
         }
 
