@@ -65,6 +65,10 @@ namespace BoxOptions.Services
         DateTime LastErrorDate = DateTime.MinValue;
         string LastErrorMessage = "";
         private BoxSize[] AssetConfiguration;
+
+        private static readonly object AssetConfigurationLock = new object();
+
+
         /// <summary>
         /// Thrown when a new message is received from RabbitMQ Queue
         /// </summary>
@@ -90,7 +94,9 @@ namespace BoxOptions.Services
         public async void Start()
         {
             var boxes = await boxRepo.GetAll();
+            // On start up call AssetConfigurationLock is not needed.
             AssetConfiguration = boxes.ToArray();
+
             // Start Primary Subscriber. Uses BestBidAsk Model
             primarySubscriber = CreateBestBidSubscriber(settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed,
                 PrimaryMessageReceived_BestBidAsk);            
@@ -362,7 +368,13 @@ namespace BoxOptions.Services
 
         private void OnMessageReceived(InstrumentPrice bestBidAsk)
         {
-            var assetCfg = AssetConfiguration.Where(a => a.AssetPair == bestBidAsk.Instrument).FirstOrDefault();
+            BoxSize assetCfg = null;
+            
+            // Lock Asset Configuration
+            lock (AssetConfigurationLock)
+            {
+                assetCfg = AssetConfiguration.Where(a => a.AssetPair == bestBidAsk.Instrument).FirstOrDefault();
+            }
             if (assetCfg == null)
                 return;
 
@@ -483,6 +495,26 @@ namespace BoxOptions.Services
                 LogError("CheckExclusionInterval", ex);                
                 return true;
             }
+        }
+
+        public async Task<bool> ReloadAssetConfiguration()
+        {
+            try
+            {
+                var boxes = await boxRepo.GetAll();
+                // Lock Asset Configuration
+                lock (AssetConfigurationLock)
+                {
+                    AssetConfiguration = boxes.ToArray();
+                }
+                LogInfo("ReloadAssetConfiguration", "Reloaded asset configuration from database");
+                return true;
+            }
+            catch (Exception ex01)
+            {
+                LogError("ReloadAssetConfiguration", ex01);
+                return false;
+            }            
         }
     }
 }

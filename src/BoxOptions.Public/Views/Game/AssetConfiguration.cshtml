@@ -1,0 +1,71 @@
+﻿@model BoxOptions.Public.ViewModels.AssetConfigurationViewModel
+@{
+    ViewBag.Title = "Box-Options Game Assets";
+}
+<div class="container">
+    <h2>Game Assets</h2>
+
+    @using (Html.BeginForm())
+    {
+        <div class="form-horizontal">
+            <div class="col-md-8 col-sm-8 col-xs-6">
+                <table class="table table-responsive" id="slideTable">
+                    <thead>
+                        <tr>
+                            <th>Asset</th>
+                            <th>Allowed In Game</th>
+                            <th>Save History</th>
+                            <th>Box Time Size (ms)</th>
+                            <th>Box Price Size (1% = 0.01)</th>
+                            <th>Time To First Box (ms)</th>
+                            <th>Boxes/Row</th>
+                        </tr>
+                    </thead>                  
+                    <tbody>
+                        @for (int i = 0; i < Model.BoxConfiguration.Count; i++)
+                        {
+                            <tr class="info" id="RowId_@i.ToString()">
+                                <td>
+                                    @Html.HiddenFor(m => m.BoxConfiguration[i].AssetPair)
+                                    @Html.DisplayFor(m => m.BoxConfiguration[i].AssetPair)
+                                </td>
+                                <td>
+                                    @Html.EditorFor(m => m.BoxConfiguration[i].GameAllowed)<br />
+                                    @Html.ValidationMessageFor(m => m.BoxConfiguration[i].GameAllowed, "", new { @class = "text-danger" })
+                                </td>
+                                <td>
+                                    @Html.EditorFor(m => m.BoxConfiguration[i].SaveHistory)<br />
+                                    @Html.ValidationMessageFor(m => m.BoxConfiguration[i].SaveHistory, "", new { @class = "text-danger" })
+                                </td>
+                                <td>
+                                    @Html.EditorFor(m => m.BoxConfiguration[i].BoxHeight)<br />
+                                    @Html.ValidationMessageFor(m => m.BoxConfiguration[i].BoxHeight, "", new { @class = "text-danger" })
+                                </td>
+                                <td>
+                                    @Html.EditorFor(m => m.BoxConfiguration[i].BoxWidth)<br />
+                                    @Html.ValidationMessageFor(m => m.BoxConfiguration[i].BoxWidth, "", new { @class = "text-danger" })
+                                </td>
+                                <td>
+                                    @Html.EditorFor(m => m.BoxConfiguration[i].TimeToFirstBox)<br />
+                                    @Html.ValidationMessageFor(m => m.BoxConfiguration[i].TimeToFirstBox, "", new { @class = "text-danger" })
+                                </td>
+                                <td>
+                                    @Html.EditorFor(m => m.BoxConfiguration[i].BoxesPerRow)<br />
+                                    @Html.ValidationMessageFor(m => m.BoxConfiguration[i].BoxesPerRow, "", new { @class = "text-danger" })
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="form-group">
+                <div class="col-md-offset-2 col-md-10">
+                    <input type="submit" value="Save" class="btn btn-default" />
+                    <br />
+                    @Model.SaveInformation
+                </div>
+            </div>
+        </div>
+    }
+</div>

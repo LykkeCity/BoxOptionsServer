@@ -80,6 +80,8 @@ namespace BoxOptions.Services
         /// </summary>
         private Dictionary<string, PriceCache> assetCache;
 
+        private readonly System.Threading.Timer CoeffMonitorTimer;
+
         /// <summary>
         /// Ongoing Bets Cache
         /// </summary>
@@ -97,8 +99,7 @@ namespace BoxOptions.Services
         private List<BoxSize> dbBoxConfig;
 
         private Queue<string> appLogInfoQueue = new Queue<string>();
-
-        private System.Threading.Timer CoeffMonitorTimer = null;
+                
         private bool isDisposing = false;
 
         private DateTime lastCoeffChange;
@@ -136,6 +137,9 @@ namespace BoxOptions.Services
             //calculateBoxConfig = null;
             dbBoxConfig = Task.Run(() => LoadBoxParameters()).Result;
             Console.WriteLine("Db Box Config = {0}", dbBoxConfig.Count);
+
+            // Create Coef Cache Monitor timer in paused state.
+            CoeffMonitorTimer = new System.Threading.Timer(new System.Threading.TimerCallback(CoeffMonitorTimerCallback), null, -1, -1);
         }
 
 
@@ -292,6 +296,7 @@ namespace BoxOptions.Services
         {
             try
             {
+                LogInfo("InitializeCoefCalc", "Initializing CoeffCalc API");
                 BoxSize[] calculatedParams = CalculatedBoxes(dbBoxConfig.Where(b => b.GameAllowed).ToList(), micrographCache);
 
                 await CoeffCalculatorChangeBatch(GameManagerId, calculatedParams);
@@ -302,7 +307,7 @@ namespace BoxOptions.Services
             LoadCoefficientCache();
 
             if (StartMonitor)
-                StartCoefficientCacheMonitor();
+                CoeffMonitorTimer.Change(CoeffMonitorTimerInterval, -1);
         }
 
         private async void LoadCoefficientCache()
@@ -330,12 +335,7 @@ namespace BoxOptions.Services
             }
             return retval;
         }
-
-        private void StartCoefficientCacheMonitor()
-        {
-            CoeffMonitorTimer = new System.Threading.Timer(new System.Threading.TimerCallback(CoeffMonitorTimerCallback), null, 30 * 1000, -1);
-
-        }
+                
         private void CoeffMonitorTimerCallback(object status)
         {
             CoeffMonitorTimer.Change(-1, -1);
@@ -855,8 +855,7 @@ namespace BoxOptions.Services
             if (CoeffMonitorTimer != null)
             {
                 CoeffMonitorTimer.Change(-1, -1);
-                CoeffMonitorTimer.Dispose();
-                CoeffMonitorTimer = null;
+                CoeffMonitorTimer.Dispose();                
             }
             
             quoteFeed.MessageReceived -= QuoteFeed_MessageReceived;
@@ -1049,6 +1048,28 @@ namespace BoxOptions.Services
             }
             
             boxConfigRepository.InsertManyAsync(AssetsToAdd);
+        }
+
+        public async Task<bool> ReloadGameAssets()
+        {
+            try
+            {
+                // Stop Coeff Monitor if it is running
+                if (IsCoeffStarted)
+                    CoeffMonitorTimer.Change(-1, -1);
+
+                dbBoxConfig = await LoadBoxParameters();
+                LogInfo("ReloadGameAssets", "Reloaded game assets from database");
+
+                // Restart InitializeCoefCalc monitor
+                InitializeCoefCalc(true);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogError("ReloadGameAssets", ex);
+                return false;
+            }
         }
 
         #endregion

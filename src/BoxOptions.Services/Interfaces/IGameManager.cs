@@ -1,6 +1,7 @@
 ﻿using BoxOptions.Core.Models;
 using BoxOptions.Services.Models;
 using System;
+using System.Threading.Tasks;
 
 namespace BoxOptions.Services.Interfaces
 {
@@ -29,6 +30,6 @@ namespace BoxOptions.Services.Interfaces
         void AddUserLog(string userId, string eventCode, string message);
 
         void SetBoxConfig(BoxSize[] boxes);
-
+        Task<bool> ReloadGameAssets();
     }
 }

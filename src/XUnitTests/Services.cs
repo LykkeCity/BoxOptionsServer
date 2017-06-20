@@ -4,6 +4,7 @@ using BoxOptions.Services;
 using System;
 using System.Collections.Generic;
 using Xunit;
+using System.Threading.Tasks;
 
 namespace XUnitTests
 {
@@ -90,6 +91,11 @@ namespace XUnitTests
             public void SimNullMessageReceived()
             {
                 MessageReceived?.Invoke(this, null);
+            }
+
+            public Task<bool> ReloadAssetConfiguration()
+            {
+                throw new NotImplementedException();
             }
         }
     }
