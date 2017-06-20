@@ -80,8 +80,18 @@ namespace BoxOptions.Public.Modules
                 "DEVBoxConfig", log)))
                 .As<IBoxConfigRepository>();
 
-            // Local File System Asset Database
-            builder.RegisterType<LocalFSHistory>()
+            //// Local File System Asset Database
+            //builder.RegisterType<LocalFSHistory>()
+            //    .As<IAssetDatabase>()
+            //    .SingleInstance();
+            
+            // Quote Feed Repository
+            builder.RegisterInstance(new AssetRepository(new AzureTableStorage<AzureRepositories.BestBidAskEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
+                "BestBidAskHistory", log)))
+                .As<IAssetRepository>();
+
+            // Azure Storage Asset Database
+            builder.RegisterType<Processors.AzureQuoteDatabase>()
                 .As<IAssetDatabase>()
                 .SingleInstance();
 #else
@@ -178,6 +188,12 @@ namespace BoxOptions.Public.Modules
             // Game Manager Interface
             builder.RegisterType<GameManager>()
               .As<Services.Interfaces.IGameManager>()
+              .SingleInstance();
+
+            // History Holder
+            builder.RegisterType<HistoryHolder>()
+              .As<Services.Interfaces.IHistoryHolder>()
+              .As<IStartable>()
               .SingleInstance();
 
         }
