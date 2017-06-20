@@ -14,15 +14,17 @@ namespace BoxOptions.Public.Controllers
     [Route("api/[controller]")]
     public class HistoryController: Controller
     {
-        IAssetDatabase history;
-        ILog appLog;
+        private readonly IAssetDatabase history;
+        private readonly Services.Interfaces.IHistoryHolder histHolder;
+        private readonly ILog appLog;
         
 
-        public HistoryController(IAssetDatabase history, ILog appLog)
+
+        public HistoryController(IAssetDatabase history, Services.Interfaces.IHistoryHolder histHolder, ILog appLog)
         {
             this.history = history;
             this.appLog = appLog;
-            
+            this.histHolder = histHolder;
         }
 
         [HttpGet]
@@ -58,6 +60,27 @@ namespace BoxOptions.Public.Controllers
                     }
                     else
                         return Ok("history is empty");
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, ex.Message);
+                }
+            }
+            else
+                return StatusCode(500, "History Not Available");
+
+        }
+
+        [HttpGet]
+        [Route("bidhistoryholder")]
+        public async Task<IActionResult> BidHistoryHolder(string assetPair)
+        {
+            if (histHolder != null)
+            {
+                try
+                {
+                    List<Price> retval = await Task.Run(() => histHolder.GetHistory(assetPair).ToList());
+                    return Ok(retval);
                 }
                 catch (Exception ex)
                 {
