@@ -352,7 +352,7 @@ namespace BoxOptions.Services
             try
             {
                 // If more than 10 minute passed since last change, do another change
-                if (lastCoeffChange.AddMinutes(1) < DateTime.UtcNow)
+                if (lastCoeffChange.AddMinutes(10) < DateTime.UtcNow)
                 {                    
                     InitializeCoefCalc(false);
                 }
