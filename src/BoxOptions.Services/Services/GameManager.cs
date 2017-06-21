@@ -293,7 +293,7 @@ namespace BoxOptions.Services
             try
             {
                 BoxSize[] calculatedParams = CalculatedBoxes(dbBoxConfig.Where(b => b.GameAllowed).ToList(), micrographCache);
-
+                Console.WriteLine("{0} > InitializeCoefCalc({1})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), StartMonitor);
                 await CoeffCalculatorChangeBatch(GameManagerId, calculatedParams);
                 
             }
@@ -316,7 +316,7 @@ namespace BoxOptions.Services
                     CoefficientCache = temp;                 
                 }
             }
-            catch (Exception ex) { LogError("LoadCoefficientCache", ex); }
+            catch (Exception ex) { LogError("LoadCoefficientCache", ex.InnerException == null ? ex : ex.InnerException); }
         }
 
         private string GetCoefficients(string assetPair)
@@ -343,7 +343,10 @@ namespace BoxOptions.Services
             {
                 // If more than 10 minute passed since last change, do another change
                 if (lastCoeffChange.AddMinutes(10) < DateTime.UtcNow)
+                {
+                    lastCoeffChange = DateTime.UtcNow;
                     InitializeCoefCalc(false);
+                }
                 else
                     LoadCoefficientCache();
             }
@@ -371,8 +374,7 @@ namespace BoxOptions.Services
                     //Console.WriteLine("{0} > {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), msg);
                     LogInfo("CoeffCalculatorChangeBatch", msg);
                     System.Threading.Thread.Sleep(500);
-                }
-                lastCoeffChange = DateTime.UtcNow;
+                }                
                 return res;
             }
             finally { coeffCalculatorSemaphoreSlim.Release(); }
