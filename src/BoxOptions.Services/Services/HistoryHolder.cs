@@ -44,7 +44,7 @@ namespace BoxOptions.Services
 
             string logLine = string.Format("{0} > GetAssets Done", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
             StartLog += "\n\r" + logLine;
-            Console.WriteLine(logLine);
+            //Console.WriteLine(logLine);
 
             historyAssets = boxCfg.Where(a => a.SaveHistory).Select(m => m.AssetPair).ToArray();
             
