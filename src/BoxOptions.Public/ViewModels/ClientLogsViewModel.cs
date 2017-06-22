@@ -11,5 +11,8 @@ namespace BoxOptions.Public.ViewModels
         public DateTime EndDate { get; set; }
         public string  Client { get; set; }
         public string[] ClientList { get; set; }
+
+        public bool GameHistory { get; set; } = false;
+
     }
 }

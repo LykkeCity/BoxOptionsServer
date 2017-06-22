@@ -16,10 +16,14 @@ namespace BoxOptions.Public.Controllers
     public class LogController : Controller
     {
         private readonly ILogRepository _logRepository;
+        private readonly IUserRepository userRepository;
+        private readonly IGameRepository gameRepository;
 
-        public LogController(ILogRepository logRepository)
+        public LogController(ILogRepository logRepository, IUserRepository userRepository, IGameRepository gameRepository)
         {
             _logRepository = logRepository;
+            this.userRepository = userRepository;
+            this.gameRepository = gameRepository;
         }
 
         [HttpPost]
@@ -55,20 +59,7 @@ namespace BoxOptions.Public.Controllers
             }).ToArray();
         }
 
-        [HttpGet]
-        [Route("boxoptionlogclientlist")]
-        public async Task<IActionResult> ClientList([FromQuery] string dateFrom, [FromQuery] string dateTo)
-        {
-            try
-            {
-                const string format = "yyyyMMdd";
-                var entities = await _logRepository.GetClients(DateTime.ParseExact(dateFrom, format, CultureInfo.InvariantCulture), DateTime.ParseExact(dateTo, format, CultureInfo.InvariantCulture).AddDays(1));
-
-                return Ok(entities);
-            }
-            catch (Exception ex) { return StatusCode(500, ex.Message); }
-        }
-
+       
         [HttpGet]
         [Route("getall")]
         public async Task<ActionResult> GetAll([FromQuery] string dateFrom, [FromQuery] string dateTo)
@@ -97,12 +88,12 @@ namespace BoxOptions.Public.Controllers
                 ClientLogsViewModel model = new ClientLogsViewModel()
                 {
                     EndDate = DateTime.UtcNow.Date,
-                    StartDate = DateTime.UtcNow.Date.AddDays(-7)
+                    StartDate = DateTime.UtcNow.Date.AddDays(-30)
                 };
 
-                var entities = await _logRepository.GetClients(model.StartDate, model.EndDate.AddDays(1));
+                var entities = await _logRepository.GetClients();
                 model.ClientList = (from l in entities
-                                    select l.Substring(0,36)).Distinct().ToArray();
+                                    select l.Length > 36 ? l.Substring(0, 36) : l).Distinct().ToArray();
                 return View(model);
             }
             catch (Exception ex)
@@ -122,15 +113,91 @@ namespace BoxOptions.Public.Controllers
                     if (entities.Count() > 0)
                     {
                         StringBuilder sb = new StringBuilder();
+                        sb.AppendLine($"Timestamp;ClientId;EventCode;Message");
                         foreach (var item in entities)
                         {
-                            sb.AppendLine($"{item.Timestamp};{item.ClientId};{item.EventCode}-{(GameStatus)int.Parse(item.EventCode)};{item.Message}");
+                            sb.AppendLine($"{item.Timestamp};{item.ClientId};{item.EventCode}-{(GameStatus)int.Parse(item.EventCode)};{item.Message.Replace(';', '|')}");
                         }
                         return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", $"clientLogs_{model.Client}.csv");
                     }
                     else
                     {
                         return StatusCode(500, "Log file is empty");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, ex.Message);
+                }
+            }
+            else
+                return StatusCode(500, "Invalid model");
+        }
+
+        [HttpGet]
+        [Route("userhistory")]
+        public async Task<ActionResult> UserHistory()
+        {
+            try
+            {
+                ClientLogsViewModel model = new ClientLogsViewModel()
+                {
+                    EndDate = DateTime.UtcNow.Date,
+                    StartDate = DateTime.UtcNow.Date.AddDays(-30)
+                };
+
+                var entities = await userRepository.GetUsers();
+                model.ClientList = entities.Distinct().ToArray();
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+        [HttpPost]
+        [Route("userhistory")]
+        public async Task<ActionResult> UserHistory(ClientLogsViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    if (model.GameHistory)
+                    {
+                        var entities = await gameRepository .GetGameBetsByUser(model.Client, model.StartDate, model.EndDate);
+                        if (entities.Count() > 0)
+                        {
+                            StringBuilder sb = new StringBuilder();
+                            sb.AppendLine("Date;UserId;AssetPair;BetAmount;BoxId;BetStatus;Parameters;Box");
+                            foreach (var item in entities.OrderBy(m=>m.Date))
+                            {
+                                sb.AppendLine($"{item.Date};{item.UserId};{item.AssetPair};{item.BetAmount};{item.BoxId};{item.BetStatus}-{(BetStates)item.BetStatus};{item.Parameters.Replace(';','|')};{item.Box.Replace(';', '|')}");
+                            }
+                            return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", $"userHistory_{model.Client}.csv");
+                        }
+                        else
+                        {
+                            return StatusCode(500, "Log file is empty");
+                        }
+                    }
+                    else
+                    {
+                        var entities = await userRepository.GetUserHistory(model.Client, model.StartDate, model.EndDate);
+                        if (entities.Count() > 0)
+                        {
+                            StringBuilder sb = new StringBuilder();
+                            sb.AppendLine("Date;UserId;Status;Message");
+                            foreach (var item in entities)
+                            {
+                                sb.AppendLine($"{item.Date};{item.UserId};{item.Status}-{(GameStatus)int.Parse(item.Status)};{item.Message.Replace(';', '|')}");
+                            }
+                            return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", $"userHistory_{model.Client}.csv");
+                        }
+                        else
+                        {
+                            return StatusCode(500, "Log file is empty");
+                        }
                     }
                 }
                 catch (Exception ex)

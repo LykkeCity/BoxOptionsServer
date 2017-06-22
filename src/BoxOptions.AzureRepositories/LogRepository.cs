@@ -85,12 +85,13 @@ namespace BoxOptions.AzureRepositories
             return retval.Select(LogEntity.CreateLogItem);
         }
 
-        public async Task<IEnumerable<string>> GetClients(DateTime dateFrom, DateTime dateTo)
+        public async Task<IEnumerable<string>> GetClients()
         {
             System.Collections.Concurrent.ConcurrentDictionary<string, byte> partitionKeys = new System.Collections.Concurrent.ConcurrentDictionary<string, byte>();
             await _storage.ExecuteAsync(new TableQuery<LogEntity>(), entity =>
             {
-                foreach (var et in entity.Where(m => m.Timestamp >= dateFrom && m.Timestamp < dateTo).Select(m => m.PartitionKey))
+                //foreach (var et in entity.Where(m => m.Timestamp >= dateFrom && m.Timestamp < dateTo).Select(m => m.PartitionKey))
+                foreach (var et in entity.Select(m => m.PartitionKey))
                     partitionKeys.TryAdd(et, 0);
             });
             return partitionKeys.Select(m => m.Key);
@@ -98,7 +99,7 @@ namespace BoxOptions.AzureRepositories
 
         public async Task<IEnumerable<LogItem>> GetAll(DateTime dateFrom, DateTime dateTo)
         {
-            List<string> clientList = new List<string>(await GetClients(dateFrom, dateTo));
+            List<string> clientList = new List<string>(await GetClients());
 
             List<LogEntity> logs = new List<LogEntity>();
 

@@ -1033,7 +1033,8 @@ namespace BoxOptions.Services
             UserState user = GetUserState(userId);
             // Request Coeffcalculator Data            
             string result = GetCoefficients(pair);
-            SetUserStatus(user, GameStatus.CoeffRequest, string.Format("[{0}]={1}", pair, result));
+            //SetUserStatus(user, GameStatus.CoeffRequest, string.Format("[{0}]={1}", pair, result));
+            SetUserStatus(user, GameStatus.CoeffRequest, string.Format("[{0}]", pair));
             return result;
         }
 

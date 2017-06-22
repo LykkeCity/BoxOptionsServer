@@ -13,5 +13,6 @@ namespace BoxOptions.Core
         Task InsertHistoryAsync(IEnumerable<Interfaces.IUserHistoryItem> olapEntity);
         Task<IEnumerable<Models.UserHistoryItem>> GetUserHistory(string userId, DateTime dateFrom, DateTime dateTo);
 
+        Task<IEnumerable<string>> GetUsers();
     }
 }

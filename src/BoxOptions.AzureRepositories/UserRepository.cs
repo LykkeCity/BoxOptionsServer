@@ -200,5 +200,16 @@ namespace BoxOptions.AzureRepositories
             //    .OrderByDescending(item => item.Timestamp).Take(numEntries);
             //return entities.Select(UserHistoryEntity.CreateUserHistoryItem);
         }
+
+        public async Task<IEnumerable<string>> GetUsers()
+        {
+            System.Collections.Concurrent.ConcurrentDictionary<string, byte> partitionKeys = new System.Collections.Concurrent.ConcurrentDictionary<string, byte>();
+            await _storage.ExecuteAsync(new TableQuery<UserEntity>(), entity =>
+            {
+                foreach (var et in entity.Select(m => m.PartitionKey))
+                    partitionKeys.TryAdd(et, 0);
+            });
+            return partitionKeys.Select(m => m.Key);
+        }
     }
 }
