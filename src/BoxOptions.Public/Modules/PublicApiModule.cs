@@ -57,7 +57,7 @@ namespace BoxOptions.Public.Modules
 
             // Client Logs Repository
             builder.RegisterInstance(new LogRepository(new AzureTableStorage<AzureRepositories.LogEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "DEVClientEventLogs", log)))
+                "ClientEventLogs", log)))
                 .As<ILogRepository>();
 
             // User Data Repository
