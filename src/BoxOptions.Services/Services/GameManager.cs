@@ -600,6 +600,7 @@ namespace BoxOptions.Services
             if (bet > userState.Balance)
             {
                 message = "User has no balance for the bet.";
+                SetUserStatus(userState, GameStatus.Error, "PlaceBet Failed:" + message);
                 return null;
             }
 
@@ -612,6 +613,16 @@ namespace BoxOptions.Services
             if (assetConfig == null)
             {
                 message = $"Box Size parameters are not set for Asset Pair[{ assetPair}].";
+                SetUserStatus(userState, GameStatus.Error, "PlaceBet Failed:" + message);
+                return null;
+            }
+
+            // Validate Coeff:
+            bool IsCoefValid = ValidateCoeff(assetPair, boxObject, assetConfig);
+            if (!IsCoefValid)
+            {
+                message = $"Invalid Coefficient[{boxObject.Coefficient}].";
+                SetUserStatus(userState, GameStatus.Error, "PlaceBet Failed:" + message);
                 return null;
             }
 
@@ -638,6 +649,12 @@ namespace BoxOptions.Services
 
             message = "OK";
             return newBet;
+        }
+
+        // Validate Coeffs, task BOXOPT-29 to be implemented in the future.
+        private bool ValidateCoeff(string assetPair, Box box, BoxSize assetConfig)
+        {
+            return true;
         }
 
         /// <summary>

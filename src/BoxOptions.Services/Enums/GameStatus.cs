@@ -16,8 +16,9 @@
             BetLost = 10,
             BalanceChanged = 11,
             ParameterChanged = 12,
-            CoeffRequest = 13
-        }
+            CoeffRequest = 13,
+            Error = 14
+    }
     
     
 }
