@@ -7,6 +7,7 @@
 
     @using (Html.BeginForm())
     {
+        @Html.AntiForgeryToken()
         <div class="form-horizontal">
             <div class="col-md-8 col-sm-8 col-xs-6">
                 <table class="table table-responsive" id="slideTable">
@@ -17,8 +18,7 @@
                             <th>Save History</th>
                             <th>Box Time Size (ms)</th>
                             <th>Box Price Size (1% = 0.01)</th>
-                            <th>Time To First Box (ms)</th>
-                            <th>Boxes/Row</th>
+                            <th>Time To First Box (ms)</th>                            
                         </tr>
                     </thead>                  
                     <tbody>
@@ -27,6 +27,7 @@
                             <tr class="info" id="RowId_@i.ToString()">
                                 <td>
                                     @Html.HiddenFor(m => m.BoxConfiguration[i].AssetPair)
+                                    @Html.HiddenFor(m => m.BoxConfiguration[i].BoxesPerRow)
                                     @Html.DisplayFor(m => m.BoxConfiguration[i].AssetPair)
                                 </td>
                                 <td>
@@ -48,11 +49,7 @@
                                 <td>
                                     @Html.EditorFor(m => m.BoxConfiguration[i].TimeToFirstBox)<br />
                                     @Html.ValidationMessageFor(m => m.BoxConfiguration[i].TimeToFirstBox, "", new { @class = "text-danger" })
-                                </td>
-                                <td>
-                                    @Html.EditorFor(m => m.BoxConfiguration[i].BoxesPerRow)<br />
-                                    @Html.ValidationMessageFor(m => m.BoxConfiguration[i].BoxesPerRow, "", new { @class = "text-danger" })
-                                </td>
+                                </td>                                
                             </tr>
                         }
                     </tbody>

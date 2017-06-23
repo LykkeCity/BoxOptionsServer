@@ -30,75 +30,98 @@ namespace BoxOptions.Public.Controllers
             this.log = log;
             this.assetConfigRepo = assetConfigRepo;
         }
-        //[HttpGet]
-        //[Route("setassetdefaultconfig")]
-        //public async Task<IActionResult> SetAssetDefaultConfig()
-        //{
-        //    List<string> assets = new List<string>();
-        //    assets.AddRange(_settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets);
-        //    assets.AddRange(_settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets);
+        [HttpGet]
+        [Route("setassetdefaultconfig")]
+        public async Task<IActionResult> SetAssetDefaultConfig()
+        {
+            List<string> assets = new List<string>();
+            assets.AddRange(_settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets);
+            assets.AddRange(_settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets);
 
-        //    List<string> distict = assets.Distinct().ToList();
-        //    List<BoxSize> defaultcfg = new List<BoxSize>();
-        //    foreach (var asset in distict)
-        //    {
-        //        defaultcfg.Add(new BoxSize()
-        //        {
-        //            AssetPair = asset,
-        //            BoxesPerRow = 7,
-        //            BoxHeight = 7000,
-        //            BoxWidth = 0.00003,
-        //            TimeToFirstBox = 4000,
-        //            SaveHistory = true,
-        //            GameAllowed = true
-        //        });
+            List<string> distict = assets.Distinct().ToList();
+            List<BoxSize> defaultcfg = new List<BoxSize>();
+            foreach (var asset in distict)
+            {
+                defaultcfg.Add(new BoxSize()
+                {
+                    AssetPair = asset,
+                    BoxesPerRow = 7,
+                    BoxHeight = 7000,
+                    BoxWidth = 0.00003,
+                    TimeToFirstBox = 4000,
+                    SaveHistory = true,
+                    GameAllowed = true
+                });
 
-        //    }
+            }
 
-        //    gameManager.SetBoxConfig(defaultcfg.ToArray());
+            gameManager.SetBoxConfig(defaultcfg.ToArray());
 
-        //    await log?.WriteInfoAsync("BoxOptions.Public.GameController", "SetAssetDefaultConfig", null, string.Format("Box configuration set to defaults for assets {0}", string.Join(",", distict)));
+            await log?.WriteInfoAsync("BoxOptions.Public.GameController", "SetAssetDefaultConfig", null, string.Format("Box configuration set to defaults for assets {0}", string.Join(",", distict)));
 
-        //    return Ok();
-        //}
+            return Ok();
+        }
 
-        //[HttpGet]
-        //[Route("assetconfiguration")]
-        //public async Task<IActionResult> AssetConfiguration()
-        //{
+        [HttpGet]
+        [Route("assetconfiguration")]
+        public async Task<IActionResult> AssetConfiguration()
+        {
 
-        //    var boxConfig = await assetConfigRepo.GetAll();
+            var boxConfig = await assetConfigRepo.GetAll();
 
-        //    AssetConfigurationViewModel viewModel = new AssetConfigurationViewModel();
-        //    viewModel.BoxConfiguration = (from i in boxConfig
-        //                                  select new BoxSizeViewModel()
-        //                                  {
-        //                                      AssetPair = i.AssetPair,
-        //                                      BoxesPerRow = i.BoxesPerRow,
-        //                                      BoxHeight = i.BoxHeight,
-        //                                      BoxWidth = i.BoxWidth,
-        //                                      GameAllowed = i.GameAllowed,
-        //                                      SaveHistory = i.SaveHistory,
-        //                                      TimeToFirstBox = i.TimeToFirstBox
-        //                                  }).ToList();
-        //    return View(viewModel);
-        //}
-        //[HttpPost]
-        //[Route("assetconfiguration")]
-        //public async Task<ActionResult> AssetConfiguration([Bind("BoxConfiguration")] AssetConfigurationViewModel config)
-        //{
-        //    if (ModelState.IsValid)
-        //    {
-                
-        //        await assetConfigRepo.InsertManyAsync(config.BoxConfiguration);
-        //        config.SaveInformation = "Asset Configuration Saved Successfully";
-        //        bool gmOk = await gameManager.ReloadGameAssets();
-        //        bool asOk = await assetQuoteSubscriber.ReloadAssetConfiguration();
+            AssetConfigurationViewModel viewModel = new AssetConfigurationViewModel();
+            viewModel.BoxConfiguration = (from i in boxConfig
+                                          select new BoxSizeViewModel()
+                                          {
+                                              AssetPair = i.AssetPair,
+                                              BoxesPerRow = i.BoxesPerRow,
+                                              BoxHeight = i.BoxHeight,
+                                              BoxWidth = i.BoxWidth,
+                                              GameAllowed = i.GameAllowed,
+                                              SaveHistory = i.SaveHistory,
+                                              TimeToFirstBox = i.TimeToFirstBox
+                                          }).ToList();
+            return View(viewModel);
+        }
+        [HttpPost]
+        [Route("assetconfiguration")]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> AssetConfiguration([Bind("BoxConfiguration")] AssetConfigurationViewModel config)
+        {
+            if (ModelState.IsValid)
+            {
+                var dbBoxConfig = await assetConfigRepo.GetAll();                
 
-        //        await log?.WriteInfoAsync("BoxOptions.Public.GameController", "AssetConfiguration", null, "Asset configuration changed");
-        //    }
-            
-        //    return View(config);
-        //}
+                List<BoxSize> boxes = new List<BoxSize>();
+                // Change only allowed fields to prevent hacking
+                foreach (var item in config.BoxConfiguration)
+                {
+                    var dbo = dbBoxConfig.Where(m => m.AssetPair == item.AssetPair).FirstOrDefault();
+                    if (dbo != null)
+                    {
+                        boxes.Add(new BoxSize()
+                        {
+                            AssetPair = dbo.AssetPair,      // Id
+                            BoxesPerRow = dbo.BoxesPerRow,  // Change NOT allowed
+                            TimeToFirstBox = item.TimeToFirstBox,
+                            BoxHeight = item.BoxHeight,
+                            BoxWidth = item.BoxWidth,
+                            GameAllowed = item.GameAllowed,
+                            SaveHistory = item.SaveHistory
+                        });
+                    }
+                }
+
+
+                await assetConfigRepo.InsertManyAsync(boxes);
+                config.SaveInformation = "Asset Configuration Saved Successfully";
+                bool gmOk = await gameManager.ReloadGameAssets();
+                bool asOk = await assetQuoteSubscriber.ReloadAssetConfiguration();
+
+                await log?.WriteInfoAsync("BoxOptions.Public.GameController", "AssetConfiguration", null, "Asset configuration changed");
+            }
+
+            return View(config);
+        }
     }
 }
