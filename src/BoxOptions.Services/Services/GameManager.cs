@@ -459,7 +459,7 @@ namespace BoxOptions.Services
                 {
                     IsCoeffStarted = true;
 
-                    InitializeCoefCalc(true);
+                    Task.Run(() => InitializeCoefCalc(true));
 
                 }
                 BoxSize[] retval = CalculatedBoxes(dbBoxConfig.Where(b => b.GameAllowed).ToList(), micrographCache);
@@ -1116,7 +1116,7 @@ namespace BoxOptions.Services
                 LogInfo("ReloadGameAssets", "Reloaded game assets from database");
 
                 // Restart InitializeCoefCalc monitor
-                InitializeCoefCalc(true);
+                await InitializeCoefCalc(true); 
                 return true;
             }
             catch (Exception ex)
