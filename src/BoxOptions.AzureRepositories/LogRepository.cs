@@ -17,6 +17,7 @@ namespace BoxOptions.AzureRepositories
         public string ClientId { get; set; }
         public string EventCode { get; set; }
         public string Message { get; set; }
+        public double AccountDelta { get; set; }
 
         public static string GetPartitionKey(string clientId, DateTime date)
         {
@@ -30,7 +31,8 @@ namespace BoxOptions.AzureRepositories
                 PartitionKey = GetPartitionKey(src.ClientId, DateTime.UtcNow),
                 ClientId = src.ClientId,
                 EventCode = src.EventCode,
-                Message = src.Message
+                Message = src.Message,
+                AccountDelta = src.AccountDelta
             };
         }
 
@@ -41,6 +43,7 @@ namespace BoxOptions.AzureRepositories
                 ClientId = src.ClientId,
                 EventCode = src.EventCode,
                 Message = src.Message,
+                AccountDelta = src.AccountDelta,
                 Timestamp = src.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)
             };
         }

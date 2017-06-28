@@ -9,5 +9,6 @@ namespace BoxOptions.Core.Models
         public DateTime Date { get; set; }
         public string Message { get; set; }
         public string UserId { get; set; }
+        public double AccountDelta { get; set; }
     }
 }

@@ -7,6 +7,7 @@ using BoxOptions.Services.Models;
 using Common.Log;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using WampSharp.V2.Realm;
@@ -471,7 +472,7 @@ namespace BoxOptions.Services
                     launchMsg += string.Format(Ci, "[{0};BoxWidth:{1};BoxHeight:{2};TimeToFirstBox:{3};BoxesPerRow:{4}]", boxSize.AssetPair, boxSize.BoxWidth, boxSize.BoxHeight, boxSize.TimeToFirstBox, boxSize.BoxesPerRow);
                 }
                 //Console.WriteLine("{0} > SetUserStatus", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
-                SetUserStatus(userState, GameStatus.Launch, launchMsg);
+                SetUserStatus(userState, GameStatus.Launch, 0, launchMsg);
 
                 // Return Calculate Price Sizes
                 return retval;
@@ -587,9 +588,9 @@ namespace BoxOptions.Services
         /// <param name="user">User Object</param>
         /// <param name="status">New Status</param>
         /// <param name="message">Status Message</param>
-        private void SetUserStatus(UserState user, GameStatus status, string message = null)
+        private void SetUserStatus(UserState user, GameStatus status,double accountdelta, string message = null)
         {
-            var hist = user.SetStatus((int)status, message);
+            var hist = user.SetStatus((int)status, message, accountdelta);
             // Save User
             database.SaveUserState(user);
             // Save user History
@@ -611,7 +612,7 @@ namespace BoxOptions.Services
             if (bet > userState.Balance)
             {
                 message = "User has no balance for the bet.";
-                SetUserStatus(userState, GameStatus.Error, "PlaceBet Failed:" + message);
+                SetUserStatus(userState, GameStatus.Error, 0, "PlaceBet Failed:" + message);
                 return null;
             }
 
@@ -624,7 +625,7 @@ namespace BoxOptions.Services
             if (assetConfig == null)
             {
                 message = $"Box Size parameters are not set for Asset Pair[{ assetPair}].";
-                SetUserStatus(userState, GameStatus.Error, "PlaceBet Failed:" + message);
+                SetUserStatus(userState, GameStatus.Error, 0, "PlaceBet Failed:" + message);
                 return null;
             }
 
@@ -633,7 +634,7 @@ namespace BoxOptions.Services
             if (!IsCoefValid)
             {
                 message = $"Invalid Coefficient[{boxObject.Coefficient}].";
-                SetUserStatus(userState, GameStatus.Error, "PlaceBet Failed:" + message);
+                SetUserStatus(userState, GameStatus.Error, 0, "PlaceBet Failed:" + message);
                 return null;
             }
 
@@ -655,7 +656,7 @@ namespace BoxOptions.Services
                 database.SaveGameBet(newBet);
 
                 // Set Status, saves User to DB            
-                SetUserStatus(userState, GameStatus.BetPlaced, $"BetPlaced[{boxObject.Id}]. Asset:{assetPair}  Bet:{bet} Balance:{userState.Balance}");
+                SetUserStatus(userState, GameStatus.BetPlaced, -Convert.ToDouble(bet), $"BetPlaced[{boxObject.Id}]. Asset:{assetPair}  Bet:{bet} Balance:{userState.Balance}");
             });
 
             message = "OK";
@@ -827,7 +828,7 @@ namespace BoxOptions.Services
 
                 // Set User Status
                 UserState user = GetUserState(bet.UserId);
-                SetUserStatus(user, GameStatus.BetWon, $"Bet WON [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount} Coef:{bet.Box.Coefficient} Prize:{bet.BetAmount * bet.Box.Coefficient}");
+                SetUserStatus(user, GameStatus.BetWon, Convert.ToDouble(bet.BetAmount * bet.Box.Coefficient), $"Bet WON [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount} Coef:{bet.Box.Coefficient} Prize:{bet.BetAmount * bet.Box.Coefficient}");
             });
             
         }
@@ -887,7 +888,7 @@ namespace BoxOptions.Services
 
                     // Set User Status
                     UserState user = GetUserState(bet.UserId);
-                    SetUserStatus(user, GameStatus.BetLost, $"Bet LOST [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount}");
+                    SetUserStatus(user, GameStatus.BetLost, 0, $"Bet LOST [{bet.Box.Id}] [{bet.AssetPair}] Bet:{bet.BetAmount}");
                 });
                 
                 
@@ -1042,10 +1043,12 @@ namespace BoxOptions.Services
         public decimal SetUserBalance(string userId, decimal newBalance)
         {
             UserState userState = GetUserState(userId);
+            decimal oldBalance = userState.Balance;
             userState.SetBalance(newBalance);
-                        
+            decimal balanceDelta = newBalance - oldBalance;
+
             // Log Balance Change
-            SetUserStatus(userState, GameStatus.BalanceChanged, $"New Balance: {newBalance}");
+            SetUserStatus(userState, GameStatus.BalanceChanged, Convert.ToDouble(balanceDelta), $"New Balance: {newBalance}");
 
             return newBalance;
         }
@@ -1062,18 +1065,40 @@ namespace BoxOptions.Services
             // Request Coeffcalculator Data            
             string result = GetCoefficients(pair);
             //SetUserStatus(user, GameStatus.CoeffRequest, string.Format("[{0}]={1}", pair, result));
-            SetUserStatus(user, GameStatus.CoeffRequest, string.Format("[{0}]", pair));
+            SetUserStatus(user, GameStatus.CoeffRequest,0, string.Format("[{0}]", pair));
             return result;
         }
 
         public void AddUserLog(string userId, string eventCode, string message)
         {
+            double accountdelta = 0;
+            if (eventCode == "8")// BetPlaced
+            {
+                //string test = "Coeff: 1.24830386982552, Bet: 1.0";
+                //model.Message = test;
+
+                int index = message.IndexOf("Bet:");
+                string betvalue = message.Substring(index, message.Length - index).Replace("Bet:", "").Trim();
+                double.TryParse(betvalue, NumberStyles.AllowDecimalPoint, Ci, out accountdelta);
+                if (accountdelta > 0)
+                    accountdelta = -accountdelta;
+            }
+            else if (eventCode == "9")// BetWon
+            {
+                //string test = "Value: 1.24830386982552";
+                //model.Message = test;
+
+                string winvalue = message.Replace("Value:", "").Trim();
+                double.TryParse(winvalue, NumberStyles.AllowDecimalPoint, Ci, out accountdelta);
+            }
+
             // Write log to repository
             Task t = logRepository?.InsertAsync(new LogItem()
             {
                 ClientId = userId,
                 EventCode = eventCode,
-                Message = message
+                Message = message,
+                AccountDelta = accountdelta
             });
             t.Wait();
 
@@ -1081,7 +1106,7 @@ namespace BoxOptions.Services
             UserState userState = GetUserState(userId);
             int ecode = -1;
             int.TryParse(eventCode, out ecode);
-            SetUserStatus(userState, (GameStatus)ecode, message);
+            SetUserStatus(userState, (GameStatus)ecode, accountdelta, message);
         }
 
         public void SetBoxConfig(BoxSize[] boxes)

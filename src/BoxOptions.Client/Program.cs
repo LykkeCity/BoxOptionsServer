@@ -98,7 +98,7 @@ namespace BoxOptions.Client
                         }
                         break;
                     case "log":
-                        client.PostLog();
+                        client.PostLog(UserId);
                         break;                                     
                     case "placebet":
                         string pb_box = "{"+

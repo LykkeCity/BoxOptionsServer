@@ -16,6 +16,7 @@ namespace BoxOptions.Services.Models
         public DateTime Timestamp { get; set; }
         public int Status { get; set; }
         public string Message { get; set; }
+        public double AccountDelta { get; set; }
 
         public override string ToString()
         {

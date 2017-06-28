@@ -72,7 +72,7 @@ namespace BoxOptions.Client
             }
         }
 
-        internal async void PostLog()
+        internal async void PostLog(string userId)
         {
             var httpWebRequest = (HttpWebRequest)WebRequest.Create("http://localhost:5000/api/Log");
             httpWebRequest.ContentType = "application/json";
@@ -82,7 +82,7 @@ namespace BoxOptions.Client
             using (var streamWriter = new StreamWriter(httpstream))
             {
                 string json = "{" +
-                    "\"ClientId\": \"SomeId\"," +
+                    $"\"ClientId\": \"{userId}\"," +
                     "\"EventCode\": \"0\"," +
                     "\"Message\": \"Test\"" +
                     "}";

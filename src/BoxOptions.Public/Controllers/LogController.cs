@@ -18,6 +18,7 @@ namespace BoxOptions.Public.Controllers
         private readonly ILogRepository _logRepository;
         private readonly IUserRepository userRepository;
         private readonly IGameRepository gameRepository;
+        private static CultureInfo Ci = new CultureInfo("en-us");
 
         public LogController(ILogRepository logRepository, IUserRepository userRepository, IGameRepository gameRepository)
         {
@@ -33,12 +34,34 @@ namespace BoxOptions.Public.Controllers
             {
                 return BadRequest(ModelState);
             }
+            
+            double accountdelta = 0;
+            if (model.EventCode == "8")// BetPlaced
+            {
+                //string test = "Coeff: 1.24830386982552, Bet: 1.0";
+                //model.Message = test;
+
+                int index = model.Message.IndexOf("Bet:");
+                string betvalue = model.Message.Substring(index, model.Message.Length - index).Replace("Bet:", "").Trim();
+                double.TryParse(betvalue, NumberStyles.AllowDecimalPoint, Ci, out accountdelta);
+                if (accountdelta > 0)
+                    accountdelta = -accountdelta;
+            }
+            else if (model.EventCode == "9")// BetWon
+            {
+                //string test = "Value: 1.24830386982552";
+                //model.Message = test;
+
+                string winvalue = model.Message.Replace("Value:", "").Trim();
+                double.TryParse(winvalue, NumberStyles.AllowDecimalPoint, Ci, out accountdelta);
+            }
 
             await _logRepository.InsertAsync(new LogItem
             {
                 ClientId = model.ClientId,
                 EventCode = model.EventCode,
-                Message = model.Message
+                Message = model.Message,
+                AccountDelta = accountdelta
             });
 
             return Ok();

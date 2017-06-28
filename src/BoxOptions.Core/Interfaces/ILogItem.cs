@@ -5,5 +5,6 @@
         string ClientId { get; }
         string EventCode { get; }
         string Message { get; }
+        double AccountDelta { get; }
     }
 }

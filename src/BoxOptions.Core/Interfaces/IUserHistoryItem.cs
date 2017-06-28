@@ -10,6 +10,7 @@ namespace BoxOptions.Core.Interfaces
         string Status { get; }
         DateTime Date { get; }
         string Message { get; }
+        double AccountDelta { get; }
     }
 
 }

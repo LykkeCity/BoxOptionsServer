@@ -60,6 +60,7 @@ namespace BoxOptions.AzureRepositories
         public string Status { get; set; }
         public DateTime Date { get; set; }
         public string Message { get; set; }
+        public double AccountDelta { get; set; }
 
         static int rowKeyCtr = 0;
 
@@ -85,7 +86,8 @@ namespace BoxOptions.AzureRepositories
                 UserId = src.UserId,
                 Date = src.Date,
                 Status = src.Status,
-                Message = src.Message
+                Message = src.Message,
+                AccountDelta = src.AccountDelta
             };
         }
 
@@ -98,7 +100,8 @@ namespace BoxOptions.AzureRepositories
                 UserId = src.UserId,
                 Date = src.Date,
                 Status = src.Status,
-                Message = src.Message
+                Message = src.Message,
+                AccountDelta = src.AccountDelta
             };
         }
     }

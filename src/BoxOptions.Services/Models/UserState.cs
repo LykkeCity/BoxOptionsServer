@@ -59,13 +59,14 @@ namespace BoxOptions.Services.Models
             });
 
         }
-        internal UserHistory SetStatus(int status, string message)
-        {
+        internal UserHistory SetStatus(int status, string message, double accountDelta = 0)
+        {           
             UserHistory newEntry = new UserHistory(userId)
             {
                 Timestamp = DateTime.UtcNow,
                 Status = status,
-                Message = message
+                Message = message,
+                AccountDelta = accountDelta
             };
             statusHistory.Add(newEntry);
 

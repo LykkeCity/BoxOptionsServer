@@ -100,7 +100,8 @@ namespace BoxOptions.Public.Processors
                             {
                                 Timestamp = p.Date,
                                 Status = int.Parse(p.Status),
-                                Message = p.Message
+                                Message = p.Message,
+                                AccountDelta = p.AccountDelta
                             };
             return converted;
         }
@@ -196,7 +197,8 @@ namespace BoxOptions.Public.Processors
                           UserId = h.UserId,
                           Date = h.Timestamp,
                           Status = h.Status.ToString(),
-                          Message = h.Message
+                          Message = h.Message,
+                          AccountDelta = h.AccountDelta
                       };
 
             userRep.InsertHistoryAsync(hst);
