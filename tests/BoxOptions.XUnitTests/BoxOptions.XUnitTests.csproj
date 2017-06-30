@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BoxOptions.Services\BoxOptions.Services.csproj" />
+    <ProjectReference Include="..\..\src\BoxOptions.Services\BoxOptions.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>

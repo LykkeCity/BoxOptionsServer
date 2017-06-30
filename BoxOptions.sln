@@ -16,13 +16,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution items", "Solution 
 		.gitignore = .gitignore
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoxOptions.AzureRepositories", "src\BoxOptions.AzureRepositories\BoxOptions.AzureRepositories.csproj", "{D7820C61-4E09-4E8B-BA6D-6ADCCAF54C86}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BoxOptions.AzureRepositories", "src\BoxOptions.AzureRepositories\BoxOptions.AzureRepositories.csproj", "{D7820C61-4E09-4E8B-BA6D-6ADCCAF54C86}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoxOptions.Client", "src\BoxOptions.Client\BoxOptions.Client.csproj", "{78B07E52-AEA1-4882-BDEF-6B0EF95231CB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BoxOptions.Client", "client\BoxOptions.Client\BoxOptions.Client.csproj", "{78B07E52-AEA1-4882-BDEF-6B0EF95231CB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XUnitTests", "src\XUnitTests\XUnitTests.csproj", "{68BE4CBE-F78C-4BBB-89BC-3BF733EA710C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BoxOptions.XUnitTests", "tests\BoxOptions.XUnitTests\BoxOptions.XUnitTests.csproj", "{68BE4CBE-F78C-4BBB-89BC-3BF733EA710C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoxOptions.CoefficientCalculator", "src\BoxOptions.CoefficientCalculator\BoxOptions.CoefficientCalculator.csproj", "{FEBE419D-5FA9-4BB5-979D-12156013994D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BoxOptions.CoefficientCalculator", "src\BoxOptions.CoefficientCalculator\BoxOptions.CoefficientCalculator.csproj", "{FEBE419D-5FA9-4BB5-979D-12156013994D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
