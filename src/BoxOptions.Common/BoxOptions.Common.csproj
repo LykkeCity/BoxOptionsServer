@@ -17,10 +17,9 @@
 
   <ItemGroup>
     <PackageReference Include="Lykke.AzureQueueIntegration" Version="1.0.7" />
-    <PackageReference Include="WampSharp.Default" Version="1.2.5.35-beta" />
-    <PackageReference Include="WampSharp.AspNetCore.WebSockets.Server" Version="1.2.5.35-beta" />
-    <PackageReference Include="WampSharp.NewtonsoftJson" Version="1.2.5.35-beta" />
     <PackageReference Include="Lykke.RabbitMqBroker" Version="1.0.63" />
+    <PackageReference Include="Lykke.WampSharp.AspNetCore.WebSockets.Server" Version="0.1.29-beta001" />
+    <PackageReference Include="Lykke.WampSharp.NewtonsoftJson" Version="0.1.29-beta001" />
   </ItemGroup>
 
 </Project>
