@@ -1,11 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
     <AssemblyName>BoxOptions.Common</AssemblyName>
     <PackageId>BoxOptions.Common</PackageId>
-    <RuntimeFrameworkVersion>1.1.1</RuntimeFrameworkVersion>
-    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50;portable-net451+win8</PackageTargetFallback>
+    <RuntimeFrameworkVersion>2.0</RuntimeFrameworkVersion>    
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
@@ -18,8 +17,8 @@
   <ItemGroup>
     <PackageReference Include="Lykke.AzureQueueIntegration" Version="1.0.7" />
     <PackageReference Include="Lykke.RabbitMqBroker" Version="1.0.63" />
-    <PackageReference Include="Lykke.WampSharp.AspNetCore.WebSockets.Server" Version="0.1.29-beta001" />
-    <PackageReference Include="Lykke.WampSharp.NewtonsoftJson" Version="0.1.29-beta001" />
+    <PackageReference Include="Lykke.WampSharp.AspNetCore.WebSockets.Server" Version="0.27.35-beta001" />
+    <PackageReference Include="Lykke.WampSharp.NewtonsoftJson" Version="0.27.35-beta001" />
   </ItemGroup>
 
 </Project>

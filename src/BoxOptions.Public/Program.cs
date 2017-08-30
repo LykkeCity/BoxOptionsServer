@@ -33,13 +33,7 @@ namespace BoxOptions.Public
             Console.WriteLine($"Kestrel threads count: {kestrelThreadsCount}");
 
             var host = new WebHostBuilder()
-                .UseKestrel(options =>
-                {
-                    if (kestrelThreadsCount > 0)
-                    {
-                        options.ThreadCount = kestrelThreadsCount;
-                    }
-                })
+                .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()
                 .UseUrls("http://*:5000")
