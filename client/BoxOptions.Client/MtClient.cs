@@ -62,7 +62,7 @@ namespace BoxOptions.Client
                     break;
                 case ClientEnv.Dev:
                     // kestrel Port
-                    _serverAddress = "ws://13.93.116.252:5050/ws";
+                    _serverAddress = "ws://box-options.lykke-box-options.svc.cluster.local/ws";
                     break;
                 case ClientEnv.Prod:
                     _serverAddress = "ws://boxoptions-api.lykke.com:5000/ws";

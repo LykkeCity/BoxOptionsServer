@@ -18,8 +18,8 @@
   <ItemGroup>
     <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="4.1.0" />
     <PackageReference Include="Lykke.RabbitMqBroker" Version="1.0.63" />
-    <PackageReference Include="Lykke.WampSharp.AspNetCore.WebSockets.Server" Version="0.27.35-beta001" />
-    <PackageReference Include="Lykke.WampSharp.NewtonsoftJson" Version="0.27.35-beta001" />
+    <PackageReference Include="Lykke.WampSharp.AspNetCore.WebSockets.Server" Version="1.0.1" />
+    <PackageReference Include="Lykke.WampSharp.NewtonsoftJson" Version="1.0.1" />
   </ItemGroup>
 
 </Project>
