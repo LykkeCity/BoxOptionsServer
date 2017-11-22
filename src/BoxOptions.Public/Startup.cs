@@ -114,8 +114,7 @@ namespace BoxOptions.Public
                 builder.UseWebSockets(new WebSocketOptions { KeepAliveInterval = TimeSpan.FromMinutes(1) });
 
                 host.RegisterTransport(new AspNetCoreWebSocketTransport(builder),
-                    new JTokenJsonBinding(),
-                    new JTokenMsgpackBinding());
+                    new JTokenJsonBinding());
             });
 
             host.Open();

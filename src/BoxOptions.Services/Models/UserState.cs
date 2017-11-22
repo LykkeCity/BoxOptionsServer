@@ -115,7 +115,7 @@ namespace BoxOptions.Services.Models
             if (subject == null)
                 throw new InvalidOperationException("Wamp Subject not set");
 
-            //Console.WriteLine("PublishToWamp > {0}", gameEvent.EventTypeEnum);
+            Console.WriteLine("PublishToWamp > {0}", gameEvent.EventTypeEnum);
             subject.OnNext(gameEvent);
         }
 
