@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lykke.WampSharp.Default.Client" Version="1.0.1" />
+    <PackageReference Include="Lykke.WampSharp.Default.Client" Version="1.0.2" />
   </ItemGroup>
 
   <ItemGroup>
