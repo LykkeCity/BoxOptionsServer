@@ -47,8 +47,11 @@ namespace BoxOptions.Public.Modules
             var logAggregate = new LogAggregate();
             var log = logAggregate.CreateLogger();
             var slackSender = _services.UseSlackNotificationsSenderViaAzureQueue(_settings.SlackNotifications.AzureQueue, log);
+            var loggeRepo = new AzureTableStorage<Lykke.Logs.LogEntity>(_settings.BoxOptionsApi.ConnectionStrings.LogsConnString,
+                "DEV" + _appName.Replace(".", string.Empty) + "Logs",
+                log);
             var azureLog = new LykkeLogToAzureStorage(_appName,
-                new AzureTableStorage<Lykke.Logs.LogEntity>(_settings.BoxOptionsApi.ConnectionStrings.LogsConnString, "DEV" +_appName.Replace(".", string.Empty) + "Logs", log),
+                loggeRepo,
                 slackSender);
             logAggregate.AddLogger(azureLog);
             log = logAggregate.CreateLogger();
@@ -56,38 +59,34 @@ namespace BoxOptions.Public.Modules
 
 
             // Client Logs Repository
-            builder.RegisterInstance(new LogRepository(new AzureTableStorage<AzureRepositories.LogEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "ClientEventLogs", log)))
+            var appLogRepo = new AzureTableStorage<AzureRepositories.LogEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage, "ClientEventLogs", log);
+            builder.RegisterInstance(new LogRepository(appLogRepo))
                 .As<ILogRepository>();
 
             // User Data Repository
-            builder.RegisterInstance(new UserRepository(
-                new AzureTableStorage<AzureRepositories.UserEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "UserRepo", log),
-                new AzureTableStorage<AzureRepositories.UserHistoryEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "UserHistory", log)))
+            var userDataRepo = new AzureTableStorage<AzureRepositories.UserEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage, "UserRepo", log);
+            var userHistoryRepo = new AzureTableStorage<AzureRepositories.UserHistoryEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage, "UserHistory", log);
+            builder.RegisterInstance(new UserRepository(userDataRepo, userHistoryRepo))
                 .As<IUserRepository>();
 
             // Game Manager Repository
-            builder.RegisterInstance(new GameRepository(
-                new AzureTableStorage<AzureRepositories.GameBetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "GameRepo", log)))
+            var gameManagerRepo = new AzureTableStorage<AzureRepositories.GameBetEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage, "GameRepo", log);
+            builder.RegisterInstance(new GameRepository(gameManagerRepo))
                 .As<IGameRepository>();
 
             // BoxConfig Repository
-            builder.RegisterInstance(new BoxConfigRepository(
-                new AzureTableStorage<AzureRepositories.BoxSizeEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "DEVBoxConfig", log)))
+            var boxConfigRepo = new AzureTableStorage<AzureRepositories.BoxSizeEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage, "DEVBoxConfig", log);
+            builder.RegisterInstance(new BoxConfigRepository(boxConfigRepo))
                 .As<IBoxConfigRepository>();
 
             //// Local File System Asset Database
             //builder.RegisterType<LocalFSHistory>()
             //    .As<IAssetDatabase>()
             //    .SingleInstance();
-            
+
             // Quote Feed Repository
-            builder.RegisterInstance(new AssetRepository(new AzureTableStorage<AzureRepositories.BestBidAskEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage,
-                "BestBidAskHistory", log)))
+            var quoteFeedRepo = new AzureTableStorage<AzureRepositories.BestBidAskEntity>(_settings.BoxOptionsApi.ConnectionStrings.BoxOptionsApiStorage, "BestBidAskHistory", log);
+            builder.RegisterInstance(new AssetRepository(quoteFeedRepo))
                 .As<IAssetRepository>();
 
             // Azure Storage Asset Database
