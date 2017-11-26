@@ -8,6 +8,7 @@ using BoxOptions.Core.Models;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage.Table;
 using System.Linq;
+using AzureStorage;
 
 namespace BoxOptions.AzureRepositories
 {
@@ -60,9 +61,9 @@ namespace BoxOptions.AzureRepositories
 
     public class BoxConfigRepository : IBoxConfigRepository
     {
-        private readonly AzureTableStorage<BoxSizeEntity> _storage;
+        private readonly INoSQLTableStorage<BoxSizeEntity> _storage;
 
-        public BoxConfigRepository(AzureTableStorage<BoxSizeEntity> storage)
+        public BoxConfigRepository(INoSQLTableStorage<BoxSizeEntity> storage)
         {
             _storage = storage;
         }

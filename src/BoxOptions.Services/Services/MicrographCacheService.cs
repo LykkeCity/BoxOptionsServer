@@ -1,6 +1,7 @@
 ﻿using Autofac;
 using BoxOptions.Common;
 using BoxOptions.Common.Interfaces;
+using BoxOptions.Common.Settings;
 using BoxOptions.Core.Models;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace BoxOptions.Services
         /// <summary>
         /// Settings Object        
         /// </summary>
-        private readonly BoxOptionsSettings settings;
+        private readonly BoxOptionsApiSettings settings;
         /// <summary>
         /// Asset Quote Subscriber
         /// </summary>
@@ -28,7 +29,7 @@ namespace BoxOptions.Services
         /// </summary>
         private static readonly object GraphQueueLock = new object();
 
-        public MicrographCacheService(BoxOptionsSettings settings, IAssetQuoteSubscriber subscriber)
+        public MicrographCacheService(BoxOptionsApiSettings settings, IAssetQuoteSubscriber subscriber)
         {
             this.settings = settings;
             
@@ -105,7 +106,7 @@ namespace BoxOptions.Services
                     });
 
                     // If quote data array is to big, resize it.
-                    if (graphData[assetBid.Instrument].Count > settings.BoxOptionsApi.PricesSettingsBoxOptions.GraphPointsCount)
+                    if (graphData[assetBid.Instrument].Count > settings.PricesSettingsBoxOptions.GraphPointsCount)
                     {
                         graphData[assetBid.Instrument] = graphData[assetBid.Instrument]
                             .GetRange(1, graphData[assetBid.Instrument].Count - 1);

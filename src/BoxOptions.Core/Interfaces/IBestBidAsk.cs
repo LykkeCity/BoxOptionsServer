@@ -9,5 +9,6 @@ namespace BoxOptions.Core.Interfaces
         double? BestBid { get; }
         string Source { get; }
         DateTime Timestamp { get; }
+        DateTime ReceiveDate { get; }
     }
 }

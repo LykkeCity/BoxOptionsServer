@@ -1,5 +1,6 @@
 ﻿using BoxOptions.Common;
 using BoxOptions.Common.Interfaces;
+using BoxOptions.Common.Settings;
 using BoxOptions.Public.Models;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -10,13 +11,13 @@ namespace BoxOptions.Public.Controllers
 
     public class VersionController : Controller
     {
-        private readonly BoxOptionsSettings _settings;
+        private readonly BoxOptionsApiSettings _settings;
         ICoefficientCalculator coefCalculator;
 
-        public VersionController(BoxOptionsSettings settings)
+        public VersionController(BoxOptionsApiSettings settings)
         {
             _settings = settings;
-            if (_settings.BoxOptionsApi.CoefApiUrl.ToLower() == "mock")
+            if (_settings.CoefApiUrl.ToLower() == "mock")
                 coefCalculator = new Processors.MockCoefficientCalculator();
             else
                 coefCalculator = new Processors.ProxyCoefficientCalculator(_settings);

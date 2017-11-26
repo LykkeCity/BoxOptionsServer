@@ -1,5 +1,5 @@
-﻿using BoxOptions.Common;
-using BoxOptions.Common.Interfaces;
+﻿using BoxOptions.Common.Interfaces;
+using BoxOptions.Common.Settings;
 using BoxOptions.Core;
 using BoxOptions.Core.Models;
 using BoxOptions.Services.Interfaces;
@@ -75,7 +75,7 @@ namespace BoxOptions.Services
         /// <summary>
         /// Settings
         /// </summary>
-        private readonly BoxOptionsSettings settings;
+        private readonly BoxOptionsApiSettings settings;
         /// <summary>
         /// Last Prices Cache
         /// </summary>
@@ -107,10 +107,14 @@ namespace BoxOptions.Services
         private DateTime LastErrorDate = DateTime.MinValue;
         private string LastErrorMessage = "";
 
+
+        private Dictionary<string, string> CoefficientCache;
+        private bool isChangingCoeffs = false;
+        private bool isRequestingCoeffs = false;
         #endregion
 
         #region Constructor
-        public GameManager(BoxOptionsSettings settings, IGameDatabase database, ICoefficientCalculator calculator,
+        public GameManager(BoxOptionsApiSettings settings, IGameDatabase database, ICoefficientCalculator calculator,
             IAssetQuoteSubscriber quoteFeed, IWampHostedRealm wampRealm, IMicrographCache micrographCache, IBoxConfigRepository boxConfigRepository, ILogRepository logRepository, ILog appLog)
         {
             this.database = database;
@@ -123,8 +127,8 @@ namespace BoxOptions.Services
             this.boxConfigRepository = boxConfigRepository;
             this.micrographCache = micrographCache;
 
-            if (this.settings != null && this.settings.BoxOptionsApi != null && this.settings.BoxOptionsApi.GameManager != null)
-                MaxUserBuffer = this.settings.BoxOptionsApi.GameManager.MaxUserBuffer;
+            if (this.settings != null && this.settings != null && this.settings.GameManager != null)
+                MaxUserBuffer = this.settings.GameManager.MaxUserBuffer;
 
             GameManagerId = Guid.NewGuid().ToString();
             userList = new List<UserState>();
@@ -192,8 +196,8 @@ namespace BoxOptions.Services
             var dbConfig = await boxConfigRepository.GetAll();
             List<BoxSize> AssetsToAdd = new List<BoxSize>();
 
-            List<string> AllAssets = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets.ToList();
-            AllAssets.AddRange(settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets.ToList());
+            List<string> AllAssets = settings.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets.ToList();
+            AllAssets.AddRange(settings.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets.ToList());
 
 
             string[] DistictAssets = AllAssets.Distinct().ToArray();
@@ -291,10 +295,7 @@ namespace BoxOptions.Services
         }
 
         #region Coefficient Cache Monitor
-        Dictionary<string, string> CoefficientCache;
-        bool isChangingCoeffs = false;
-        bool isRequestingCoeffs = false;
-
+        
         private async Task<bool> InitializeCoefCalc(bool StartMonitor)
         {
             lastCoeffChange = DateTime.UtcNow;
@@ -509,7 +510,7 @@ namespace BoxOptions.Services
                 current = t.Result;
 
                 // Assing WAMP realm to user
-                current.StartWAMP(wampRealm, this.settings.BoxOptionsApi.GameManager.GameTopicName);
+                current.StartWAMP(wampRealm, settings.GameManager.GameTopicName);
 
                 // keep list size to maxbuffer
                 if (userList.Count >= MaxUserBuffer)
@@ -521,9 +522,6 @@ namespace BoxOptions.Services
                     if (OlderUser != null)
                     {
                         // Check if user does not have running bets
-                        //var userOpenBets = from b in betCache
-                        //                   where b.UserId == OlderUser.UserId
-                        //                   select b;
                         var userOpenBets = from b in OlderUser.OpenBets
                                            where b.BetStatus == BetStates.Waiting || b.BetStatus == BetStates.OnGoing
                                            select b;

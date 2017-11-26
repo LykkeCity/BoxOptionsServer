@@ -1,9 +1,8 @@
 ﻿using Autofac;
-using BoxOptions.Common;
 using BoxOptions.Common.Interfaces;
+using BoxOptions.Common.Settings;
 using BoxOptions.Core.Models;
 using System;
-using System.Collections.Generic;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using WampSharp.V2.Realm;
@@ -15,7 +14,7 @@ namespace BoxOptions.Services
         /// <summary>
         /// Settings Object        
         /// </summary>
-        private readonly BoxOptionsSettings settings;
+        private readonly BoxOptionsApiSettings settings;
         
         /// <summary>
         /// Wamp Subject Publisher
@@ -25,15 +24,13 @@ namespace BoxOptions.Services
         /// Asset Quote Subscriber
         /// </summary>
         IAssetQuoteSubscriber subscriber;
-
         
 
-
-        public PriceFeedService(BoxOptionsSettings settings, IWampHostedRealm realm, IAssetQuoteSubscriber subscriber)
+        public PriceFeedService(BoxOptionsApiSettings settings, IWampHostedRealm realm, IAssetQuoteSubscriber subscriber)
         {
             this.settings = settings;            
             this.subscriber = subscriber;            
-            subject = realm.Services.GetSubject<InstrumentPrice>(this.settings.BoxOptionsApi.PricesSettingsBoxOptions.PricesTopicName);         
+            subject = realm.Services.GetSubject<InstrumentPrice>(this.settings.PricesSettingsBoxOptions.PricesTopicName);         
         }
 
         /// <summary>

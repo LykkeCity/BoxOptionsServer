@@ -1,13 +1,16 @@
-﻿using System;
-using Autofac;
+﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using BoxOptions.Common;
-using BoxOptions.Core;
+using BoxOptions.Common.Extensions;
+using BoxOptions.Common.Services;
+using BoxOptions.Common.Settings;
 using BoxOptions.Public.Exceptions;
 using BoxOptions.Public.Modules;
 using BoxOptions.Services;
 using Common.Log;
-using Flurl.Http;
+using Lykke.AzureQueueIntegration;
+using Lykke.Logs;
+using Lykke.SettingsReader;
 using Lykke.SlackNotification.AzureQueue;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -15,6 +18,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Swashbuckle.Swagger.Model;
+using System;
 using WampSharp.AspNetCore.WebSockets.Server;
 using WampSharp.Binding;
 using WampSharp.V2;
@@ -24,27 +28,30 @@ namespace BoxOptions.Public
 {
     public class Startup
     {
-        public IConfigurationBuilder Builder { get; }
+        //public IConfigurationBuilder Builder { get; }
         public IConfigurationRoot Configuration { get; }
         public IHostingEnvironment Environment { get; }
         public IContainer ApplicationContainer { get; set; }
 
         public Startup(IHostingEnvironment env)
         {
-            Builder = new ConfigurationBuilder()
+            Configuration = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
-                .AddJsonFile("appsettings.json", true, true)
-                .AddJsonFile("appsettings.dev.json", true, true)
-                .AddEnvironmentVariables();
+                .AddDevJson(env)
+                .AddEnvironmentVariables()
+                .Build();
 
-            Configuration = Builder.Build();
             Environment = env;
         }
 
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-            BoxOptionsSettings settings = BuildConfiguration(services);
-
+            ILoggerFactory loggerFactory = new LoggerFactory()
+               .AddConsole(LogLevel.Error)
+               .AddDebug(LogLevel.Error);
+                        
+            services.AddSingleton(loggerFactory);
+            services.AddLogging();
             services.AddMvc(o =>
                 {
                     o.Filters.Add(new HandleAllExceptionsFilterFactory());
@@ -63,32 +70,21 @@ namespace BoxOptions.Public
                 });
                 options.DescribeAllEnumsAsStrings();
             });
-                                               
-            //var settings = Environment.IsEnvironment("Development")
-            //    ? Configuration.Get<BoxOptionsSettings>()
-            //    : Configuration.GetValue<string>("SettingsUrl").GetJsonAsync<BoxOptionsSettings>().Result;
-
+                                                
             var builder = new ContainerBuilder();
-                        
-            builder.RegisterModule(new PublicApiModule(services, settings, Program.Name));
 
+            var settings = Configuration.LoadSettings<AppSettings>();
+            var boSettings = settings.Nested(s => s.BoxOptionsApi);
+
+            SetupLoggers(services, settings, boSettings);
+
+            RegisterModules(builder, boSettings);
+            
             builder.Populate(services);
-
             ApplicationContainer = builder.Build();
-
             return new AutofacServiceProvider(ApplicationContainer);
         }
-        private BoxOptionsSettings BuildConfiguration(IServiceCollection services)
-        {
-            BoxOptionsSettings settings = null;
-            if (Environment.IsEnvironment("Development"))
-                settings = Lykke.SettingsReader.SettingsReader.ReadGeneralSettings<BoxOptionsSettings>("appsettings.dev.json");
-            else
-                settings = Lykke.SettingsReader.SettingsReader.ReadGeneralSettings<BoxOptionsSettings>(new Uri(Configuration.GetValue<string>("SettingsUrl")));
-
-            return settings;
-        }
-
+                
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILog appLog, IApplicationLifetime appLifetime)
         {
             IWampHost host = ApplicationContainer.Resolve<IWampHost>();
@@ -122,6 +118,32 @@ namespace BoxOptions.Public
             appLog.WriteInfoAsync("BoxOptionsServer", "Startup.Configure", null, string.Format("Lykke.BoxOptionsServer [{0}] started.", Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion));
 
 
+        }
+              
+        private static void SetupLoggers(IServiceCollection services, IReloadingManager<AppSettings> settings, IReloadingManager<BoxOptionsApiSettings> boxOptionsSettings)
+        {
+            var consoleLogger = new LogToConsole();
+
+            var azureQueue = new AzureQueueSettings
+            {
+                ConnectionString = settings.CurrentValue.SlackNotifications.AzureQueue.ConnectionString,
+                QueueName = settings.CurrentValue.SlackNotifications.AzureQueue.QueueName
+            };
+
+            var commonSlackService =
+                services.UseSlackNotificationsSenderViaAzureQueue(azureQueue, consoleLogger);
+
+            var log = services.UseLogToAzureStorage(boxOptionsSettings.Nested(s => s.ConnectionStrings.LogsConnString), commonSlackService,
+               "BoxOptionsPublicLogs", consoleLogger);
+
+            LogLocator.CommonLog = log; 
+        }
+
+        private void RegisterModules(ContainerBuilder builder, IReloadingManager<BoxOptionsApiSettings> settings)
+        {
+            builder.RegisterModule(new PublicSettingsModule(settings.CurrentValue));
+            builder.RegisterModule(new PublicRepositoriesModule(settings, LogLocator.CommonLog));
+            builder.RegisterModule(new PublicApiModule(settings));
         }
     }
 }

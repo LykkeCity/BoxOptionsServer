@@ -1,4 +1,5 @@
-﻿using AzureStorage.Tables;
+﻿using AzureStorage;
+using AzureStorage.Tables;
 using BoxOptions.Core;
 using BoxOptions.Core.Interfaces;
 using BoxOptions.Core.Models;
@@ -70,9 +71,9 @@ namespace BoxOptions.AzureRepositories
     public class GameRepository : IGameRepository
     {
         
-        private readonly AzureTableStorage<GameBetEntity> _betstorage;
+        private readonly INoSQLTableStorage<GameBetEntity> _betstorage;
 
-        public GameRepository(AzureTableStorage<GameBetEntity> betstorage)
+        public GameRepository(INoSQLTableStorage<GameBetEntity> betstorage)
         {
             _betstorage = betstorage;
         }

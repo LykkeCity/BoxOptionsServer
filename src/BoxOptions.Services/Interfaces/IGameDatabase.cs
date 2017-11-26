@@ -1,4 +1,5 @@
-﻿using BoxOptions.Services.Models;
+﻿using BoxOptions.Core.Models;
+using BoxOptions.Services.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -15,5 +16,8 @@ namespace BoxOptions.Services.Interfaces
         
         Task SaveUserHistory( UserHistory history);
         Task<IEnumerable<UserHistory>> LoadUserHistory(string userId, DateTime dateFrom, DateTime dateTo);
+
+        Task<IEnumerable<string>> GetUsers();
+        Task<IEnumerable<GameBetItem>> GetGameBetsByUser(string userId, DateTime dateFrom, DateTime dateTo);
     }
 }

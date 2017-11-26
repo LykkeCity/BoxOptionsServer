@@ -1,6 +1,7 @@
 ﻿using Autofac;
-using BoxOptions.Common;
 using BoxOptions.Common.Interfaces;
+using BoxOptions.Common.RabbitMq;
+using BoxOptions.Common.Settings;
 using BoxOptions.Core;
 using BoxOptions.Core.Models;
 using Common.Log;
@@ -21,7 +22,7 @@ namespace BoxOptions.Services
         /// <summary>
         /// Settings Object
         /// </summary>
-        private readonly BoxOptionsSettings _settings;
+        private readonly BoxOptionsApiSettings _settings;
         /// <summary>
         /// Incoming Asset Cache
         /// </summary>
@@ -69,7 +70,7 @@ namespace BoxOptions.Services
         /// </summary>
         public event EventHandler<InstrumentPrice> MessageReceived;
 
-        public AssetQuoteSubscriber(BoxOptionsSettings settings, ILog log, IAssetDatabase history, IBoxConfigRepository boxRepo)
+        public AssetQuoteSubscriber(BoxOptionsApiSettings settings, ILog log, IAssetDatabase history, IBoxConfigRepository boxRepo)
         {
             _isDisposing = false;
             _primaryStreamLastMessageTimeStamp = _secondaryStreamLastMessageTimeStamp = DateTime.UtcNow;
@@ -81,9 +82,9 @@ namespace BoxOptions.Services
             _lastPrices = new Dictionary<string, InstrumentPrice>();
             _checkConnectionTimer = new System.Threading.Timer(CheckConnectionTimerCallback, null, -1, -1);
 
-            _primaryGameInstruments = settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets.ToList();
-            if (settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed != null)
-                _secondaryGameInstruments = settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets.ToList();
+            _primaryGameInstruments = settings.PricesSettingsBoxOptions.PrimaryFeed.AllowedAssets.ToList();
+            if (settings.PricesSettingsBoxOptions.SecondaryFeed != null)
+                _secondaryGameInstruments = settings.PricesSettingsBoxOptions.SecondaryFeed.AllowedAssets.ToList();
         }
 
         public async void Start()
@@ -93,22 +94,22 @@ namespace BoxOptions.Services
             _assetConfiguration = boxes.ToArray();
 
             // Start Primary Subscriber. Uses BestBidAsk Model
-            _primarySubscriber = CreateBestBidSubscriber(_settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed,
+            _primarySubscriber = CreateSubscriber<BestBidAsk>(_settings.PricesSettingsBoxOptions.PrimaryFeed,
                 PrimaryMessageReceived_BestBidAsk);
 
-            LogInfo("Start", $"AssetQuoteSubscriber Primary Feed [{_settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.RabbitMqConnectionString}]");
-            if (_settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed != null)
+            LogInfo("Start", $"AssetQuoteSubscriber Primary Feed [{_settings.PricesSettingsBoxOptions.PrimaryFeed.RabbitMqConnectionString}]");
+            if (_settings.PricesSettingsBoxOptions.SecondaryFeed != null)
             {
                 // Start Secondary Subscriber. Uses Asset quote model
-                _secondarySubscriber = CreateAssetSubscriber(
-                    _settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed,
+                _secondarySubscriber = CreateSubscriber<AssetQuote>(
+                    _settings.PricesSettingsBoxOptions.SecondaryFeed,
                     SecondaryMessageReceived_AssetQuote);
                 if (_secondarySubscriber != null)
-                    LogInfo("Start", $"AssetQuoteSubscriber Secondary Feed [{_settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.RabbitMqConnectionString}]");
+                    LogInfo("Start", $"AssetQuoteSubscriber Secondary Feed [{_settings.PricesSettingsBoxOptions.SecondaryFeed.RabbitMqConnectionString}]");
             }
 
             // Start Timer to check incoming dataconnection (checks every 30 seconds)
-            int CheckInterval = _settings.BoxOptionsApi.PricesSettingsBoxOptions.NoFeedSlackReportInSeconds;
+            int CheckInterval = _settings.PricesSettingsBoxOptions.NoFeedSlackReportInSeconds;
             _checkConnectionTimer.Change(CheckInterval * 1000, -1);
         }
         public void Dispose()
@@ -165,8 +166,8 @@ namespace BoxOptions.Services
             }
         }
 
-        #region Create Subscribers
-        private RabbitMqSubscriber<AssetQuote> CreateAssetSubscriber(FeedSettings settings, Func<AssetQuote, Task> handler)
+        
+        private RabbitMqSubscriber<TMessage> CreateSubscriber<TMessage>(FeedSettings settings, Func<TMessage, Task> handler)
         {
             if (settings.RabbitMqConnectionString == null || settings.RabbitMqConnectionString == "" || settings.RabbitMqConnectionString == "null")
                 return null;
@@ -179,39 +180,16 @@ namespace BoxOptions.Services
                 IsDurable = false
             };
 
-            RabbitMqSubscriber<AssetQuote> subscriber = new RabbitMqSubscriber<AssetQuote>(subscriptionSettings,
+            var subscriber = new RabbitMqSubscriber<TMessage>(subscriptionSettings,
                 new DefaultErrorHandlingStrategy(_logger, subscriptionSettings))
-                .SetMessageDeserializer(new MessageDeserializer<AssetQuote>())
+                .SetMessageDeserializer(new ErrorLoggingJsonMessageDeserializer<TMessage>(_logger))
                 .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy())
                 .SetLogger(_logger)
                 .Subscribe(handler)
                 .Start();
 
             return subscriber;
-        }
-        private RabbitMqSubscriber<BestBidAsk> CreateBestBidSubscriber(FeedSettings settings, Func<BestBidAsk, Task> handler)
-        {
-            if (settings.RabbitMqConnectionString == null || settings.RabbitMqConnectionString == "" || settings.RabbitMqConnectionString == "null")
-                return null;
-            var subscriptionSettings = new RabbitMqSubscriptionSettings
-            {
-                ConnectionString = settings.RabbitMqConnectionString,
-                ExchangeName = settings.RabbitMqExchangeName,
-                QueueName = settings.RabbitMqQueueName,
-                IsDurable = false
-            };
-
-            var subscriber = new RabbitMqSubscriber<BestBidAsk>(subscriptionSettings,
-                 new DefaultErrorHandlingStrategy(_logger, subscriptionSettings))
-              .SetMessageDeserializer(new MessageDeserializer<BestBidAsk>())
-              .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy())
-              .SetLogger(_logger)
-              .Subscribe(handler)
-              .Start();
-
-            return subscriber;
-        }
-        #endregion
+        }        
 
         #region Process Subscriber Incoming Message
         private Task PrimaryMessageReceived_BestBidAsk(BestBidAsk bestBidAsk)
@@ -268,15 +246,15 @@ namespace BoxOptions.Services
                 // Discard it
                 return Task.FromResult(0);
             }
-
-            // TODO: clear date override
+            
             InstrumentPrice assetbid = new InstrumentPrice()
             {
                 Instrument = bestBidAsk.Asset,
                 Source = bestBidAsk.Source,
                 Ask = bestBidAsk.BestAsk.Value,
                 Bid = bestBidAsk.BestBid.Value,
-                Date = DateTime.UtcNow
+                Date = bestBidAsk.Timestamp,
+                ReceiveDate = bestBidAsk.ReceiveDate
             };
 
             OnMessageReceived(assetbid);
@@ -309,7 +287,8 @@ namespace BoxOptions.Services
                     Source = "AssetQuote",
                     Date = assetQuote.Timestamp,
                     Ask = assetQuote.IsBuy == Statics.ASK ? assetQuote.Price : 0,
-                    Bid = assetQuote.IsBuy == Statics.ASK ? 0 : assetQuote.Price
+                    Bid = assetQuote.IsBuy == Statics.ASK ? 0 : assetQuote.Price,
+                    ReceiveDate = DateTime.UtcNow
                 };
                 _assetCache.Add(assetbid);
             }
@@ -322,11 +301,7 @@ namespace BoxOptions.Services
                 else
                     assetbid.Bid = assetQuote.Price;
             }
-
-            // TODO: clear date override
-            // override asset bid with server UTC date.now
-            assetbid.Date = DateTime.UtcNow;
-
+            
             // Only publish if bid and ask prices have changed since last publish
             bool publish = false;
             if (!_lastPrices.ContainsKey(assetbid.Instrument))
@@ -387,7 +362,8 @@ namespace BoxOptions.Services
                     BestAsk = bestBidAsk.Ask,
                     BestBid = bestBidAsk.Bid,
                     Source = bestBidAsk.Source,
-                    Timestamp = bestBidAsk.Date
+                    Timestamp = bestBidAsk.Date,
+                    ReceiveDate = DateTime.UtcNow
                 });
             }
 
@@ -410,12 +386,12 @@ namespace BoxOptions.Services
                 double PrimaryStreamLastMessage = (currentdate - _primaryStreamLastMessageTimeStamp).TotalSeconds;
 
                 // Last message receive longer than allowed in IncomingDataCheckInterval
-                if (PrimaryStreamLastMessage > _settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.IncomingDataCheckInterval)
+                if (PrimaryStreamLastMessage > _settings.PricesSettingsBoxOptions.PrimaryFeed.IncomingDataCheckInterval)
                 {
                     //Check if current date is in exclusion interval (feeds are not available)
                     bool InExclusionInterval = CheckExclusionInterval(currentdate,
-                        _settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.PricesWeekExclusionStart,
-                        _settings.BoxOptionsApi.PricesSettingsBoxOptions.PrimaryFeed.PricesWeekExclusionEnd);
+                        _settings.PricesSettingsBoxOptions.PrimaryFeed.PricesWeekExclusionStart,
+                        _settings.PricesSettingsBoxOptions.PrimaryFeed.PricesWeekExclusionEnd);
                     if (!InExclusionInterval)
                     {
                         // Not in exclusion interval, report error.                                            
@@ -432,12 +408,12 @@ namespace BoxOptions.Services
                 double SecondaryStreamLastMessage = (currentdate - _secondaryStreamLastMessageTimeStamp).TotalSeconds;
 
                 // Last message receive longer than allowed in IncomingDataCheckInterval
-                if (SecondaryStreamLastMessage > _settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.IncomingDataCheckInterval)
+                if (SecondaryStreamLastMessage > _settings.PricesSettingsBoxOptions.SecondaryFeed.IncomingDataCheckInterval)
                 {
                     //Check if current date is in exclusion interval (feeds are not available)
                     bool InExclusionInterval = CheckExclusionInterval(currentdate,
-                        _settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.PricesWeekExclusionStart,
-                        _settings.BoxOptionsApi.PricesSettingsBoxOptions.SecondaryFeed.PricesWeekExclusionEnd);
+                        _settings.PricesSettingsBoxOptions.SecondaryFeed.PricesWeekExclusionStart,
+                        _settings.PricesSettingsBoxOptions.SecondaryFeed.PricesWeekExclusionEnd);
                     if (!InExclusionInterval)
                     {
                         // Not in exclusion interval, report error.                                                                    
@@ -449,7 +425,7 @@ namespace BoxOptions.Services
 
             // Re-start timer if not disposing.
             if (!_isDisposing)
-                _checkConnectionTimer.Change(_settings.BoxOptionsApi.PricesSettingsBoxOptions.NoFeedSlackReportInSeconds * 1000, -1);
+                _checkConnectionTimer.Change(_settings.PricesSettingsBoxOptions.NoFeedSlackReportInSeconds * 1000, -1);
 
         }
         private bool CheckExclusionInterval(DateTime utcNow, string WeekExclusionStart, string WeekExclusionEnd)

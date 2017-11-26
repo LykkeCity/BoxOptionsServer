@@ -38,6 +38,7 @@ namespace BoxOptions.Services
                                     {
                                         // Filter Date
                                         DateTime dt = DateTime.ParseExact(values[0], "yyyyMMdd_HHmmssff", Ci);
+                                        DateTime rdt = DateTime.ParseExact(values[5], "yyyyMMdd_HHmmssff", Ci);
                                         if (dt >= dateFrom && dt <= dateTo)
                                         {
                                             retval.AddLast(new BestBidAsk()
@@ -46,7 +47,8 @@ namespace BoxOptions.Services
                                                 Asset = values[1],
                                                 BestBid = double.Parse(values[2], Ci),
                                                 BestAsk = double.Parse(values[3], Ci),
-                                                Source = values[4]
+                                                Source = values[4],
+                                                ReceiveDate = rdt
                                             });
                                         }
                                     }
@@ -81,12 +83,13 @@ namespace BoxOptions.Services
                 {
                     foreach (var quote in buffer)
                     {
-                        string line = string.Format("{0}|{1}|{2}|{3}|{4}",
+                        string line = string.Format("{0}|{1}|{2}|{3}|{4}|{5}",
                             quote.Timestamp.ToString("yyyyMMdd_HHmmssff", Ci),
                             quote.Asset,
                             quote.BestBid.Value.ToString(Ci),
                             quote.BestAsk.Value.ToString(Ci),
-                            quote.Source
+                            quote.Source,
+                            quote.ReceiveDate.ToString("yyyyMMdd_HHmmssff", Ci)
                             );
                         textstream.WriteLine(line);
                     }

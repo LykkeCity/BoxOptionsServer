@@ -51,9 +51,9 @@ namespace BoxOptions.AzureRepositories
 
     public class LogRepository : ILogRepository
     {
-        private readonly AzureTableStorage<LogEntity> _storage;
+        private readonly INoSQLTableStorage<LogEntity> _storage;
 
-        public LogRepository(AzureTableStorage<LogEntity> storage)
+        public LogRepository(INoSQLTableStorage<LogEntity> storage)
         {
             _storage = storage;
         }

@@ -1,5 +1,6 @@
 ﻿using Autofac;
 using BoxOptions.Common.Interfaces;
+using BoxOptions.Common.Settings;
 using BoxOptions.Core;
 using BoxOptions.Core.Models;
 using BoxOptions.Services.Interfaces;
@@ -12,11 +13,11 @@ namespace BoxOptions.Services
 {
     public class HistoryHolder : IHistoryHolder,IStartable, IDisposable
     {
-        private readonly Dictionary<string, LinkedList<Price>> holder;
-        private readonly IAssetQuoteSubscriber subscriber;
-        private readonly IAssetRepository assetRepo;
-        private readonly IBoxConfigRepository boxRepo;
-        private readonly ILog appLog;
+        private readonly BoxOptionsApiSettings _settings;
+        private readonly Dictionary<string, LinkedList<Price>> _holder;
+        private readonly IAssetQuoteSubscriber _subscriber;
+        private readonly IAssetDatabase _assetDatabase;        
+        private readonly ILog _log;
 
         private string[] historyAssets;
 
@@ -24,68 +25,65 @@ namespace BoxOptions.Services
 
         bool isStarting;
 
-        public HistoryHolder(IAssetQuoteSubscriber subscriber, IAssetRepository assetRepo,IBoxConfigRepository boxRepo, ILog appLog)
+        public HistoryHolder(BoxOptionsApiSettings settings, IAssetQuoteSubscriber subscriber, IAssetDatabase assetDatabase, ILog appLog)
         {
-            this.assetRepo = assetRepo;
-            this.appLog = appLog;
-            this.subscriber = subscriber;
-            this.boxRepo = boxRepo;
-            holder = new Dictionary<string, LinkedList<Price>>();
+            _settings = settings;
+            _assetDatabase = assetDatabase;
+            _log = appLog;
+            _subscriber = subscriber;
+            _holder = new Dictionary<string, LinkedList<Price>>();
             isStarting = true;
-
         }
 
         public async void Start()
         {
-            await appLog?.WriteInfoAsync("BoxOptions.Services.HistoryHolder", "Start", null, "History Holder Started", DateTime.UtcNow);
+            Console.WriteLine("{0} > History Holder Starting", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+            await _log?.WriteInfoAsync("BoxOptions.Services.HistoryHolder", "Start", null, "History Holder Started", DateTime.UtcNow);
 
-            string StartLog = string.Format("{0} > Getting History", DateTime.UtcNow.ToString("HH:mm:ss.fff")); 
-            var boxCfg = await boxRepo.GetAll();
+            string StartLog = string.Format("{0} > Getting History", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
 
-            string logLine = string.Format("{0} > GetAssets Done", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
-            StartLog += "\n\r" + logLine;
-            //Console.WriteLine(logLine);
+            historyAssets = _settings.HistoryHolder.Assets;
 
-            historyAssets = boxCfg.Where(a => a.SaveHistory).Select(m => m.AssetPair).ToArray();
-            
             // Load 2 days history forach asset pair
             foreach (var asset in historyAssets)
             {
-                holder.Add(asset, new LinkedList<Price>());
+                _holder.Add(asset, new LinkedList<Price>());
 
-                // Ignore weekends
-                DateTime FirstDay = GetLastWeekDay(DateTime.UtcNow.Date);
-                DateTime SecondDay = GetLastWeekDay(FirstDay.AddDays(-1));
+                // Get FromDate Ignoring weekends
+                var historyStart = GetHistoryStartDate(DateTime.UtcNow);
+                                
+                StartLog += $"\n\r{DateTime.UtcNow.ToString("HH:mm:ss.fff")} > GetHistory({asset}>{historyStart.ToString("yyyy-MM-dd")})";
+                var tmp = await _assetDatabase.GetAssetHistory(historyStart, DateTime.UtcNow, asset);                
+                StartLog += $"\n\r{DateTime.UtcNow.ToString("HH:mm:ss.fff")} > GetHistory({asset}>{historyStart.ToString("yyyy-MM-dd")}) DONE";
 
-                logLine = string.Format("{0} > GetHistory({1}>{2}|{3})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), asset, SecondDay.ToString("yyyy-MM-dd"), FirstDay.ToString("yyyy-MM-dd"));
-                StartLog += "\n\r" + logLine;
-                //Console.WriteLine(logLine);
-
-                var tmp = await assetRepo.GetRange(SecondDay, FirstDay, asset);
-
-                logLine = string.Format("{0} > GetHistory({1}>{2}|{3}) DONE", DateTime.UtcNow.ToString("HH:mm:ss.fff"), asset, SecondDay.ToString("yyyy-MM-dd"), FirstDay.ToString("yyyy-MM-dd"));
-                //Console.WriteLine(logLine);
-                StartLog += "\n\r" + logLine;
-                
                 foreach (var historyItem in tmp)
                 {
-                    holder[asset].AddLast( new Price()
+                    _holder[asset].AddLast( new Price()
                     {
                         Ask = historyItem.BestAsk.Value,
                         Bid = historyItem.BestBid.Value,
                         Date = historyItem.Timestamp
                     } );
                 }
-
-                logLine = string.Format("{0} > Build Cache({1}>{2} items) DONE", DateTime.UtcNow.ToString("HH:mm:ss.fff"), asset, holder[asset].Count);
-                //Console.WriteLine(logLine);
-                StartLog += "\n\r" + logLine;
-            }            
-            await appLog?.WriteInfoAsync("BoxOptions.Services.HistoryHolder", "Start", null, StartLog, DateTime.UtcNow);
+                StartLog += $"\n\r{DateTime.UtcNow.ToString("HH:mm:ss.fff")} > Build Cache({asset}>{_holder[asset].Count} items) DONE";
+            }
+            Console.WriteLine(StartLog);
+            await _log?.WriteInfoAsync("BoxOptions.Services.HistoryHolder", "Start", null, StartLog, DateTime.UtcNow);
 
             // Start subscribing prices
-            subscriber.MessageReceived += Subscriber_MessageReceived;
+            _subscriber.MessageReceived += Subscriber_MessageReceived;
             isStarting = false;
+        }
+
+        private DateTime GetHistoryStartDate(DateTime historyEnd)
+        {
+            var currentDay = GetLastWeekDay(historyEnd);
+            for (int i = 0; i < _settings.HistoryHolder.NumberOfDaysInCache-1; i++)
+            {
+                var nextDay = GetLastWeekDay(currentDay.AddDays(-1));
+                currentDay = nextDay;
+            }
+            return currentDay.Date;
         }
 
         private DateTime GetLastWeekDay(DateTime date)
@@ -103,22 +101,20 @@ namespace BoxOptions.Services
             if (!historyAssets.Contains(e.Instrument))
                 return;
 
-            if (!holder.ContainsKey(e.Instrument))
-                holder.Add(e.Instrument, new LinkedList<Price>());
+            if (!_holder.ContainsKey(e.Instrument))
+                _holder.Add(e.Instrument, new LinkedList<Price>());
 
-            holder[e.Instrument].AddLast(new Price()
+            _holder[e.Instrument].AddLast(new Price()
             {
                 Ask = e.Ask,
                 Bid = e.Bid,
                 Date = e.Date
             });
 
-            DateTime FirstDay = GetLastWeekDay(DateTime.UtcNow.Date);
-            DateTime SecondDay = GetLastWeekDay(FirstDay.AddDays(-1));
+            DateTime HistoryStart = GetHistoryStartDate(DateTime.UtcNow);
 
-
-            if (holder[e.Instrument].First.Value.Date < SecondDay)
-                holder[e.Instrument].RemoveFirst();
+            if (_holder[e.Instrument].First.Value.Date < HistoryStart)
+                _holder[e.Instrument].RemoveFirst();
 
 
         }
@@ -130,17 +126,17 @@ namespace BoxOptions.Services
                 return new LinkedList<Price>();
 
             // Asset not in history
-            if (!holder.ContainsKey(asset))
+            if (!_holder.ContainsKey(asset))
                 return new LinkedList<Price>();
             else
-                return holder[asset];
+                return _holder[asset];
 
         }
 
         public void Dispose()
         {
-            subscriber.MessageReceived -= Subscriber_MessageReceived;
-            holder.Clear();
+            _subscriber.MessageReceived -= Subscriber_MessageReceived;
+            _holder.Clear();
         }
 
         

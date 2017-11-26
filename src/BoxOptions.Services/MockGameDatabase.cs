@@ -4,11 +4,22 @@ using System.Collections.Generic;
 using System.Text;
 using BoxOptions.Services.Models;
 using System.Threading.Tasks;
+using BoxOptions.Core.Models;
 
 namespace BoxOptions.Services
 {
     public class MockGameDatabase : IGameDatabase
     {
+        public Task<IEnumerable<GameBetItem>> GetGameBetsByUser(string userId, DateTime dateFrom, DateTime dateTo)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<string>> GetUsers()
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<IEnumerable<GameBet>> LoadGameBets(string userId, DateTime dateFrom, DateTime dateTo,int status)
         {
             throw new NotImplementedException();

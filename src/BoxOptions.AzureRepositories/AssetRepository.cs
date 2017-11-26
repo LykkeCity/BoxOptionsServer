@@ -17,18 +17,20 @@ namespace BoxOptions.AzureRepositories
         public string Asset { get; set; }
         public double? BestAsk { get; set; }
         public double? BestBid { get; set; }
-        public string Source { get; set; }
+        public string Source { get; set; }                        
+        public DateTime ReceiveDate { get; set; }
+        public DateTime BidDate { get; set; }
 
-        DateTime IBestBidAsk.Timestamp { get; }
+        DateTime IBestBidAsk.Timestamp => BidDate;
 
         public static string GetPartitionKey(IBestBidAsk src)
         {
-            string key = string.Format("{0}_{1}", src.Asset, src.Timestamp.ToString("yyyyMMdd_HH"));
+            string key = string.Format("{0}_{1}", src.Asset, src.ReceiveDate.ToString("yyyyMMdd_HH"));
             return key;
         }
         public static string GetRowKey(IBestBidAsk src)
         {
-            string key = src.Timestamp.Ticks.ToString();
+            string key = src.ReceiveDate.Ticks.ToString();
             return key;
         }
 
@@ -41,8 +43,9 @@ namespace BoxOptions.AzureRepositories
                 Asset = src.Asset,
                 BestAsk = src.BestAsk,
                 BestBid = src.BestBid,
-                Timestamp = src.Timestamp,
-                Source = src.Source
+                BidDate = src.Timestamp,
+                Source = src.Source,
+                ReceiveDate = src.ReceiveDate
             };
         }
         
@@ -53,8 +56,9 @@ namespace BoxOptions.AzureRepositories
             {
                 Asset = src.Asset,
                 BestAsk = src.BestAsk,
-                BestBid = src.BestBid,
-                Timestamp = new DateTime(ticks, DateTimeKind.Utc),
+                BestBid = src.BestBid,                
+                Timestamp = src.BidDate,
+                ReceiveDate = new DateTime(ticks, DateTimeKind.Utc),
                 Source = src.Source
             };
         }
@@ -63,9 +67,9 @@ namespace BoxOptions.AzureRepositories
     public class AssetRepository : IAssetRepository
     {
         const int maxbuffer = 100;
-        private readonly AzureTableStorage<BestBidAskEntity> _storage;
+        private readonly INoSQLTableStorage<BestBidAskEntity> _storage;
 
-        public AssetRepository(AzureTableStorage<BestBidAskEntity> storage)
+        public AssetRepository(INoSQLTableStorage<BestBidAskEntity> storage)
         {
             _storage = storage;
         }

@@ -43,9 +43,7 @@ namespace BoxOptions.Public.Processors
             {
                 List<BestBidAsk> buffer = assetCache[bidask.Asset].ToList();
                 assetCache[bidask.Asset].Clear();
-#if !DEBUG
                 InsertInAzure(buffer);
-#endif
             }
         }
 
@@ -65,7 +63,7 @@ namespace BoxOptions.Public.Processors
         {
             var history = await assetRep.GetRange(dateFrom, dateTo, assetPair); ;
             var sorted = from h in history
-                            orderby h.Timestamp
+                            orderby h.ReceiveDate
                             select h;
             return new LinkedList<BestBidAsk>(sorted);
         }

@@ -9,6 +9,7 @@ using BoxOptions.Core.Models;
 using BoxOptions.Public.ViewModels;
 using System.Text;
 using BoxOptions.Services;
+using BoxOptions.Services.Interfaces;
 
 namespace BoxOptions.Public.Controllers
 {
@@ -16,15 +17,13 @@ namespace BoxOptions.Public.Controllers
     public class LogController : Controller
     {
         private readonly ILogRepository _logRepository;
-        private readonly IUserRepository userRepository;
-        private readonly IGameRepository gameRepository;
+        private readonly IGameDatabase _gameDatabase;        
         private static CultureInfo Ci = new CultureInfo("en-us");
 
-        public LogController(ILogRepository logRepository, IUserRepository userRepository, IGameRepository gameRepository)
+        public LogController(ILogRepository logRepository, IGameDatabase gameDatabase)
         {
             _logRepository = logRepository;
-            this.userRepository = userRepository;
-            this.gameRepository = gameRepository;
+            _gameDatabase = gameDatabase;
         }
 
         [HttpPost]
@@ -169,7 +168,7 @@ namespace BoxOptions.Public.Controllers
                     StartDate = DateTime.UtcNow.Date.AddDays(-30)
                 };
 
-                var entities = await userRepository.GetUsers();
+                var entities = await _gameDatabase.GetUsers();
                 model.ClientList = entities.Distinct().ToArray();
                 return View(model);
             }
@@ -188,7 +187,7 @@ namespace BoxOptions.Public.Controllers
                 {
                     if (model.GameHistory)
                     {
-                        var entities = await gameRepository .GetGameBetsByUser(model.Client, model.StartDate, model.EndDate);
+                        var entities = await _gameDatabase.GetGameBetsByUser(model.Client, model.StartDate, model.EndDate);
                         if (entities.Count() > 0)
                         {
                             StringBuilder sb = new StringBuilder();
@@ -206,14 +205,14 @@ namespace BoxOptions.Public.Controllers
                     }
                     else
                     {
-                        var entities = await userRepository.GetUserHistory(model.Client, model.StartDate, model.EndDate);
+                        var entities = await _gameDatabase.LoadUserHistory(model.Client, model.StartDate, model.EndDate);
                         if (entities.Count() > 0)
                         {
                             StringBuilder sb = new StringBuilder();
                             sb.AppendLine("Date;UserId;Status;Message");
                             foreach (var item in entities)
                             {
-                                sb.AppendLine($"{item.Date};{item.UserId};{item.Status}-{(GameStatus)int.Parse(item.Status)};{item.Message.Replace(';', '|')}");
+                                sb.AppendLine($"{item.Timestamp.ToString("u")};{item.UserId};{item.Status}-{(GameStatus)item.Status};{item.Message.Replace(';', '|')}");
                             }
                             return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", $"userHistory_{model.Client}.csv");
                         }

@@ -1,5 +1,6 @@
 ﻿using BoxOptions.Common;
 using BoxOptions.Common.Interfaces;
+using BoxOptions.Common.Settings;
 using Flurl;
 using Flurl.Http;
 using System;
@@ -15,13 +16,13 @@ namespace BoxOptions.Public.Processors
         /// <summary>
         /// Settings Object
         /// </summary>
-        private readonly BoxOptionsSettings settings;
+        private readonly BoxOptionsApiSettings settings;
 
         /// <summary>
         /// Default constructor with ref to <see cref="BoxOptionsSettings"/>
         /// </summary>
         /// <param name="settings"></param>
-        public ProxyCoefficientCalculator(BoxOptionsSettings settings)
+        public ProxyCoefficientCalculator(BoxOptionsApiSettings settings)
         {
             this.settings = settings;
         }
@@ -39,7 +40,7 @@ namespace BoxOptions.Public.Processors
         public async Task<string> ChangeAsync(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
         {
             //TODO: UserId??
-            string result = await $"{settings.BoxOptionsApi.CoefApiUrl}/change"
+            string result = await $"{settings.CoefApiUrl}/change"
                 .SetQueryParams(new
                 {
                     pair,
@@ -65,7 +66,7 @@ namespace BoxOptions.Public.Processors
         public async Task<string> RequestAsync(string userId, string pair)
         {
             //TODO: UserId??            
-            string result = await $"{settings.BoxOptionsApi.CoefApiUrl}/request"
+            string result = await $"{settings.CoefApiUrl}/request"
                 .SetQueryParams(new { pair, userId })
                 .GetStringAsync();
             return result;

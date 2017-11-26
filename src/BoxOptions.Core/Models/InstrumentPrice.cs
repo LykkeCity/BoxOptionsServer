@@ -6,6 +6,7 @@ namespace BoxOptions.Core.Models
     {
         public string Instrument { get; set; }
         public string Source { get; set; }
+        public DateTime ReceiveDate { get; set; }
 
         public override Price ClonePrice()
         {
@@ -18,7 +19,8 @@ namespace BoxOptions.Core.Models
                     Source = this.Source,
                     Ask = res.Ask,
                     Bid = res.Bid,
-                    Date = res.Date
+                    Date = res.Date,
+                    ReceiveDate = DateTime.UtcNow
                 };
                 
                 return retval;

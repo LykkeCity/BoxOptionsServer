@@ -108,10 +108,10 @@ namespace BoxOptions.AzureRepositories
     
     public class UserRepository : IUserRepository
     {
-        private readonly AzureTableStorage<UserEntity> _storage;        
-        private readonly AzureTableStorage<UserHistoryEntity> _hstorage;
+        private readonly INoSQLTableStorage<UserEntity> _storage;        
+        private readonly INoSQLTableStorage<UserHistoryEntity> _hstorage;
 
-        public UserRepository(AzureTableStorage<UserEntity> storage, AzureTableStorage<UserHistoryEntity> hstorage)
+        public UserRepository(INoSQLTableStorage<UserEntity> storage, INoSQLTableStorage<UserHistoryEntity> hstorage)
         {
             _storage = storage;            
             _hstorage = hstorage;

@@ -1,5 +1,6 @@
 ﻿using BoxOptions.Common;
 using BoxOptions.Common.Interfaces;
+using BoxOptions.Common.Settings;
 using BoxOptions.Core;
 using BoxOptions.Core.Models;
 using Common.Log;
@@ -12,13 +13,13 @@ namespace BoxOptions.Public.Controllers
     [Route("api/[controller]")]
     public class CoefController : Controller
     {
-        private readonly BoxOptionsSettings _settings;
+        private readonly BoxOptionsApiSettings _settings;
         ICoefficientCalculator coefCalculator;
         private readonly ILogRepository logRepository;
         private readonly ILog log;
         private readonly IAssetDatabase history;
 
-        public CoefController(BoxOptionsSettings settings, IAssetDatabase history, ILogRepository logRepository, ILog log, ICoefficientCalculator coefCalculator)
+        public CoefController(BoxOptionsApiSettings settings, IAssetDatabase history, ILogRepository logRepository, ILog log, ICoefficientCalculator coefCalculator)
         {
             _settings = settings;
             this.logRepository = logRepository;

@@ -1,5 +1,6 @@
 ﻿using BoxOptions.Common;
 using BoxOptions.Common.Interfaces;
+using BoxOptions.Common.Settings;
 using BoxOptions.Core;
 using BoxOptions.Core.Models;
 using BoxOptions.Public.ViewModels;
@@ -16,13 +17,13 @@ namespace BoxOptions.Public.Controllers
     [Route("api/[controller]")]
     public class GameController : Controller
     {
-        private readonly BoxOptionsSettings _settings;
+        private readonly BoxOptionsApiSettings _settings;
         private readonly IGameManager gameManager;
         private readonly IAssetQuoteSubscriber assetQuoteSubscriber;
         private readonly ILog log;
         private readonly IBoxConfigRepository assetConfigRepo;
 
-        public GameController(BoxOptionsSettings settings, IGameManager gameManager, IAssetQuoteSubscriber assetQuoteSubscriber, ILog log, IBoxConfigRepository assetConfigRepo)
+        public GameController(BoxOptionsApiSettings settings, IGameManager gameManager, IAssetQuoteSubscriber assetQuoteSubscriber, ILog log, IBoxConfigRepository assetConfigRepo)
         {
             _settings = settings;
             this.gameManager = gameManager;
