@@ -1,7 +1,6 @@
 ﻿using Autofac;
 using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Settings;
-using BoxOptions.Core;
 using BoxOptions.Core.Models;
 using BoxOptions.Services.Interfaces;
 using Common.Log;
@@ -44,7 +43,7 @@ namespace BoxOptions.Services
 
             historyAssets = _settings.HistoryHolder.Assets;
 
-            // Load 2 days history forach asset pair
+            // Load history forach asset pair
             foreach (var asset in historyAssets)
             {
                 _holder.Add(asset, new LinkedList<Price>());

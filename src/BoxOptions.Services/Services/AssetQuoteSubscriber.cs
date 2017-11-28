@@ -108,7 +108,7 @@ namespace BoxOptions.Services
                     LogInfo("Start", $"AssetQuoteSubscriber Secondary Feed [{_settings.PricesSettingsBoxOptions.SecondaryFeed.RabbitMqConnectionString}]");
             }
 
-            // Start Timer to check incoming dataconnection (checks every 30 seconds)
+            // Start Timer to check incoming dataconnection
             int CheckInterval = _settings.PricesSettingsBoxOptions.NoFeedSlackReportInSeconds;
             _checkConnectionTimer.Change(CheckInterval * 1000, -1);
         }
@@ -254,7 +254,7 @@ namespace BoxOptions.Services
                 Ask = bestBidAsk.BestAsk.Value,
                 Bid = bestBidAsk.BestBid.Value,
                 Date = bestBidAsk.Timestamp,
-                ReceiveDate = bestBidAsk.ReceiveDate
+                ReceiveDate = DateTime.UtcNow
             };
 
             OnMessageReceived(assetbid);
@@ -375,7 +375,9 @@ namespace BoxOptions.Services
         private void CheckConnectionTimerCallback(object status)
         {
             DateTime currentdate = DateTime.UtcNow;
-
+#if DEBUG
+            Console.WriteLine("{0} > CheckConnectionTimerCallback", currentdate.ToString("HH:mm:ss.fff"));
+#endif
             // Stop Timer
             _checkConnectionTimer.Change(-1, -1);
 
@@ -394,8 +396,10 @@ namespace BoxOptions.Services
                         _settings.PricesSettingsBoxOptions.PrimaryFeed.PricesWeekExclusionEnd);
                     if (!InExclusionInterval)
                     {
-                        // Not in exclusion interval, report error.                                            
-                        LogWarning("CheckConnectionTimerCallback", string.Format("No Messages from Primary Feed for {0}", currentdate - _primaryStreamLastMessageTimeStamp));
+                        // Not in exclusion interval, report error.        
+                        string msg = string.Format("No Messages from Primary Feed for {0}", currentdate - _primaryStreamLastMessageTimeStamp);
+                        Console.WriteLine("{0} > {1}", currentdate.ToString("HH:mm:ss.fff"), msg);
+                        LogWarning("CheckConnectionTimerCallback", msg);
                     }
                 }
             }
@@ -417,7 +421,9 @@ namespace BoxOptions.Services
                     if (!InExclusionInterval)
                     {
                         // Not in exclusion interval, report error.                                                                    
-                        LogWarning("CheckConnectionTimerCallback", string.Format("No Messages from Secondary Feed for {0}", currentdate - _primaryStreamLastMessageTimeStamp));
+                        string msg = string.Format("No Messages from Secondary Feed for {0}", currentdate - _secondaryStreamLastMessageTimeStamp);
+                        Console.WriteLine("{0} > {1}", currentdate.ToString("HH:mm:ss.fff"), msg);
+                        LogWarning("CheckConnectionTimerCallback", msg);
                     }
                 }
             }

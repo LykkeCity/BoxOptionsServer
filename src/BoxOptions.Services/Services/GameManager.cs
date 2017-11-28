@@ -326,7 +326,7 @@ namespace BoxOptions.Services
         {
             try
             {
-                Console.WriteLine("{0} > LoadCoefficientCache", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+                //Console.WriteLine("{0} > LoadCoefficientCache", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                 string[] assets = dbBoxConfig.Where(a => a.GameAllowed).Select(b => b.AssetPair).ToArray();
                 Dictionary<string, string> temp = await CoeffCalculatorRequestBatch(GameManagerId, assets);
 
@@ -336,7 +336,11 @@ namespace BoxOptions.Services
                         CoefficientCache = temp;
                     }
             }
-            catch (Exception ex) { LogError("LoadCoefficientCache", ex.InnerException == null ? ex : ex.InnerException); }
+            catch (Exception ex)
+            {
+                Console.WriteLine("{0} > LoadCoefficientCache Error: {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), ex.Message);
+                LogError("LoadCoefficientCache", ex.InnerException ?? ex);
+            }
         }
 
         private string GetCoefficients(string assetPair)
