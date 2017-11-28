@@ -3,11 +3,12 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <AssemblyName>BoxOptions.Common</AssemblyName>
-    <PackageId>BoxOptions.Common</PackageId>
+    <PackageId>Lykke.BoxOptions.Common</PackageId>
     <RuntimeFrameworkVersion>2.0</RuntimeFrameworkVersion>    
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <Authors>Nuno Araujo</Authors>
   </PropertyGroup>
 
   <ItemGroup>

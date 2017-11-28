@@ -17,9 +17,7 @@ namespace BoxOptions.CoefficientCalculator
 
         // TODO: configuration
         //private int numDaysHistory;
-
-        private HistoryHolder historyHolder;
-
+        
         private List<InstrumentPrice> lastPricesCache;
 
 
@@ -111,6 +109,31 @@ namespace BoxOptions.CoefficientCalculator
                 //TODO: Log Error
                 throw;
             }
+        }
+
+        public Task<string> ChangeAsync(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool ValidateRequest(string userId, string pair)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool ValidateRequestResult(string result, out string errorMessage)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool ValidateChange(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool ValidateChangeResult(string result, out string errorMessage)
+        {
+            throw new NotImplementedException();
         }
     }
 }
