@@ -50,8 +50,10 @@ namespace BoxOptions.Public.Processors
         private async void InsertInAzure(List<BestBidAsk> buffer)
         {            
             try
-            {  
+            {
+#if !DEBUG
                 await assetRep.InsertManyAsync(buffer);             
+#endif
             }
             catch (Exception ex)
             {
@@ -61,7 +63,7 @@ namespace BoxOptions.Public.Processors
               
         public async Task<LinkedList<BestBidAsk>> GetAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair)
         {
-            var history = await assetRep.GetRange(dateFrom, dateTo, assetPair); ;
+            var history = await assetRep.GetRange(dateFrom, dateTo, assetPair);
             var sorted = from h in history
                             orderby h.ReceiveDate
                             select h;

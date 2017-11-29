@@ -52,13 +52,14 @@ namespace BoxOptions.AzureRepositories
         public static BestBidAsk CreateBestBidAsk(BestBidAskEntity src)
         {
             long ticks = long.Parse(src.RowKey);
+            DateTime rdate = new DateTime(ticks, DateTimeKind.Utc);
             return new BestBidAsk
             {
                 Asset = src.Asset,
                 BestAsk = src.BestAsk,
-                BestBid = src.BestBid,                
-                Timestamp = src.BidDate,
-                ReceiveDate = new DateTime(ticks, DateTimeKind.Utc),
+                BestBid = src.BestBid,
+                Timestamp = src.BidDate != DateTime.MinValue ? src.BidDate : rdate,
+                ReceiveDate = rdate,
                 Source = src.Source
             };
         }
