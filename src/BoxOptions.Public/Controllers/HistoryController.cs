@@ -1,6 +1,5 @@
-﻿using BoxOptions.Common;
-using BoxOptions.Common.Interfaces;
-using BoxOptions.Core.Models;
+﻿using BoxOptions.Common.Interfaces;
+using BoxOptions.Common.Models;
 using Common.Log;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -15,12 +14,12 @@ namespace BoxOptions.Public.Controllers
     public class HistoryController: Controller
     {
         private readonly IAssetDatabase history;
-        private readonly Services.Interfaces.IHistoryHolder histHolder;
+        private readonly IHistoryHolder histHolder;
         private readonly ILog appLog;
         
 
 
-        public HistoryController(IAssetDatabase history, Services.Interfaces.IHistoryHolder histHolder, ILog appLog)
+        public HistoryController(IAssetDatabase history, IHistoryHolder histHolder, ILog appLog)
         {
             this.history = history;
             this.appLog = appLog;

@@ -2,6 +2,7 @@
 using Autofac.Extensions.DependencyInjection;
 using BoxOptions.Common;
 using BoxOptions.Common.Extensions;
+using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Services;
 using BoxOptions.Common.Settings;
 using BoxOptions.Public.Exceptions;

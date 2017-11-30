@@ -54,7 +54,7 @@ namespace BoxOptions.Public.Modules
 
             // History Holder
             builder.RegisterType<HistoryHolder>()
-              .As<Services.Interfaces.IHistoryHolder>()
+              .As<IHistoryHolder>()
               .As<IStartable>()
               .SingleInstance();
 
@@ -86,7 +86,7 @@ namespace BoxOptions.Public.Modules
                        
             // Game Manager Interface
             builder.RegisterType<GameManager>()
-              .As<Services.Interfaces.IGameManager>()
+              .As<IGameManager>()
               .SingleInstance();
         }
     }

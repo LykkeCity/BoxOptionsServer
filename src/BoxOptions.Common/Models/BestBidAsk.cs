@@ -1,8 +1,9 @@
-﻿using System;
+﻿using BoxOptions.Core.Interfaces;
+using System;
 
-namespace BoxOptions.Core.Models
+namespace BoxOptions.Common.Models
 {
-    public class BestBidAsk : Interfaces.IBestBidAsk
+    public class BestBidAsk : IBestBidAsk
     {
         public string Source { get; set; }
         public string Asset { get; set; }        

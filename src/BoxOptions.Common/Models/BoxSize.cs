@@ -1,8 +1,8 @@
-﻿using System;
+﻿using BoxOptions.Core.Interfaces;
 
-namespace BoxOptions.Core.Models
+namespace BoxOptions.Common.Models
 {
-    public class BoxSize:Interfaces.IBoxSize
+    public class BoxSize:IBoxSize
     {
         /// <summary>
         /// Instrument

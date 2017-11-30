@@ -1,6 +1,7 @@
-﻿using System;
+﻿using BoxOptions.Core;
+using System;
 
-namespace BoxOptions.Core.Models
+namespace BoxOptions.Common.Models
 {
     public class Price
     {
@@ -29,8 +30,6 @@ namespace BoxOptions.Core.Models
             string ticks = Date.Ticks.ToString();
             string trimed = ticks.Substring(0, ticks.Length - 1) + "0";
             long trimmedTicks = long.Parse(trimed);
-
-
 
             return new Price()
             {

@@ -1,11 +1,12 @@
 ﻿using Autofac;
 using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Settings;
-using BoxOptions.Core.Models;
+using BoxOptions.Common.Models;
 using System;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using WampSharp.V2.Realm;
+using BoxOptions.Core.Interfaces;
 
 namespace BoxOptions.Services
 {
@@ -19,7 +20,7 @@ namespace BoxOptions.Services
         /// <summary>
         /// Wamp Subject Publisher
         /// </summary>
-        private readonly ISubject<InstrumentPrice> subject;
+        private readonly ISubject<IInstrumentPrice> subject;
         /// <summary>
         /// Asset Quote Subscriber
         /// </summary>
@@ -30,7 +31,7 @@ namespace BoxOptions.Services
         {
             this.settings = settings;            
             this.subscriber = subscriber;            
-            subject = realm.Services.GetSubject<InstrumentPrice>(this.settings.PricesSettingsBoxOptions.PricesTopicName);         
+            subject = realm.Services.GetSubject<IInstrumentPrice>(this.settings.PricesSettingsBoxOptions.PricesTopicName);         
         }
 
         /// <summary>
@@ -53,7 +54,7 @@ namespace BoxOptions.Services
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private async void Subscriber_MessageReceived(object sender, InstrumentPrice e)
+        private async void Subscriber_MessageReceived(object sender, IInstrumentPrice e)
         {
             await ProcessPrice(e);
         }
@@ -63,7 +64,7 @@ namespace BoxOptions.Services
         /// </summary>
         /// <param name="assetQuote"></param>
         /// <returns></returns>
-        private Task ProcessPrice(InstrumentPrice assetBid)
+        private Task ProcessPrice(IInstrumentPrice assetBid)
         {         
             // Parameter validation
             if (assetBid == null ||
@@ -84,7 +85,7 @@ namespace BoxOptions.Services
         /// </summary>
         /// <param name="instrumentBidAskPair"></param>
         /// <returns></returns>
-        private Task PublishInstrumentPair(InstrumentPrice instrumentBidAskPair)
+        private Task PublishInstrumentPair(IInstrumentPrice instrumentBidAskPair)
         {
             //string json = instrumentBidAskPair.ToJson();
             subject.OnNext(instrumentBidAskPair);

@@ -1,16 +1,14 @@
-﻿using BoxOptions.Services.Interfaces;
+﻿using BoxOptions.Common.Interfaces;
+using BoxOptions.Core.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Text;
-using BoxOptions.Services.Models;
 using System.Threading.Tasks;
-using BoxOptions.Core.Models;
 
 namespace BoxOptions.Services
 {
     public class MockGameDatabase : IGameDatabase
     {
-        public Task<IEnumerable<GameBetItem>> GetGameBetsByUser(string userId, DateTime dateFrom, DateTime dateTo)
+        public Task<IEnumerable<IGameBetItem>> GetGameBetsByUser(string userId, DateTime dateFrom, DateTime dateTo)
         {
             throw new NotImplementedException();
         }
@@ -20,37 +18,32 @@ namespace BoxOptions.Services
             throw new NotImplementedException();
         }
 
-        public Task<IEnumerable<GameBet>> LoadGameBets(string userId, DateTime dateFrom, DateTime dateTo,int status)
+        public Task<IEnumerable<IGameBetItem>> LoadGameBets(string userId, DateTime dateFrom, DateTime dateTo, int betState)
         {
             throw new NotImplementedException();
         }
 
-       
-        public Task<IEnumerable<UserHistory>> LoadUserHistory(string userId, DateTime dateFrom, DateTime dateTo)
+        public Task<IEnumerable<IUserHistoryItem>> LoadUserHistory(string userId, DateTime dateFrom, DateTime dateTo)
         {
             throw new NotImplementedException();
         }
 
-      
-
-        public Task<UserState> LoadUserState(string userId)
+        public Task<IUserItem> LoadUserState(string userId)
         {
             throw new NotImplementedException();
         }
 
-        public Task SaveGameBet(GameBet bet)
+        public Task SaveGameBet(IGameBetItem bet)
         {
-            return Task.FromResult(0);
+            throw new NotImplementedException();
         }
 
-        public Task SaveUserHistory(UserHistory history)
+        public Task SaveUserHistory(IUserHistoryItem history)
         {
-            return Task.FromResult(0);
+            throw new NotImplementedException();
         }
 
-    
-
-        public Task SaveUserState(UserState userState)
+        public Task SaveUserState(IUserItem userState)
         {
             throw new NotImplementedException();
         }

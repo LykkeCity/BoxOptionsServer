@@ -1,55 +1,27 @@
-﻿using BoxOptions.CoefficientCalculator.Daos;
-using BoxOptions.Common.Interfaces;
-using BoxOptions.Core.Models;
+﻿using BoxOptions.Common.Interfaces;
+using BoxOptions.Core.Interfaces;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace BoxOptions.CoefficientCalculator
 {
-    public class Calculator : ICoefficientCalculator
-    {
-        private bool initialized ;
-        private bool isDisposing ;
+    public class Calculator : ICoefficientCalculator, IDisposable
+    {   
         private bool isSubscriberRunning;
         private IAssetQuoteSubscriber quoteSubscriber;
         private IAssetDatabase historyRep;
 
-        // TODO: configuration
-        //private int numDaysHistory;
+        private bool isDisposing = false;
+
+        public Calculator(IAssetQuoteSubscriber quoteSubscriber, IHistoryHolder historyRep)
+        {
+            isSubscriberRunning = false;            
+        }
+
         
-        private List<InstrumentPrice> lastPricesCache;
-
-
-        public Calculator()
-        {
-            initialized = false;
-            isDisposing = false;
-            isSubscriberRunning = false;
-            //numDaysHistory = 7;
-
-            historyHolder = new HistoryHolder();
-            lastPricesCache = new List<InstrumentPrice>();
-        }
-
-        public void Init(IAssetQuoteSubscriber quoteSubscriber, IAssetDatabase historyRep)
-        {
-            this.quoteSubscriber = quoteSubscriber;
-            this.historyRep = historyRep;
-
-            // TODO: Load history to Holder()
-
-            //historyHolder.BuildHistory(historyRep.GetAssetHistory(DateTime.Today.AddDays(-numDaysHistory), DateTime.UtcNow));
-
-
-
-            initialized = true;
-        }
 
         public void StartSubscriber()
-        {
-            if (!initialized )
-                throw new InvalidOperationException("Calculator not initialized");
+        {   
             if (quoteSubscriber == null)
                 throw new InvalidOperationException("QuoteSubscriber not available");
                         
@@ -57,9 +29,7 @@ namespace BoxOptions.CoefficientCalculator
             isSubscriberRunning = true;
         }        
         public void StopSubscriber()
-        {
-            if (!initialized)
-                throw new InvalidOperationException("Calculator not initialized");
+        {   
             if (quoteSubscriber == null)
                 throw new InvalidOperationException("QuoteSubscriber not available");
 
@@ -83,25 +53,22 @@ namespace BoxOptions.CoefficientCalculator
             if (isDisposing)
                 return;
             isDisposing = true;
-            initialized = false;
-
+            
             if (isSubscriberRunning)
                 StopSubscriber();
             quoteSubscriber = null;
-
-
         }
 
-        private Task ProcessPrice(InstrumentPrice assetBid)
+        private Task ProcessPrice(IInstrumentPrice assetBid)
         {
             // Append price to History
-            historyHolder.AddPrice(assetBid.Instrument, new Price() { Date = assetBid.Date, Ask = assetBid.Ask, Bid = assetBid.Bid });
+            //historyHolder.AddPrice(assetBid.Instrument, new Price() { Date = assetBid.Date, Ask = assetBid.Ask, Bid = assetBid.Bid });
 
             return Task.FromResult(0);
         }
 
 
-        private async void QuoteSubscriber_MessageReceived(object sender, InstrumentPrice e)
+        private async void QuoteSubscriber_MessageReceived(object sender, IInstrumentPrice e)
         {
             try { await ProcessPrice(e); }
             catch

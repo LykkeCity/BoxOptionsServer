@@ -1,5 +1,5 @@
 ﻿using BoxOptions.Core;
-using BoxOptions.Core.Models;
+using BoxOptions.Common.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;

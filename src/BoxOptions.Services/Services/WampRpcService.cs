@@ -1,13 +1,12 @@
-﻿using BoxOptions.Core.Models;
-using BoxOptions.Services.Interfaces;
-using System.Collections.Generic;
-using System;
-using BoxOptions.Services.Models;
-using Common.Log;
+﻿using BoxOptions.Common.Interfaces;
+using BoxOptions.Common.Models;
 using BoxOptions.Core;
-using System.Threading.Tasks;
-using System.Globalization;
+using BoxOptions.Core.Interfaces;
+using BoxOptions.Services.Models;
 using Common;
+using Common.Log;
+using System;
+using System.Collections.Generic;
 
 namespace BoxOptions.Services
 {
@@ -404,19 +403,13 @@ namespace BoxOptions.Services
             }            
         }
 
-        public PlaceBetResult PlaceBet(string userId, string assetPair, string box, decimal betValue)
+        public IPlaceBetResult PlaceBet(string userId, string assetPair, string box, decimal betValue)
         {
             Console.WriteLine("{0} - PlaceBet", DateTime.Now.ToString("u"));
             try
             {
-                string msg = "OK";                
-                DateTime betdate = _gameManager.PlaceBet(userId, assetPair, box, betValue, out msg);
-                //DateTime betdate = DateTime.UtcNow;
-
-                
-
-
-                return new PlaceBetResult()
+                DateTime betdate = _gameManager.PlaceBet(userId, assetPair, box, betValue, out string msg);
+                return new PlaceBetResult
                 {
                     BetTimeStamp = betdate,
                     Status = msg
@@ -425,7 +418,7 @@ namespace BoxOptions.Services
             catch (Exception ex)
             {
                 LogError("PlaceBet", ex);                
-                return new PlaceBetResult()
+                return new PlaceBetResult
                 {
                     BetTimeStamp = DateTime.MinValue,
                     Status = ex.Message
@@ -481,7 +474,6 @@ namespace BoxOptions.Services
             try
             {                               
                 _gameManager.AddUserLog(userId, eventCode, message);
-
                 return "OK";
             }
             catch (Exception ex)
@@ -530,34 +522,5 @@ namespace BoxOptions.Services
                 //Console.WriteLine("Logged: {0}", innerEx.Message);
             }
         }
-
-
-
-        //public string GameStart(string userId, string assetPair)
-        //{
-        //    try
-        //    {
-        //        return _gameManager.GameStart(userId, assetPair);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        LogError(ex, "GameStart");
-        //        return ex.Message;
-        //    }
-        //}
-
-        //public string GameClose(string userId)
-        //{
-        //    try
-        //    {
-        //        _gameManager.GameClose(userId);
-        //        return "OK";
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        LogError(ex, "GameClose");
-        //        return ex.Message;
-        //    }
-        //}
     }
 }

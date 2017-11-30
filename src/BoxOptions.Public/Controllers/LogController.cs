@@ -1,15 +1,15 @@
-﻿using System;
-using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using BoxOptions.Common.Interfaces;
+using BoxOptions.Common.Models;
 using BoxOptions.Core;
 using BoxOptions.Public.Models;
-using Microsoft.AspNetCore.Mvc;
-using BoxOptions.Core.Models;
 using BoxOptions.Public.ViewModels;
-using System.Text;
 using BoxOptions.Services;
-using BoxOptions.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Globalization;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace BoxOptions.Public.Controllers
 {
@@ -55,6 +55,7 @@ namespace BoxOptions.Public.Controllers
                 double.TryParse(winvalue, NumberStyles.AllowDecimalPoint, Ci, out accountdelta);
             }
 
+
             await _logRepository.InsertAsync(new LogItem
             {
                 ClientId = model.ClientId,
@@ -77,7 +78,7 @@ namespace BoxOptions.Public.Controllers
                 ClientId = e.ClientId,
                 EventCode = e.EventCode,
                 Message = e.Message,
-                Timestamp = e.Timestamp
+                Timestamp = e.Date.ToString("u")
             }).ToArray();
         }
 
@@ -94,7 +95,7 @@ namespace BoxOptions.Public.Controllers
                 ClientId = e.ClientId,
                 EventCode = e.EventCode,
                 Message = e.Message,
-                Timestamp = e.Timestamp
+                Timestamp = e.Date.ToString("u")
             }).ToArray();
 
             return View(res);
@@ -138,7 +139,7 @@ namespace BoxOptions.Public.Controllers
                         sb.AppendLine($"Timestamp;ClientId;EventCode;Message");
                         foreach (var item in entities)
                         {
-                            sb.AppendLine($"{item.Timestamp};{item.ClientId};{item.EventCode}-{(GameStatus)int.Parse(item.EventCode)};{item.Message.Replace(';', '|')}");
+                            sb.AppendLine($"{item.Date.ToString("u")};{item.ClientId};{item.EventCode}-{(Common.GameStatus)int.Parse(item.EventCode)};{item.Message.Replace(';', '|')}");
                         }
                         return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", $"clientLogs_{model.Client}.csv");
                     }
@@ -212,7 +213,7 @@ namespace BoxOptions.Public.Controllers
                             sb.AppendLine("Date;UserId;Status;Message");
                             foreach (var item in entities)
                             {
-                                sb.AppendLine($"{item.Timestamp.ToString("u")};{item.UserId};{item.Status}-{(GameStatus)item.Status};{item.Message.Replace(';', '|')}");
+                                sb.AppendLine($"{item.Date.ToString("u")};{item.UserId};{item.GameStatus}-{(Common.GameStatus)item.GameStatus};{item.Message.Replace(';', '|')}");
                             }
                             return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", $"userHistory_{model.Client}.csv");
                         }

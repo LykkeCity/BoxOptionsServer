@@ -1,5 +1,6 @@
 ﻿using BoxOptions.Common.Interfaces;
-using BoxOptions.Core.Models;
+using BoxOptions.Common.Models;
+using BoxOptions.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -12,9 +13,9 @@ namespace BoxOptions.Services
         static object AssetFileAccessLock = new object();
         static object UserFileAccessLock = new object();
 
-        private Task<LinkedList<BestBidAsk>> LoadAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair)
+        private Task<LinkedList<IBestBidAsk>> LoadAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair)
         {
-            LinkedList<BestBidAsk> retval = new LinkedList<BestBidAsk>();
+            LinkedList<IBestBidAsk> retval = new LinkedList<IBestBidAsk>();
             try
             {
                 lock (AssetFileAccessLock)
@@ -66,7 +67,7 @@ namespace BoxOptions.Services
             return Task.FromResult(retval);
         }
 
-        private Task AddToAssetFile(BestBidAsk[] buffer)
+        private Task AddToAssetFile(IBestBidAsk[] buffer)
         {
             
             lock (AssetFileAccessLock)
@@ -99,19 +100,19 @@ namespace BoxOptions.Services
             return Task.FromResult(0);
         }
 
-        public Task<LinkedList<BestBidAsk>> GetAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair)
+        public Task<LinkedList<IBestBidAsk>> GetAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair)
         {
             return LoadAssetHistory(dateFrom, dateTo, assetPair);
         }
-        Queue<BestBidAsk> AssetQueue = new Queue<BestBidAsk>();
-        Task IAssetDatabase.AddToAssetHistory(BestBidAsk quote)
+        Queue<IBestBidAsk> AssetQueue = new Queue<IBestBidAsk>();
+        Task IAssetDatabase.AddToAssetHistory(IBestBidAsk quote)
         {            
             AssetQueue.Enqueue(quote);
             try
             {
                 if (AssetQueue.Count >= 512)
                 {
-                    BestBidAsk[] buffer = AssetQueue.ToArray();
+                    IBestBidAsk[] buffer = AssetQueue.ToArray();
                     AssetQueue.Clear();
                     AddToAssetFile(buffer);
                 }

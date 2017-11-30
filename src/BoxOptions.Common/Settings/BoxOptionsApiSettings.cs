@@ -6,6 +6,7 @@
         public PricesSettingsBoxOptions PricesSettingsBoxOptions { get; set; }
         public GameManagerSettings GameManager { get; set; } = new GameManagerSettings();
         public HistoryHolderSettings HistoryHolder { get; set; } = new HistoryHolderSettings();
+        public CoefficientCalculatorSettings CoefficientCalculator { get; set; }
         public string CoefApiUrl { get; set; }
     }
 }

@@ -1,8 +1,8 @@
 ﻿using Autofac;
-using BoxOptions.Common;
 using BoxOptions.Common.Interfaces;
+using BoxOptions.Common.Models;
 using BoxOptions.Common.Settings;
-using BoxOptions.Core.Models;
+using BoxOptions.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -59,7 +59,7 @@ namespace BoxOptions.Services
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private async void Subscriber_MessageReceived(object sender, InstrumentPrice e)
+        private async void Subscriber_MessageReceived(object sender, IInstrumentPrice e)
         {
             try { await ProcessPrice(e); }
             catch
@@ -74,7 +74,7 @@ namespace BoxOptions.Services
         /// </summary>
         /// <param name="assetQuote"></param>
         /// <returns></returns>
-        private Task ProcessPrice(InstrumentPrice assetBid)
+        private Task ProcessPrice(IInstrumentPrice assetBid)
         {            
             // Parameter validation
             if (assetBid == null ||

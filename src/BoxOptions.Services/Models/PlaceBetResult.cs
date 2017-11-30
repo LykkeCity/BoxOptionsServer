@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using BoxOptions.Core.Interfaces;
+using System;
 
 namespace BoxOptions.Services.Models
 {
-    public class PlaceBetResult
+    public class PlaceBetResult : IPlaceBetResult
     {        
         public DateTime BetTimeStamp { get; set; }
         public string Status { get; set; }

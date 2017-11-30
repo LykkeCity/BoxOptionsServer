@@ -1,4 +1,6 @@
-﻿namespace BoxOptions.Core.Interfaces
+﻿using System;
+
+namespace BoxOptions.Core.Interfaces
 {
     public interface ILogItem
     {
@@ -6,5 +8,7 @@
         string EventCode { get; }
         string Message { get; }
         double AccountDelta { get; }
+
+        DateTime Date { get; }
     }
 }

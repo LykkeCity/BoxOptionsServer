@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace BoxOptions.Core.Models
+namespace BoxOptions.Common.Models
 {
     public class AssetQuote
     {        

@@ -1,7 +1,7 @@
-﻿using BoxOptions.Core.Models;
+﻿using BoxOptions.Common.Models;
 using System.Collections.Generic;
 
-namespace BoxOptions.Services
+namespace BoxOptions.Common.Interfaces
 {
     /// <summary>
     /// Connects to the rabbitmq 

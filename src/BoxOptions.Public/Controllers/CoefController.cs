@@ -1,12 +1,8 @@
-﻿using BoxOptions.Common;
-using BoxOptions.Common.Interfaces;
+﻿using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Settings;
 using BoxOptions.Core;
-using BoxOptions.Core.Models;
 using Common.Log;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Threading.Tasks;
 
 namespace BoxOptions.Public.Controllers
 {

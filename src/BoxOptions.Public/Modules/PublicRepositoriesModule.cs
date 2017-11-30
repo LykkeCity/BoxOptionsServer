@@ -1,10 +1,10 @@
 ﻿using Autofac;
 using AzureStorage.Tables;
 using BoxOptions.AzureRepositories;
+using BoxOptions.AzureRepositories.Entities;
 using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Settings;
 using BoxOptions.Core;
-using BoxOptions.Services.Interfaces;
 using Common.Log;
 using Lykke.SettingsReader;
 

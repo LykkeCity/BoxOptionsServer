@@ -1,7 +1,7 @@
 ﻿using BoxOptions.Core.Interfaces;
 using System;
 
-namespace BoxOptions.Core.Models
+namespace BoxOptions.Common.Models
 {
     public class GameBetItem : IGameBetItem
     {

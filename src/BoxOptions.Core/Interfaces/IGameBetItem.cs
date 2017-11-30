@@ -6,11 +6,11 @@ namespace BoxOptions.Core.Interfaces
     {
         string UserId { get; }
         string BoxId { get; }
-        string AssetPair { get; }        
+        string AssetPair { get; }
         DateTime Date { get; }
         string Box { get; }
         string BetAmount { get; }
         string Parameters { get; }
         int BetStatus { get; }
-}
+    }
 }

@@ -1,14 +1,15 @@
-﻿using System;
+﻿using BoxOptions.Core.Interfaces;
+using System;
 
-namespace BoxOptions.Core.Models
+namespace BoxOptions.Common.Models
 {
-    public class InstrumentPrice:Price
+    public class InstrumentPrice : Price, IInstrumentPrice
     {
         public string Instrument { get; set; }
         public string Source { get; set; }
         public DateTime ReceiveDate { get; set; }
 
-        public override Price ClonePrice()
+        public new IInstrumentPrice ClonePrice()
         {
             try
             {

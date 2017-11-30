@@ -1,17 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading;
-using BoxOptions.Core;
+﻿using BoxOptions.Common.Interfaces;
+using BoxOptions.Common.Models;
+using BoxOptions.Core.Interfaces;
 using BoxOptions.Services;
+using BoxOptions.Services.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 using WampSharp.V2;
 using WampSharp.V2.Client;
-using System.Net;
-using System.IO;
-using BoxOptions.Core.Models;
-using Lykke.Common;
-using BoxOptions.Services.Models;
-using System.Threading.Tasks;
-using System.Linq;
 
 namespace BoxOptions.Client
 {
@@ -243,7 +243,7 @@ namespace BoxOptions.Client
                         string box = string.Format(CI, boxstring, GUID, coef);
                         coef += 0.02;
                         Console.WriteLine("{0} | {1} > Placing Bet", DateTime.UtcNow.ToString("HH:mm:ss.fff"), GUID);
-                        PlaceBetResult result = _service.PlaceBet(userId, "EURCHF", box, 1);
+                        IPlaceBetResult result = _service.PlaceBet(userId, "EURCHF", box, 1);
                         Console.WriteLine("{0} | {1} > Result = {2} ({3})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), GUID, result.BetTimeStamp.ToString("yyyy-MM-dd_HH:mm:ss.fff"), result.Status);
                         b.Result = result;
                         RunningBets.Add(b);
@@ -269,7 +269,7 @@ namespace BoxOptions.Client
         public class BetInfo
         {
             public string BetId { get; private set; }
-            public PlaceBetResult Result { get; set; }
+            public IPlaceBetResult Result { get; set; }
 
             public List<string> Events { get; set; }
 

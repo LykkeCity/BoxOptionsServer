@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BoxOptions.Common.Models;
+using System;
 
 namespace BoxOptions.CoefficientCalculator.Algo
 {
@@ -14,7 +15,7 @@ namespace BoxOptions.CoefficientCalculator.Algo
         private double maxPayoutCoeff;
         private double bookingFee;
 
-        public BoxPricing(long startTime, long endTime, double upperStrike, double lowerStrike, Core.Models.Price price, double marginHit, double marginMiss, double maxPayoutCoeff, double bookingFee)
+        public BoxPricing(long startTime, long endTime, double upperStrike, double lowerStrike, Price price, double marginHit, double marginMiss, double maxPayoutCoeff, double bookingFee)
         {
             if (startTime < endTime)
             {

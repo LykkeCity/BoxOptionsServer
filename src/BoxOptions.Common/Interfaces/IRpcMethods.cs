@@ -1,9 +1,9 @@
-﻿using BoxOptions.Core.Models;
-using System;
+﻿using BoxOptions.Common.Models;
+using BoxOptions.Core.Interfaces;
 using System.Collections.Generic;
 using WampSharp.V2.Rpc;
 
-namespace BoxOptions.Services
+namespace BoxOptions.Common.Interfaces
 {
     public interface IRpcMethods
     {
@@ -57,7 +57,7 @@ namespace BoxOptions.Services
         /// <param name="betValue">Bet Value</param>
         /// <returns>'OK' or error string</returns>
         [WampProcedure("game.placebet")]
-        Models.PlaceBetResult PlaceBet(string userId, string assetPair ,string box, decimal betValue);
+        IPlaceBetResult PlaceBet(string userId, string assetPair, string box, decimal betValue);
 
         /// <summary>
         /// Saves log to database
@@ -68,8 +68,8 @@ namespace BoxOptions.Services
         /// <returns></returns>
         [WampProcedure("game.savelog")]
         string SaveLog(string userId, string eventCode, string message);
-              
-       
+
+
         /// <summary>
         /// Coefficient Api Request Coefficients
         /// </summary>
@@ -78,7 +78,7 @@ namespace BoxOptions.Services
         /// <returns>Coefficient array(json) or error string</returns>
         [WampProcedure("coeffapi.requestcoeff")]
         string RequestCoeff(string userId, string pair);
-        
+
 
     }
 }

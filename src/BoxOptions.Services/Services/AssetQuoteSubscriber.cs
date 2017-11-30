@@ -1,9 +1,10 @@
 ﻿using Autofac;
 using BoxOptions.Common.Interfaces;
+using BoxOptions.Common.Models;
 using BoxOptions.Common.RabbitMq;
 using BoxOptions.Common.Settings;
 using BoxOptions.Core;
-using BoxOptions.Core.Models;
+using BoxOptions.Core.Interfaces;
 using Common.Log;
 using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Subscriber;
@@ -63,12 +64,12 @@ namespace BoxOptions.Services
 
         private DateTime _lastErrorDate = DateTime.MinValue;
         private string _lastErrorMessage = "";
-        private BoxSize[] _assetConfiguration;
+        private IBoxSize[] _assetConfiguration;
 
         /// <summary>
         /// Thrown when a new message is received from RabbitMQ Queue
         /// </summary>
-        public event EventHandler<InstrumentPrice> MessageReceived;
+        public event EventHandler<IInstrumentPrice> MessageReceived;
 
         public AssetQuoteSubscriber(BoxOptionsApiSettings settings, ILog log, IAssetDatabase history, IBoxConfigRepository boxRepo)
         {
@@ -343,12 +344,12 @@ namespace BoxOptions.Services
 
         private void OnMessageReceived(InstrumentPrice bestBidAsk)
         {
-            BoxSize assetCfg = null;
+            IBoxSize assetCfg = null;
 
             // Lock Asset Configuration
             lock (AssetConfigurationLock)
             {
-                assetCfg = _assetConfiguration.Where(a => a.AssetPair == bestBidAsk.Instrument).FirstOrDefault();
+                assetCfg = _assetConfiguration.FirstOrDefault(a => a.AssetPair == bestBidAsk.Instrument);
             }
             if (assetCfg == null)
                 return;

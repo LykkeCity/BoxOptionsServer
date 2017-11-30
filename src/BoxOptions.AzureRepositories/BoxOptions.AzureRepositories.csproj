@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BoxOptions.Common\BoxOptions.Common.csproj" />
     <ProjectReference Include="..\BoxOptions.Core\BoxOptions.Core.csproj" />
   </ItemGroup>
 

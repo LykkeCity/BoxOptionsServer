@@ -17,13 +17,5 @@ namespace BoxOptions.Services.Models
         public GameEventType EventTypeEnum { get => (GameEventType)eventType; }
         public string EventParameters { get => eventParameters; set => eventParameters = value; }
         public int EventType { get => eventType; set => eventType = value; }
-
-        //public string ToJson()
-        //{
-        //    string retval = JsonConvert.SerializeObject(this);
-        //    return retval;
-
-        //}
-
     }
 }

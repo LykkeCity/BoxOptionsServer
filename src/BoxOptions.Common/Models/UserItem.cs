@@ -1,8 +1,9 @@
-﻿using System;
+﻿using BoxOptions.Core.Interfaces;
+using System;
 
-namespace BoxOptions.Core.Models
+namespace BoxOptions.Common.Models
 {
-    public class UserItem : Interfaces.IUserItem
+    public class UserItem : IUserItem
     {
         public string UserId { get; set; }
         public string Balance { get; set; }
