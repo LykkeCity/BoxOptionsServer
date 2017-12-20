@@ -1,53 +1,52 @@
-﻿namespace BoxOptions.CoefficientCalculator.Algo
-{
-    public class BoxOption
-    {
-        private long startsInMS;
-        private long lenInMS;
-        private double relatUpStrike;
-        private double relatBotStrike;
-        private double hitCoeff;
-        private double missCoeff;
+﻿using Newtonsoft.Json;
 
-        public double RelatUpStrike { get => relatUpStrike; }
-        public double RelatBotStrike { get => relatBotStrike; }
-        public long StartsInMS { get => startsInMS; }
-        public long LenInMS { get => lenInMS; }
+namespace BoxOptions.CoefficientCalculator.Algo
+{
+    [JsonObject(MemberSerialization.OptIn)]
+    internal class BoxOption
+    {
+        // Transient (ScriptIgnoreAttribute)
+        private long _startsInMS;
+        private long _lenInMS;
+        private double _relatUpStrike;
+        private double _relatBotStrike;
+
+        private double _hitCoeff;
+        private double _missCoeff;
 
         public BoxOption(long startsInMS, long lenInMS, double relatUpStrike, double relatBotStrike)
         {
-            this.startsInMS = startsInMS;
-            this.lenInMS = lenInMS;
-            this.relatUpStrike = relatUpStrike;
-            this.relatBotStrike = relatBotStrike;
+            _startsInMS = startsInMS;
+            _lenInMS = lenInMS;
+            _relatUpStrike = relatUpStrike;
+            _relatBotStrike = relatBotStrike;
         }
+        [JsonProperty]
+        public double HitCoeff { get => _hitCoeff; }
+        [JsonProperty]
+        public double MissCoeff { get => _missCoeff; }
+
+        public long StartsInMS { get => _startsInMS; }
+        public long LenInMS { get => _lenInMS; }
+        public double RelatUpStrike { get => _relatUpStrike; }
+        public double RelatBotStrike { get => _relatBotStrike; }
 
         public BoxOption CloneBoxOption()
         {
-            BoxOption boxOption = new BoxOption(startsInMS, lenInMS, relatUpStrike, relatBotStrike);
-            boxOption.hitCoeff = this.hitCoeff;
-            boxOption.missCoeff = this.missCoeff;
-            boxOption.relatUpStrike = this.relatUpStrike;
-            boxOption.relatBotStrike = this.relatBotStrike;
+            BoxOption boxOption = new BoxOption(_startsInMS, _lenInMS, _relatUpStrike, _relatBotStrike)
+            {
+                _hitCoeff = this._hitCoeff,
+                _missCoeff = this._missCoeff,
+                _relatUpStrike = this._relatUpStrike,
+                _relatBotStrike = this._relatBotStrike
+            };
             return boxOption;
         }
 
         public void SetCoefficients(double[] coefficients)
         {
-            this.hitCoeff = coefficients[0];
-            this.missCoeff = coefficients[1];
-
+            _hitCoeff = coefficients[0];
+            _missCoeff = coefficients[1];
         }
-
-        public double GetHitCoeff()
-        {
-            return hitCoeff;
-        }
-
-        public double GetMissCoeff()
-        {
-            return missCoeff;
-        }
-
     }
 }

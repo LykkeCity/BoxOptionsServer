@@ -1,11 +1,8 @@
-﻿using BoxOptions.Common;
-using BoxOptions.Common.Interfaces;
+﻿using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Settings;
-using BoxOptions.Core;
-using BoxOptions.Core.Models;
+using BoxOptions.Core.Repositories;
 using Common.Log;
 using Microsoft.AspNetCore.Mvc;
-using System;
 using System.Threading.Tasks;
 
 namespace BoxOptions.Public.Controllers
@@ -28,7 +25,7 @@ namespace BoxOptions.Public.Controllers
             this.coefCalculator = coefCalculator;
             
         }
-        
+
         /*[HttpGet]
         [Route("change")]
         public async Task<IActionResult> ChangeAsync(string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex, string userId="0")
@@ -67,59 +64,17 @@ namespace BoxOptions.Public.Controllers
             //catch (Exception ex) { return StatusCode(500, ex.Message); }
         }*/
 
-        /*[HttpGet]
+        [HttpGet]
         [Route("request")]
         public async Task<IActionResult> RequestAsync(string pair, string userId = "0")
         {
-            return StatusCode(500, "Request Obsolete");
-            //try
-            //{
-            //    // Validate parameters
-            //    bool parOk = coefCalculator.ValidateRequest(userId, pair);
-            //    if (!parOk)
-            //    {
-            //        // Invalid Parameters, report to logger and return Internal Server Error Code
-            //        return StatusCode(500, "Invalid Parameters");
-            //    }
-            //    else
-            //    {
-            //        string result = await coefCalculator.RequestAsync(userId, pair);
-            //        bool resOk = true; ;
-            //        try { resOk = coefCalculator.ValidateRequestResult(result); }
-            //        catch (Exception ex)
-            //        {
-            //            // If all coefficients are equal to 1.0
-            //            // return answer to client.
-            //            // https://lykkex.atlassian.net/browse/BOXOPT-12?focusedCommentId=26511&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-26511
-            //            if (ex.Message == "All coefficients are equal to 1.0")
-            //                resOk = true;
-            //            // If there are negative coefficients
-            //            // return Error
-            //            else if (ex.Message == "Negative coefficients")
-            //                resOk = false;
-            //            else
-            //                resOk = false;
-            //            await log.WriteErrorAsync("Coef/Request", $"pair={pair}&userId={userId}", "", ex);
-            //        }
-            //        if (!resOk)
-            //        {
-            //            // Invalid result
-            //            return StatusCode(500, "Invalid Result");
-            //        }
-            //        else
-            //        {
-            //            await logRepository.InsertAsync(new LogItem
-            //            {
-            //                ClientId = userId.ToString(),
-            //                EventCode = ((int)(BoxOptionEvent.BOEventCoefRequest)).ToString(),
-            //                Message = $"[{pair}];Result=[{result}]"
-            //            });
-            //            return Ok(result);
-            //        }
-            //    }
-            //}
-            //catch (Exception ex) { return StatusCode(500, ex.Message); }
-        }*/
+            try
+            {
+                string result = await coefCalculator.RequestAsync(userId, pair);
+                return Ok(result);
+            }
+            catch (System.Exception ex) { return StatusCode(500, ex.Message); }
+        }
 
         //[HttpGet]
         //[Route("history")]

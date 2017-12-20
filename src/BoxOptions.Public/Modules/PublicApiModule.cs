@@ -20,11 +20,11 @@ namespace BoxOptions.Public.Modules
 {
     public class PublicApiModule : Module
     {        
-        private readonly IReloadingManager<BoxOptionsApiSettings> _settings;
+        //private readonly IReloadingManager<BoxOptionsApiSettings> _settings;
         
-        public PublicApiModule(IReloadingManager<BoxOptionsApiSettings> settings)
+        public PublicApiModule()
         {
-            _settings = settings;
+            //_settings = settings;
         }
         
         protected override void Load(ContainerBuilder builder)
@@ -54,7 +54,7 @@ namespace BoxOptions.Public.Modules
 
             // History Holder
             builder.RegisterType<HistoryHolder>()
-              .As<Services.Interfaces.IHistoryHolder>()
+              .As<IHistoryHolder>()
               .As<IStartable>()
               .SingleInstance();
 
@@ -73,21 +73,29 @@ namespace BoxOptions.Public.Modules
             builder.RegisterType<WampRpcService>()
                 .As<IRpcMethods>()
                 .SingleInstance();
-
-            // Coefficient Calculator Interface
-            ICoefficientCalculator coefCalculator;
-            if (_settings.CurrentValue.CoefApiUrl.ToLower() == "mock")
-                coefCalculator = new Processors.MockCoefficientCalculator();
-            else
-                coefCalculator = new Processors.ProxyCoefficientCalculator(_settings.CurrentValue);
-            builder.RegisterInstance(coefCalculator)
-                .As<ICoefficientCalculator>()
-                .SingleInstance();
-                       
+                                               
             // Game Manager Interface
             builder.RegisterType<GameManager>()
-              .As<Services.Interfaces.IGameManager>()
+              .As<IGameManager>()
               .SingleInstance();
+
+            // Activity Manager Interface
+            builder.RegisterType<ActivityManager>()
+              .As<IActivityManager>()
+              .As<IStartable>()
+              .SingleInstance();
+
+            // Coefficient Calculator Interface
+            //ICoefficientCalculator coefCalculator;
+            //if (_settings.CurrentValue.CoefApiUrl.ToLower() == "mock")
+            //    coefCalculator = new MockCoefficientCalculator();
+            //else
+            //    coefCalculator = new ProxyCoefficientCalculator(_settings.CurrentValue);            
+
+            builder.RegisterType<CoefficientCalculator.Calculator>()
+                .As<ICoefficientCalculator>()
+                .As<IStartable>()
+                .SingleInstance();
         }
     }
 }

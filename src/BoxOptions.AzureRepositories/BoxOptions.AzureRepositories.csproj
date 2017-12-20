@@ -3,11 +3,12 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <AssemblyName>BoxOptions.AzureRepositories</AssemblyName>
-    <PackageId>BoxOptions.AzureRepositories</PackageId>
+    <PackageId>Lykke.BoxOptions.AzureRepositories</PackageId>
     <RuntimeFrameworkVersion>2.0</RuntimeFrameworkVersion>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <Authors>Nuno Araujo</Authors>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\BoxOptions.Common\BoxOptions.Common.csproj" />
     <ProjectReference Include="..\BoxOptions.Core\BoxOptions.Core.csproj" />
   </ItemGroup>
 

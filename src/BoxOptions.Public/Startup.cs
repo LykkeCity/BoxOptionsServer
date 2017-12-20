@@ -2,6 +2,7 @@
 using Autofac.Extensions.DependencyInjection;
 using BoxOptions.Common;
 using BoxOptions.Common.Extensions;
+using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Services;
 using BoxOptions.Common.Settings;
 using BoxOptions.Public.Exceptions;
@@ -143,7 +144,7 @@ namespace BoxOptions.Public
         {
             builder.RegisterModule(new PublicSettingsModule(settings.CurrentValue));
             builder.RegisterModule(new PublicRepositoriesModule(settings, LogLocator.CommonLog));
-            builder.RegisterModule(new PublicApiModule(settings));
+            builder.RegisterModule(new PublicApiModule());
         }
     }
 }

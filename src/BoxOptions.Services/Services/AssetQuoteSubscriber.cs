@@ -1,9 +1,11 @@
 ﻿using Autofac;
 using BoxOptions.Common.Interfaces;
+using BoxOptions.Common.Models;
 using BoxOptions.Common.RabbitMq;
 using BoxOptions.Common.Settings;
 using BoxOptions.Core;
-using BoxOptions.Core.Models;
+using BoxOptions.Core.Interfaces;
+using BoxOptions.Core.Repositories;
 using Common.Log;
 using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Subscriber;
@@ -63,12 +65,12 @@ namespace BoxOptions.Services
 
         private DateTime _lastErrorDate = DateTime.MinValue;
         private string _lastErrorMessage = "";
-        private BoxSize[] _assetConfiguration;
+        private IBoxSize[] _assetConfiguration;
 
         /// <summary>
         /// Thrown when a new message is received from RabbitMQ Queue
         /// </summary>
-        public event EventHandler<InstrumentPrice> MessageReceived;
+        public event EventHandler<IInstrumentPrice> MessageReceived;
 
         public AssetQuoteSubscriber(BoxOptionsApiSettings settings, ILog log, IAssetDatabase history, IBoxConfigRepository boxRepo)
         {
@@ -241,7 +243,7 @@ namespace BoxOptions.Services
                 || bestBidAsk.BestBid == null || bestBidAsk.BestBid <= 0)
             {
                 //log                
-                LogWarning("ProcessBestBidAsk", string.Format("Received BestBidAsk with price zero [0], BestBidAsk discarded. {0}", bestBidAsk));
+                //LogWarning("ProcessBestBidAsk", string.Format("Received BestBidAsk with price zero [0], BestBidAsk discarded. {0}", bestBidAsk));
 
                 // Discard it
                 return Task.FromResult(0);
@@ -268,7 +270,7 @@ namespace BoxOptions.Services
             // If Price is zero publish exception to support slack channel
             if (assetQuote.Price <= 0)
             {
-                LogWarning("ProcessAssetQuote", string.Format("Received AssetQuote with price zero [0], AssetQuote discarded. {0}", assetQuote));
+                //LogWarning("ProcessAssetQuote", string.Format("Received AssetQuote with price zero [0], AssetQuote discarded. {0}", assetQuote));
                 return Task.FromResult(0);
             }
 
@@ -343,12 +345,12 @@ namespace BoxOptions.Services
 
         private void OnMessageReceived(InstrumentPrice bestBidAsk)
         {
-            BoxSize assetCfg = null;
+            IBoxSize assetCfg = null;
 
             // Lock Asset Configuration
             lock (AssetConfigurationLock)
             {
-                assetCfg = _assetConfiguration.Where(a => a.AssetPair == bestBidAsk.Instrument).FirstOrDefault();
+                assetCfg = _assetConfiguration.FirstOrDefault(a => a.AssetPair == bestBidAsk.Instrument);
             }
             if (assetCfg == null)
                 return;

@@ -1,16 +1,14 @@
-﻿using BoxOptions.Core.Models;
-using System;
+﻿using BoxOptions.Core.Interfaces;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace BoxOptions.Core
+namespace BoxOptions.Core.Repositories
 {
     public interface IBoxConfigRepository
     {
-        Task InsertAsync(Interfaces.IBoxSize olapEntity);
-        Task InsertManyAsync(IEnumerable<Interfaces.IBoxSize> olapEntities);
-        Task<BoxSize> GetAsset(string assetPair);
-        Task<IEnumerable<BoxSize>> GetAll();
+        Task InsertAsync(IBoxSize olapEntity);
+        Task InsertManyAsync(IEnumerable<IBoxSize> olapEntities);
+        Task<IBoxSize> GetAsset(string assetPair);
+        Task<IEnumerable<IBoxSize>> GetAll();
     }
 }

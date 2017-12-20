@@ -1,20 +1,25 @@
-﻿using System;
+﻿using BoxOptions.Common.Models;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace BoxOptions.CoefficientCalculator.Algo
 {
-    class BoxPricing
+    internal class BoxPricing
     {
-        private long tCurrent, tStart, tEnd;
-        private double upperK, lowerK;
-        private double startPrice;
-        private double frontHit, bellowHit, aboveHit;
         private const long MS_PER_YEAR = 31536000000L;
+
+        long tCurrent, tStart, tEnd;
+        double upperK, lowerK;
+        double startPrice;
+        double frontHit, bellowHit, aboveHit;
+
         public double marginHit;
         public double marginMiss;
-        private double maxPayoutCoeff;
-        private double bookingFee;
+        double maxPayoutCoeff;
+        double bookingFee;
 
-        public BoxPricing(long startTime, long endTime, double upperStrike, double lowerStrike, Core.Models.Price price, double marginHit, double marginMiss, double maxPayoutCoeff, double bookingFee)
+        public BoxPricing(long startTime, long endTime, double upperStrike, double lowerStrike, Price price, double marginHit, double marginMiss, double maxPayoutCoeff, double bookingFee)
         {
             if (startTime < endTime)
             {
@@ -45,9 +50,11 @@ namespace BoxOptions.CoefficientCalculator.Algo
             this.maxPayoutCoeff = maxPayoutCoeff;
             this.bookingFee = bookingFee;
         }
+
         double CumNorm(double x)
-        { // cumulative distribution function of normal distribution N(0,1)
-          // protect against overflow
+        { 
+            // cumulative distribution function of normal distribution N(0,1)
+            // protect against overflow
             if (x > 6.0)
                 return 1.0;
             if (x < -6.0)
@@ -74,7 +81,8 @@ namespace BoxOptions.CoefficientCalculator.Algo
         }
 
         double AmericanOneTouch(double sigma, double r, double deltaT, bool downAndIn, double strike, double price)
-        { // probability of hitting an American down/up-and-in option
+        { 
+            // probability of hitting an American down/up-and-in option
             double eta = (downAndIn ? 1.0 : -1.0);
             double mu = (r - 0.5 * sigma * sigma) / (sigma * sigma);
             double lambda = Math.Sqrt(mu * mu + 2.0 * r / (sigma * sigma));
@@ -85,10 +93,15 @@ namespace BoxOptions.CoefficientCalculator.Algo
         }
 
         double Density(double startPrice, double sigma, double r, double deltaTs, double x)
-        { // probability density of log-normal distribution log N(0,1)
+        { 
+            // probability density of log-normal distribution log N(0,1)
             return Math.Exp(-Math.Pow(Math.Log(x / startPrice) - (r - 0.5 * Math.Pow(sigma, 2.0)) * deltaTs, 2.0) / (2.0 * sigma * sigma * deltaTs)) / (Math.Sqrt(2.0 * Math.PI * deltaTs) * sigma * x);
         }
 
+        /**********************************************************************
+        * Integrate f from a to b using Simpson's rule.
+        * Increase N for more precision.
+        **********************************************************************/
         public double IntegrateLykke(double startPrice, double downLimit, double upLimit, bool downAndIn, double deltaT, double deltaTs, double sigma, double r, double strike)
         {
             int N = 1000;                    // precision parameter
@@ -141,10 +154,10 @@ namespace BoxOptions.CoefficientCalculator.Algo
             return (frontHit + bellowHit + aboveHit);
         }
 
-        public double[] GetCoefficients(double r, double volatility)
+        public double[] GetCoefficients(double r, double annualVolatility)
         {
             double[] coefficients = new double[2];
-            if (volatility < 0.005)
+            if (annualVolatility < 0.005)
             {
                 coefficients[0] = 1.0;
                 coefficients[1] = 1.0;
@@ -152,14 +165,17 @@ namespace BoxOptions.CoefficientCalculator.Algo
             }
             else
             {
-                double probToHit = Prob(r, volatility);
+                double probToHit = Prob(r, annualVolatility);
                 double cHit = (marginHit) / (0.5 - marginHit);
                 double cMiss = (marginMiss) / (0.5 - marginMiss);
                 double payoutCoefHit = (1 + cHit * probToHit) / ((1 + cHit) * probToHit);
                 double payoutCoefMiss = (1 + cMiss * (1 - probToHit)) / ((1 + cMiss) * (1 - probToHit));
 
-                coefficients[0] = Math.Min(payoutCoefHit - bookingFee, maxPayoutCoeff);
-                coefficients[1] = Math.Min(payoutCoefMiss - bookingFee, maxPayoutCoeff);
+                payoutCoefHit = Math.Min(payoutCoefHit - bookingFee, maxPayoutCoeff);
+                payoutCoefMiss = Math.Min(payoutCoefMiss - bookingFee, maxPayoutCoeff);
+
+                coefficients[0] = Math.Max(payoutCoefHit, 1.0);
+                coefficients[1] = Math.Max(payoutCoefMiss, 1.0);
 
                 return coefficients;
             }

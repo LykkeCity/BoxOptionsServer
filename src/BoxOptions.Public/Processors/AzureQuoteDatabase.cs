@@ -1,7 +1,6 @@
 ﻿using BoxOptions.Common.Interfaces;
-using BoxOptions.Core;
 using BoxOptions.Core.Interfaces;
-using BoxOptions.Core.Models;
+using BoxOptions.Core.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,26 +13,26 @@ namespace BoxOptions.Public.Processors
         IAssetRepository assetRep;
         bool isDisposing = false;
         const int queueMaxSize = 100;
-        Dictionary<string, Queue<BestBidAsk>> assetCache;
+        Dictionary<string, Queue<IBestBidAsk>> assetCache;
         
         public AzureQuoteDatabase(IAssetRepository assetRep)
         {
             this.assetRep = assetRep;
-            assetCache = new Dictionary<string, Queue<BestBidAsk>>();
+            assetCache = new Dictionary<string, Queue<IBestBidAsk>>();
         }
 
-        public Task AddToAssetHistory(BestBidAsk bidask)
+        public Task AddToAssetHistory(IBestBidAsk bidask)
         {
 
             AddToHistory(bidask);
             return Task.FromResult(0);
         }
                 
-        private void AddToHistory(BestBidAsk bidask)
+        private void AddToHistory(IBestBidAsk bidask)
         {
 
             if (!assetCache.ContainsKey(bidask.Asset))
-                assetCache.Add(bidask.Asset, new Queue<BestBidAsk>());
+                assetCache.Add(bidask.Asset, new Queue<IBestBidAsk>());
 
             assetCache[bidask.Asset].Enqueue(bidask);
 
@@ -41,33 +40,26 @@ namespace BoxOptions.Public.Processors
 
             if (assetCache[bidask.Asset].Count >= queueMaxSize)
             {
-                List<BestBidAsk> buffer = assetCache[bidask.Asset].ToList();
+                List<IBestBidAsk> buffer = assetCache[bidask.Asset].ToList();
                 assetCache[bidask.Asset].Clear();
                 InsertInAzure(buffer);
             }
         }
 
-        private async void InsertInAzure(List<BestBidAsk> buffer)
-        {            
-            try
-            {
+        private async void InsertInAzure(List<IBestBidAsk> buffer)
+        {
 #if !DEBUG
-                await assetRep.InsertManyAsync(buffer);             
-#endif
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }            
+                await assetRep.InsertManyAsync(buffer);
+#endif    
         }
               
-        public async Task<LinkedList<BestBidAsk>> GetAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair)
+        public async Task<LinkedList<IBestBidAsk>> GetAssetHistory(DateTime dateFrom, DateTime dateTo, string assetPair)
         {
             var history = await assetRep.GetRange(dateFrom, dateTo, assetPair);
             var sorted = from h in history
                             orderby h.ReceiveDate
                             select h;
-            return new LinkedList<BestBidAsk>(sorted);
+            return new LinkedList<IBestBidAsk>(sorted);
         }
 
         public void Dispose()
@@ -81,7 +73,7 @@ namespace BoxOptions.Public.Processors
             {
                 if (assetCache[key].Count > 0)
                 {
-                    List<BestBidAsk> buffer = assetCache[key].ToList();
+                    List<IBestBidAsk> buffer = assetCache[key].ToList();
                     assetCache[key].Clear();
 
                     InsertInAzure(buffer);

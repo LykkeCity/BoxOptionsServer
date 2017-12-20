@@ -1,16 +1,13 @@
-﻿using BoxOptions.Core.Models;
+﻿using BoxOptions.Core.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace BoxOptions.Core
+namespace BoxOptions.Core.Repositories
 {
-
     public interface IAssetRepository
     {        
-        Task InsertManyAsync(IEnumerable<Interfaces.IBestBidAsk> olapEntities);
-        Task<IEnumerable<BestBidAsk>> GetRange(DateTime dateFrom, DateTime dateTo, string assetPair);
-
+        Task InsertManyAsync(IEnumerable<IBestBidAsk> olapEntities);
+        Task<IEnumerable<IBestBidAsk>> GetRange(DateTime dateFrom, DateTime dateTo, string assetPair);
     }
 }

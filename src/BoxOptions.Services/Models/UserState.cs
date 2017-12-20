@@ -1,4 +1,6 @@
-﻿using BoxOptions.Core.Models;
+﻿using BoxOptions.Common;
+using BoxOptions.Common.Models;
+using BoxOptions.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Reactive.Subjects;
@@ -8,43 +10,42 @@ namespace BoxOptions.Services.Models
 {
     public class UserState : IDisposable
     {
-        readonly string userId;
-        decimal balance;
-        int currentState;
-        List<UserHistory> statusHistory;
-        List<GameBet> openBets;                     // Bet cache
-        ISubject<GameEvent> subject;                // WAMP Subject
+        private readonly string _userId;
+        private readonly List<UserHistoryItem> _statusHistory;
+        private readonly List<GameBet> _openBets;   // Bet cache
 
-        System.Globalization.CultureInfo Ci = new System.Globalization.CultureInfo("en-us");
+        private decimal balance;
+        private GameStatus currentState;
+        private ISubject<GameEvent> subject;    // WAMP Subject for publishing User Events
         
         public UserState(string userId)
         {
-            this.userId = userId;
-            statusHistory = new List<UserHistory>();
-            openBets = new List<GameBet>();
+            _userId = userId;
+            _statusHistory = new List<UserHistoryItem>();
+            _openBets = new List<GameBet>();
             subject = null;
             LastChange = DateTime.UtcNow;
         }
-        public UserState(string userId, decimal balance, int currentState)
-            : this(userId)
+        public UserState(IUserItem userItem)
+            :this(userItem.UserId)
         {
-            this.balance = balance;
-            this.currentState = currentState;
+            balance = decimal.Parse(userItem.Balance, System.Globalization.CultureInfo.InvariantCulture);
+            LastChange = userItem.LastChange;
+            currentState = (GameStatus)userItem.CurrentState;
         }
-
 
         /// <summary>
         /// Unique User Id
         /// </summary>
-        public string UserId { get => userId; }
+        public string UserId { get => _userId; }
         /// <summary>
         /// User Balance
         /// </summary>
         public decimal Balance { get => balance; }
-        public int CurrentState { get => currentState; }
-        public UserHistory[] StatusHistory => statusHistory.ToArray();
+        public GameStatus CurrentState { get => currentState; }
+        public UserHistoryItem[] StatusHistory => _statusHistory.ToArray();
         public DateTime LastChange { get; set; }
-        public GameBet[] OpenBets  { get => openBets.ToArray(); }
+        public GameBet[] OpenBets  { get => _openBets.ToArray(); }
     
 
         public void SetBalance(decimal newBalance)
@@ -55,28 +56,29 @@ namespace BoxOptions.Services.Models
             PublishToWamp(new GameEvent()
             {
                 EventType = (int)GameEventType.BalanceChanged,
-                EventParameters = string.Format(Ci,"{0}", balance)
+                EventParameters = string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}", balance)
             });
 
         }
-        internal UserHistory SetStatus(int status, string message, double accountDelta = 0)
-        {           
-            UserHistory newEntry = new UserHistory(userId)
+        internal UserHistoryItem SetStatus(GameStatus gameStatus, string message, double accountDelta = 0)
+        {
+            var newEntry = new UserHistoryItem
             {
-                Timestamp = DateTime.UtcNow,
-                Status = status,
+                UserId = _userId,
+                Date = DateTime.UtcNow,
                 Message = message,
-                AccountDelta = accountDelta
+                AccountDelta = accountDelta,
+                GameStatus = gameStatus
             };
-            statusHistory.Add(newEntry);
+            _statusHistory.Add(newEntry);
 
             // Keep load history buffer to 20 items
-            if (statusHistory.Count > 20)
+            if (_statusHistory.Count > 20)
             {
-                statusHistory.RemoveAt(0);
+                _statusHistory.RemoveAt(0);
             }
 
-            currentState = status;
+            currentState = gameStatus;
             LastChange = DateTime.UtcNow;
             
             return newEntry;
@@ -93,22 +95,17 @@ namespace BoxOptions.Services.Models
                 CurrentParameters = boxConfig,
                 Timestamp = DateTime.UtcNow
             };
-            openBets.Add(retval);
+            _openBets.Add(retval);
             // keep bet cache to 1000
-            if (openBets.Count > 1000)
-                openBets.RemoveAt(0);
+            if (_openBets.Count > 1000)
+                _openBets.RemoveAt(0);
 
             return retval;
         }
-        //internal void LoadBets(IEnumerable<GameBet> bets)
-        //{
-        //    openBets = new List<GameBet>(); ;
-        //    openBets.AddRange(bets);
-        //}
-
+       
         internal void StartWAMP(IWampHostedRealm wampRealm, string topicName)
         {
-            subject = wampRealm.Services.GetSubject<GameEvent>(topicName + "." + userId);
+            subject = wampRealm.Services.GetSubject<GameEvent>(topicName + "." + _userId);            
         }
         internal void PublishToWamp(GameEvent gameEvent)
         {
@@ -123,7 +120,7 @@ namespace BoxOptions.Services.Models
         {
             subject = null;
 
-            foreach (var bet in openBets)
+            foreach (var bet in _openBets)
             {
                 bet.Dispose();
             }
@@ -133,7 +130,7 @@ namespace BoxOptions.Services.Models
 
         public override string ToString()
         {
-            return userId;
+            return _userId;
         }
     }
 }

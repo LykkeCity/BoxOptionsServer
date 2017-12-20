@@ -15,6 +15,7 @@ namespace BoxOptions.Public.Modules
         protected override void Load(ContainerBuilder builder)
         {
             builder.RegisterInstance(_settings).SingleInstance();
+            builder.RegisterInstance(_settings.CoefficientCalculator).SingleInstance();
         }
     }
 }

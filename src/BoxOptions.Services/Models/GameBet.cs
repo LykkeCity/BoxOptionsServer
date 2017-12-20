@@ -1,10 +1,11 @@
-﻿using BoxOptions.Common.Interfaces;
-using BoxOptions.Core.Models;
+﻿using BoxOptions.Common.Models;
+using BoxOptions.Core.Interfaces;
+using Common;
 using System;
 
 namespace BoxOptions.Services.Models
 {
-    public class GameBet : IDisposable
+    public class GameBet : IGameBetItem, IDisposable
     {        
         readonly string userId;
         UserState user;
@@ -22,6 +23,15 @@ namespace BoxOptions.Services.Models
         public DateTime? FinishedStamp { get; private set; }
 
         public string BetLog { get; private set; }
+
+        #region IGameBetItem
+        public string BoxId => Box.Id;
+        public DateTime Date => Timestamp;
+        string IGameBetItem.Box => Box.ToJson();
+        string IGameBetItem.BetAmount => BetAmount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        public string Parameters => CurrentParameters.ToJson();
+        int IGameBetItem.BetStatus => (int)BetStatus;
+        #endregion
 
         System.Threading.Timer BetTimer;
 
