@@ -144,7 +144,7 @@ namespace BoxOptions.Public
         {
             builder.RegisterModule(new PublicSettingsModule(settings.CurrentValue));
             builder.RegisterModule(new PublicRepositoriesModule(settings, LogLocator.CommonLog));
-            builder.RegisterModule(new PublicApiModule(settings));
+            builder.RegisterModule(new PublicApiModule());
         }
     }
 }

@@ -5,6 +5,7 @@ using BoxOptions.Common.RabbitMq;
 using BoxOptions.Common.Settings;
 using BoxOptions.Core;
 using BoxOptions.Core.Interfaces;
+using BoxOptions.Core.Repositories;
 using Common.Log;
 using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Subscriber;
@@ -242,7 +243,7 @@ namespace BoxOptions.Services
                 || bestBidAsk.BestBid == null || bestBidAsk.BestBid <= 0)
             {
                 //log                
-                LogWarning("ProcessBestBidAsk", string.Format("Received BestBidAsk with price zero [0], BestBidAsk discarded. {0}", bestBidAsk));
+                //LogWarning("ProcessBestBidAsk", string.Format("Received BestBidAsk with price zero [0], BestBidAsk discarded. {0}", bestBidAsk));
 
                 // Discard it
                 return Task.FromResult(0);
@@ -269,7 +270,7 @@ namespace BoxOptions.Services
             // If Price is zero publish exception to support slack channel
             if (assetQuote.Price <= 0)
             {
-                LogWarning("ProcessAssetQuote", string.Format("Received AssetQuote with price zero [0], AssetQuote discarded. {0}", assetQuote));
+                //LogWarning("ProcessAssetQuote", string.Format("Received AssetQuote with price zero [0], AssetQuote discarded. {0}", assetQuote));
                 return Task.FromResult(0);
             }
 

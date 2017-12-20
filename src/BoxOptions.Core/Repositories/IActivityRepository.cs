@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace BoxOptions.Core
+namespace BoxOptions.Core.Repositories
 {
     public interface IActivityRepository
     {
-        Task InsertActivityAsync(IEnumerable<IActivity> entities);
-        Task<IActivity> GetActivity(string instrument, string name);
-        Task<IEnumerable<IActivity>> GetActivities();
-        Task<IEnumerable<IActivity>> GetActivityByInstrument();
+        Task InsertOrReplaceActivities(IEnumerable<IActivity> entities);
+        Task<IActivity> GetActivityById(string id);        
+        Task<IEnumerable<IActivity>> GetActivitiesByInstrument(string instrument);
+        Task<IActivity> GetActivitiesByInstrumentAndName(string instrument, string name);
     }
 }

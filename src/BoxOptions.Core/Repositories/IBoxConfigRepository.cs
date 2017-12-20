@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace BoxOptions.Core
+namespace BoxOptions.Core.Repositories
 {
     public interface IBoxConfigRepository
     {

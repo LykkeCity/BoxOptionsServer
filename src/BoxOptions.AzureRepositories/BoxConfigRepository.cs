@@ -1,7 +1,7 @@
 ﻿using AzureStorage;
 using BoxOptions.AzureRepositories.Entities;
-using BoxOptions.Core;
 using BoxOptions.Core.Interfaces;
+using BoxOptions.Core.Repositories;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;

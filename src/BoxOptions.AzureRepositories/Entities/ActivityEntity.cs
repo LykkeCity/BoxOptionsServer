@@ -1,20 +1,27 @@
 ﻿using BoxOptions.Core.Interfaces;
+using Microsoft.WindowsAzure.Storage.Table;
 using System.Linq;
 
 namespace BoxOptions.AzureRepositories.Entities
 {
-    public class ActivityEntity : IActivity
+    public class ActivityEntity : TableEntity, IActivity
     {
-        public string ActivityArray { get; set; }
+        public string Activity { get; set; }
+        public string Id { get; set; }
         public string Name { get; set; }
         public string Instrument { get; set; }
+        public bool IsDefault { get; set; }
 
-        decimal[] IActivity.ActivityArray { get =>GetActivityArray(); }
+        public double[] ActivityArray { get =>GetActivityArray(); set => SetActivityArray(value); }
 
-        private decimal[] GetActivityArray()
+        private void SetActivityArray(double[] value)
         {
-            var res = ActivityArray.Split("\n\r")
-                .Select(x => decimal.Parse(x, System.Globalization.CultureInfo.InvariantCulture));
+            Activity = string.Join(";", value.Select(x=>x.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        }
+        private double[] GetActivityArray()
+        {
+            var res = Activity.Split(";")
+                .Select(x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture));
             return res.ToArray();
         }
 
@@ -24,7 +31,21 @@ namespace BoxOptions.AzureRepositories.Entities
         }
         public static string GetRowKey(IActivity src)
         {
-            return src.Name;
+            return src.Id;
+        }
+
+        public static ActivityEntity CreateEntity(IActivity src)
+        {
+            return new ActivityEntity
+            {
+                Id = src.Id,
+                PartitionKey = GetPartitionKey(src),
+                RowKey = GetRowKey(src),
+                ActivityArray = src.ActivityArray,
+                Instrument = src.Instrument,
+                IsDefault = src.IsDefault,
+                Name = src.Name
+            };
         }
     }
 }

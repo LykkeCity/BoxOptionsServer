@@ -10,16 +10,20 @@ using BoxOptions.Core.Interfaces;
 
 namespace BoxOptions.Services
 {
-    public class HistoryHolder : IHistoryHolder,IStartable, IDisposable
+    public class HistoryHolder : IHistoryHolder, IStartable, IDisposable
     {
+        public event EventHandler InitializationFinished;
+
+        private static object HistoryLock = new object();
+
         private readonly BoxOptionsApiSettings _settings;
         private readonly Dictionary<string, LinkedList<Price>> _holder;
         private readonly IAssetQuoteSubscriber _subscriber;
-        private readonly IAssetDatabase _assetDatabase;        
+        private readonly IAssetDatabase _assetDatabase;
         private readonly ILog _log;
 
         private string[] historyAssets;
-        
+
         bool isStarting;
 
         public HistoryHolder(BoxOptionsApiSettings settings, IAssetQuoteSubscriber subscriber, IAssetDatabase assetDatabase, ILog appLog)
@@ -31,6 +35,8 @@ namespace BoxOptions.Services
             _holder = new Dictionary<string, LinkedList<Price>>();
             isStarting = true;
         }
+
+        public bool IsStarting { get => isStarting; }
 
         public async void Start()
         {
@@ -70,6 +76,7 @@ namespace BoxOptions.Services
             // Start subscribing prices
             _subscriber.MessageReceived += Subscriber_MessageReceived;
             isStarting = false;
+            InitializationFinished?.Invoke(this, new EventArgs());
         }
 
         private DateTime GetHistoryStartDate(DateTime historyEnd)
@@ -97,36 +104,42 @@ namespace BoxOptions.Services
         {
             if (!historyAssets.Contains(e.Instrument))
                 return;
-
-            if (!_holder.ContainsKey(e.Instrument))
-                _holder.Add(e.Instrument, new LinkedList<Price>());
-
-            _holder[e.Instrument].AddLast(new Price()
+            lock (HistoryLock)
             {
-                Ask = e.Ask,
-                Bid = e.Bid,
-                Date = e.Date
-            });            
-            DateTime HistoryStart = GetHistoryStartDate(DateTime.UtcNow);
+                if (!_holder.ContainsKey(e.Instrument))
+                    _holder.Add(e.Instrument, new LinkedList<Price>());
 
-            if (_holder[e.Instrument].First.Value.Date < HistoryStart)
-                _holder[e.Instrument].RemoveFirst();
+                _holder[e.Instrument].AddLast(new Price()
+                {
+                    Ask = e.Ask,
+                    Bid = e.Bid,
+                    Date = e.Date
+                });
+                DateTime HistoryStart = GetHistoryStartDate(DateTime.UtcNow);
 
-
+                if (_holder[e.Instrument].First.Value.Date < HistoryStart)
+                    _holder[e.Instrument].RemoveFirst();
+            }
         }
 
-        public LinkedList<Price> GetHistory(string asset)
+        public Price[] GetHistory(string asset)
         {
             // Still build history
             if (isStarting)
-                return new LinkedList<Price>();
+                return new Price[0];
 
             // Asset not in history
             if (!_holder.ContainsKey(asset))
-                return new LinkedList<Price>();
+                return new Price[0];
             else
-                return _holder[asset];
-
+            {
+                lock (HistoryLock)
+                {
+                    Price[] copy = new Price[_holder[asset].Count];
+                    _holder[asset].CopyTo(copy, 0);
+                    return copy;
+                }
+            }
         }
 
         public void Dispose()

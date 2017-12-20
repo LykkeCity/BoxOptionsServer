@@ -5,6 +5,7 @@ using BoxOptions.AzureRepositories.Entities;
 using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Settings;
 using BoxOptions.Core;
+using BoxOptions.Core.Repositories;
 using Common.Log;
 using Lykke.SettingsReader;
 
@@ -49,6 +50,13 @@ namespace BoxOptions.Public.Modules
                        isRelease ? "BoxConfig" : "DEVBoxConfig",
                        _log)));
 
+            // Activities Repository
+            builder.Register<IActivityRepository>(ctx =>
+               new ActivityRepository(AzureTableStorage<ActivityEntity>.Create(
+                       _settings.Nested(s => s.ConnectionStrings.BoxOptionsApiStorage),
+                       "Activities",
+                       _log)));
+
             // Asset Database Interface
             // and dependecy repositories
             var assetrepo = new AssetRepository(AzureTableStorage<BestBidAskEntity>.Create(
@@ -65,6 +73,8 @@ namespace BoxOptions.Public.Modules
             var gameRepo = new GameRepository(AzureTableStorage<GameBetEntity>.Create(
                        _settings.Nested(s => s.ConnectionStrings.BoxOptionsApiStorage), "GameRepo", _log));
             builder.RegisterInstance<IGameDatabase>(new Processors.AzureGameDatabase(userRepo, gameRepo));
+            
+
         }
     }
 }

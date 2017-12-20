@@ -1,9 +1,6 @@
 ﻿using BoxOptions.Common.Interfaces;
-using BoxOptions.Common.Models;
-using BoxOptions.Core;
 using BoxOptions.Core.Interfaces;
-using BoxOptions.Services.Models;
-using Common;
+using BoxOptions.Core.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;

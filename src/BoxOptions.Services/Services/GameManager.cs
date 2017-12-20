@@ -2,8 +2,8 @@
 using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Models;
 using BoxOptions.Common.Settings;
-using BoxOptions.Core;
 using BoxOptions.Core.Interfaces;
+using BoxOptions.Core.Repositories;
 using BoxOptions.Services.Models;
 using Common.Log;
 using System;
@@ -440,9 +440,16 @@ namespace BoxOptions.Services
                 Dictionary<string, string> retval = new Dictionary<string, string>();
                 foreach (var asset in assetPairs)
                 {
-                    string res = await calculator.RequestAsync(userId, asset);
-                    //Console.WriteLine("{0} > Coeffs[{1}]  received", DateTime.UtcNow.ToString("HH:mm:ss.fff"), asset);
-                    retval.Add(asset, res);
+                    try
+                    {
+                        string res = await calculator.RequestAsync(userId, asset);
+                        //Console.WriteLine("{0} > Coeffs[{1}]  received", DateTime.UtcNow.ToString("HH:mm:ss.fff"), asset);
+                        retval.Add(asset, res);
+                    }
+                    catch(Exception ex)
+                    {
+                        Console.WriteLine("{0} > Coeff Request Error: {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), ex.Message);
+                    }
                 }
                 //Console.WriteLine("{0} > Coeff Request DONE", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                 return retval;

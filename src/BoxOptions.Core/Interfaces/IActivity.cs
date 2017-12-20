@@ -2,8 +2,10 @@
 {
     public interface IActivity
     {
+        string Id { get; }
         string Name { get; }
         string Instrument { get; }
-        decimal[] ActivityArray { get; }
+        double[] ActivityArray { get; }
+        bool IsDefault { get; }
     }
 }

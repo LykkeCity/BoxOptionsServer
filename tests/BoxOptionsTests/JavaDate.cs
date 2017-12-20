@@ -1,15 +1,16 @@
-﻿
-using BoxOptions.Core;
+﻿using NUnit.Framework;
 using System;
+using BoxOptions.Core;
 using System.Collections.Generic;
 using System.Text;
-using Xunit;
 
-namespace XUnitTests
+namespace BoxOptionsTests
 {
-    public class JavaDateTests
+    [TestFixture]
+    public class JavaDate
     {
-        [Fact]
+        [Test]
+        [Category("JavaDate")]
         public void CreateDateFromJavaMilliseconds()
         {
             //ARRANGE
@@ -26,7 +27,7 @@ namespace XUnitTests
 
             // ACT
             // Timespan to JavaEpochStart
-            TimeSpan ts = (currentDate - BoxOptions.Core.Statics.JavaEpochStart);
+            TimeSpan ts = (currentDate - Statics.JavaEpochStart);
             // Convert To long
             long ConvertedMilliseconds = (long)ts.TotalMilliseconds;
             // Instantiate new date.
@@ -41,17 +42,15 @@ namespace XUnitTests
 
             //ASSERT
             // Compare milliseconds from calculated timespan
-            Assert.Equal(MillisecondsSince_1970_01_01, ConvertedMilliseconds);
+            Assert.AreEqual(MillisecondsSince_1970_01_01, ConvertedMilliseconds);
             // Compare JavaMillis
-            Assert.Equal(MillisecondsSince_1970_01_01, javaMillis);
+            Assert.AreEqual(MillisecondsSince_1970_01_01, javaMillis);
             // Compare dates
-            Assert.Equal(DotNetDate, JavaDate);
-
-
-
-
+            Assert.AreEqual(DotNetDate, JavaDate);
         }
-        [Fact]
+
+        [Test]
+        [Category("JavaDate")]
         public void GetDayOfWeek()
         {
             //Arrange            
@@ -68,13 +67,13 @@ namespace XUnitTests
             DateTime WeekSaturday = currentdate.GetWeekDay(DayOfWeek.Saturday);
 
             //Assert
-            Assert.Equal(new DateTime(2017, 05, 14, 0, 0, 0), WeekSunday);
-            Assert.Equal(new DateTime(2017, 05, 15, 0, 0, 0), WeekMonday);
-            Assert.Equal(new DateTime(2017, 05, 16, 0, 0, 0), WeekTuesday);
-            Assert.Equal(new DateTime(2017, 05, 17, 0, 0, 0), WeekWednesday);
-            Assert.Equal(new DateTime(2017, 05, 18, 0, 0, 0), WeekThursday);
-            Assert.Equal(new DateTime(2017, 05, 19, 0, 0, 0), WeekFriday);
-            Assert.Equal(new DateTime(2017, 05, 20, 0, 0, 0), WeekSaturday);
+            Assert.AreEqual(new DateTime(2017, 05, 14, 0, 0, 0), WeekSunday);
+            Assert.AreEqual(new DateTime(2017, 05, 15, 0, 0, 0), WeekMonday);
+            Assert.AreEqual(new DateTime(2017, 05, 16, 0, 0, 0), WeekTuesday);
+            Assert.AreEqual(new DateTime(2017, 05, 17, 0, 0, 0), WeekWednesday);
+            Assert.AreEqual(new DateTime(2017, 05, 18, 0, 0, 0), WeekThursday);
+            Assert.AreEqual(new DateTime(2017, 05, 19, 0, 0, 0), WeekFriday);
+            Assert.AreEqual(new DateTime(2017, 05, 20, 0, 0, 0), WeekSaturday);
 
         }
     }

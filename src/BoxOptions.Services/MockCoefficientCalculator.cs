@@ -2,12 +2,12 @@
 using System;
 using System.Threading.Tasks;
 
-namespace BoxOptions.Public.Processors
+namespace BoxOptions.Services
 {
     /// <summary>
     /// Mock Coefficient Calculator for testing purposes.
     /// </summary>
-    public class MockCoefficientCalculator:ICoefficientCalculator
+    public class MockCoefficientCalculator : ICoefficientCalculator
     {
         public async Task<string> ChangeAsync(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
         {
@@ -27,7 +27,7 @@ namespace BoxOptions.Public.Processors
             throw new NotImplementedException();
         }
 
-      
+
         public bool ValidateChangeResult(string result, out string errorMessage)
         {
             throw new NotImplementedException();
@@ -37,7 +37,7 @@ namespace BoxOptions.Public.Processors
         {
             throw new NotImplementedException();
         }
-             
+
         public bool ValidateRequestResult(string result, out string errorMessage)
         {
             throw new NotImplementedException();

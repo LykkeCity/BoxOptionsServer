@@ -1,7 +1,7 @@
 ﻿using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Models;
-using BoxOptions.Core;
 using BoxOptions.Core.Interfaces;
+using BoxOptions.Core.Repositories;
 using BoxOptions.Services.Models;
 using Common;
 using Common.Log;

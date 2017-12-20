@@ -20,12 +20,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BoxOptions.AzureRepositories\BoxOptions.AzureRepositories.csproj" />
+    <ProjectReference Include="..\BoxOptions.CoefficientCalculator\BoxOptions.CoefficientCalculator.csproj" />
     <ProjectReference Include="..\BoxOptions.Core\BoxOptions.Core.csproj" />
     <ProjectReference Include="..\BoxOptions.Services\BoxOptions.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Flurl.Http" Version="2.0.1" />
+    <PackageReference Include="Flurl.Http" Version="2.1.1" />
     <PackageReference Include="Lykke.Logs" Version="3.2.3" />
     <PackageReference Include="Lykke.SettingsReader" Version="1.0.43" />
     <PackageReference Include="Lykke.SlackNotification.AzureQueue" Version="1.0.6" />

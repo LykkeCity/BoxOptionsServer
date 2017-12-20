@@ -1,6 +1,6 @@
 ﻿using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Models;
-using BoxOptions.Core;
+using BoxOptions.Core.Repositories;
 using BoxOptions.Public.Models;
 using BoxOptions.Public.ViewModels;
 using BoxOptions.Services;

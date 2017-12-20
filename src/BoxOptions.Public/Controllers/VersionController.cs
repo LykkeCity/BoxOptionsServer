@@ -2,6 +2,7 @@
 using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Settings;
 using BoxOptions.Public.Models;
+using BoxOptions.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -18,9 +19,9 @@ namespace BoxOptions.Public.Controllers
         {
             _settings = settings;
             if (_settings.CoefApiUrl.ToLower() == "mock")
-                coefCalculator = new Processors.MockCoefficientCalculator();
+                coefCalculator = new MockCoefficientCalculator();
             else
-                coefCalculator = new Processors.ProxyCoefficientCalculator(_settings);
+                coefCalculator = new ProxyCoefficientCalculator(_settings);
         }
 
         [HttpGet]        

@@ -2,7 +2,7 @@
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace BoxOptions.Public.Models
+namespace BoxOptions.Services.Models
 {
     public class CoefModels
     {
@@ -26,12 +26,12 @@ namespace BoxOptions.Public.Models
 
                 List<CoefBlock> blockList = new List<CoefBlock>();
                 // Invalid json format
-                if (result.Length<2 || !result.StartsWith("[")|| !result.EndsWith("]"))
+                if (result.Length < 2 || !result.StartsWith("[") || !result.EndsWith("]"))
                     throw new FormatException("Invalid format");
                 string objectstring = result.Substring(1, result.Length - 2);
 
                 string[] blocks = objectstring.Split('[');
-                foreach(var block in blocks)
+                foreach (var block in blocks)
                 {
                     CoefBlock newBlock = new CoefBlock();
                     List<Coeff> coefBlockList = new List<Coeff>();
@@ -45,14 +45,14 @@ namespace BoxOptions.Public.Models
                             continue;
 
                         string coefstring = "";
-                        if (coef.EndsWith("},")|| coef.EndsWith("}]"))
-                            coefstring = coef.Substring(0, coef.Length - 2); 
+                        if (coef.EndsWith("},") || coef.EndsWith("}]"))
+                            coefstring = coef.Substring(0, coef.Length - 2);
                         else if (coef.EndsWith("}],"))
                             coefstring = coef.Substring(0, coef.Length - 3);
                         else
                             throw new FormatException("invalid Format");
-                        
-                        string[] coefValues = coefstring.Split(',');                        
+
+                        string[] coefValues = coefstring.Split(',');
                         Coeff newItem = new Coeff();
                         foreach (var item in coefValues)
                         {
@@ -93,6 +93,6 @@ namespace BoxOptions.Public.Models
             public decimal MissCoeff { get; set; }
         }
 
-        
+
     }
 }

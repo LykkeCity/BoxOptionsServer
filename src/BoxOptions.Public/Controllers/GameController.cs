@@ -1,6 +1,6 @@
 ﻿using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Settings;
-using BoxOptions.Core;
+using BoxOptions.Core.Repositories;
 using Common.Log;
 using Microsoft.AspNetCore.Mvc;
 

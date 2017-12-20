@@ -4,8 +4,12 @@ namespace BoxOptions.Common.Models
 {
     public class Activity : IActivity
     {
+        public string Id { get; set; }
         public string Name { get; set; }
         public string Instrument { get; set; }
-        public decimal[] ActivityArray { get; set; }
+        public double [] ActivityArray { get; set; }
+        public bool IsDefault { get; set; }
+
+        
     }
 }

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27004.2009
+VisualStudioVersion = 15.0.27130.2010
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BoxOptions.Public", "src\BoxOptions.Public\BoxOptions.Public.csproj", "{DCDA01AE-29CE-4A34-B835-EFC2D82E57BA}"
 EndProject
@@ -21,6 +21,18 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BoxOptions.Client", "client\BoxOptions.Client\BoxOptions.Client.csproj", "{78B07E52-AEA1-4882-BDEF-6B0EF95231CB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BoxOptions.CoefficientCalculator", "src\BoxOptions.CoefficientCalculator\BoxOptions.CoefficientCalculator.csproj", "{DE1396AC-2D68-4B22-BB0F-ACB8F179E366}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1. Infrastructure", "1. Infrastructure", "{FBE84ECB-4020-4E52-BE66-406B7AF7064A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2. Repositories", "2. Repositories", "{2157D918-E540-4884-97E7-0641FE09034F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3. Hosts", "3. Hosts", "{4BC358DF-E312-4DD3-BF49-1333546B7EFA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4. Tests", "4. Tests", "{052F0843-8D72-4593-9DFE-97F89400C612}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "5. Clients", "5. Clients", "{A6BE7317-4C6A-4CCF-AFE0-2E0A64BBBA87}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoxOptionsTests", "tests\BoxOptionsTests\BoxOptionsTests.csproj", "{85734322-BF62-45D8-82BE-ED4D3A1C3F7F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -56,9 +68,23 @@ Global
 		{DE1396AC-2D68-4B22-BB0F-ACB8F179E366}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE1396AC-2D68-4B22-BB0F-ACB8F179E366}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DE1396AC-2D68-4B22-BB0F-ACB8F179E366}.Release|Any CPU.Build.0 = Release|Any CPU
+		{85734322-BF62-45D8-82BE-ED4D3A1C3F7F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{85734322-BF62-45D8-82BE-ED4D3A1C3F7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{85734322-BF62-45D8-82BE-ED4D3A1C3F7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{85734322-BF62-45D8-82BE-ED4D3A1C3F7F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{DCDA01AE-29CE-4A34-B835-EFC2D82E57BA} = {4BC358DF-E312-4DD3-BF49-1333546B7EFA}
+		{B58CBF69-6265-4485-87B4-0D9FB22ECBC0} = {FBE84ECB-4020-4E52-BE66-406B7AF7064A}
+		{D282E9C0-B9F4-4887-AF50-173B3FA69072} = {FBE84ECB-4020-4E52-BE66-406B7AF7064A}
+		{B5D636D0-262A-450C-BB2E-CC98097CF66A} = {FBE84ECB-4020-4E52-BE66-406B7AF7064A}
+		{D7820C61-4E09-4E8B-BA6D-6ADCCAF54C86} = {2157D918-E540-4884-97E7-0641FE09034F}
+		{78B07E52-AEA1-4882-BDEF-6B0EF95231CB} = {A6BE7317-4C6A-4CCF-AFE0-2E0A64BBBA87}
+		{DE1396AC-2D68-4B22-BB0F-ACB8F179E366} = {FBE84ECB-4020-4E52-BE66-406B7AF7064A}
+		{85734322-BF62-45D8-82BE-ED4D3A1C3F7F} = {052F0843-8D72-4593-9DFE-97F89400C612}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {16970303-CA91-460C-A6E3-C98CBF62A3B3}

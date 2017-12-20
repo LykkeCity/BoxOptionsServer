@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace BoxOptions.CoefficientCalculator.Algo
 {
-    public class VolatilityEstimator
+    internal class VolatilityEstimator
     {
         public Runner runner;
         public List<double> activityDistribution;
@@ -32,7 +32,7 @@ namespace BoxOptions.CoefficientCalculator.Algo
             this.movingWindow = movingWindow;
             this.periodsPerYear = periodsPerYear;
             this.hasWeekend = hasWeekend;
-            timeOfBar = msInWeek / activityDistribution.size(); // divide number of ms per week to the number of bars
+            timeOfBar = msInWeek / activityDistribution.Count(); // divide number of ms per week to the number of bars
             initialized = false;
             if (hasWeekend)
             {
@@ -44,14 +44,15 @@ namespace BoxOptions.CoefficientCalculator.Algo
                 timeWeekendStarts = timeWeekendEnds = -1L;
             }
             addedWeekend = false;
-            DateTimeZone.setDefault(DateTimeZone.UTC); // it is an important field: without this the algorithm will
+            //Not needed in .NET, all datetime variables are set as UTC 
+            //DateTimeZone.setDefault(DateTimeZone.UTC); // it is an important field: without this the algorithm will
                                                        // interpret time like my local time. https://stackoverflow.com/questions/9397715/defaulting-date-time-zone-to-utc-for-jodatimes-datetime
                                                        
         }
         private double ComputeAverageFutureActivity(Price currentPrice, long optEndsInMs)
         { // average activity for a given period of time
 
-            long msFromMonday = MsFromMonday(currentPrice.getTime());
+            long msFromMonday = MsFromMonday(currentPrice.Time);
             int firstBar = (int)(msFromMonday / timeOfBar);
             int lastBar = (int)((msFromMonday + optEndsInMs) / timeOfBar);
             nBarStartTime = firstBar;
@@ -59,9 +60,9 @@ namespace BoxOptions.CoefficientCalculator.Algo
             double sumActivity = 0.0;
             for (int iBar = firstBar; iBar <= lastBar; iBar++)
             {
-                sumActivity += activityDistribution.get(iBar % activityDistribution.size()); // will iterate the array if index is too big
+                sumActivity += activityDistribution[iBar % activityDistribution.Count]; // will iterate the array if index is too big
             }
-            return sumActivity / (double)(lastBar - firstBar + 1); // finds average activity till the end of the box
+            return sumActivity / (lastBar - firstBar + 1); // finds average activity till the end of the box
         }
        
         private long MsFromMonday(long currentTime)
@@ -107,7 +108,7 @@ namespace BoxOptions.CoefficientCalculator.Algo
 
         private void Initialize(List<Price> historicalPrices)
         {
-            Price previousPrice = historicalPrices.get(0);
+            Price previousPrice = historicalPrices[0];
             long weekendLength = timeWeekendEnds - timeWeekendStarts;
             foreach (var currentPrice in historicalPrices)
             {   
@@ -122,7 +123,7 @@ namespace BoxOptions.CoefficientCalculator.Algo
 
 
         public double Run(List<Price> newPrices, Price currentPrice, long optEndsInMs)
-        {
+        {            
             if (!initialized)
             {
                 initialized = true;
@@ -133,7 +134,8 @@ namespace BoxOptions.CoefficientCalculator.Algo
             }
             else
             {
-                if (Tools.checkIfNowIsWeekend(timeWeekendStarts, timeWeekendEnds, currentPrice.Time))
+                //if (Tools.checkIfNowIsWeekend(timeWeekendStarts, timeWeekendEnds, currentPrice.Time))
+                if (currentPrice.Time.CheckIfNowIsWeekend(timeWeekendStarts, timeWeekendEnds))
                 {
                     if (!addedWeekend)
                     {

@@ -1,7 +1,7 @@
 ﻿using AzureStorage;
 using BoxOptions.AzureRepositories.Entities;
-using BoxOptions.Core;
 using BoxOptions.Core.Interfaces;
+using BoxOptions.Core.Repositories;
 using Microsoft.WindowsAzure.Storage.Table;
 using System;
 using System.Collections.Generic;

@@ -6,7 +6,7 @@ using Flurl.Http;
 using System;
 using System.Threading.Tasks;
 
-namespace BoxOptions.Public.Processors
+namespace BoxOptions.Services
 {
     /// <summary>
     /// Coefficient calculator Using proxy to Coefficient API
@@ -52,12 +52,12 @@ namespace BoxOptions.Public.Processors
                 })
                 .GetStringAsync();
 
-            
-            
+
+
 
             return result;
         }
-        
+
         /// <summary>
         /// Request method forwarded to Coefficient API and returns result.
         /// </summary>
@@ -122,7 +122,7 @@ namespace BoxOptions.Public.Processors
 
             // Teste if all values are 1.0
             bool AllEqualOne = true;
-            
+
             // Test if there are negative 
             bool NegativeCoef = false;
             foreach (var block in res.CoefBlocks)
@@ -131,14 +131,14 @@ namespace BoxOptions.Public.Processors
                 {
                     if (coef.HitCoeff != 1.0m || coef.MissCoeff != 1.0m)
                     {
-                        AllEqualOne = false;                        
+                        AllEqualOne = false;
                     }
 
                     if (coef.HitCoeff < 0 || coef.MissCoeff < 0)
                     {
                         NegativeCoef = true;
                     }
-                }                
+                }
             }
             if (AllEqualOne == true) // All coefficients are 1.0 thow exception with information.
             {
