@@ -169,6 +169,8 @@ namespace BoxOptions.CoefficientCalculator
         public Task<string> RequestAsync(string userId, string pair)
         {
             var grid = _grids[pair].optionsGrid.ToJson();
+            // Hack for old APP compatibility
+            grid = grid.Replace("HitCoeff", "hitCoeff").Replace("MissCoeff", "missCoeff");
             return Task.FromResult(grid);
         }
 

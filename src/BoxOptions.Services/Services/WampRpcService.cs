@@ -403,7 +403,7 @@ namespace BoxOptions.Services
             }            
         }
 
-        public IPlaceBetResult PlaceBet(string userId, string assetPair, string box, decimal betValue)
+        public PlaceBetResult PlaceBet(string userId, string assetPair, string box, decimal betValue)
         {
             Console.WriteLine("{0} - PlaceBet", DateTime.Now.ToString("u"));
             try

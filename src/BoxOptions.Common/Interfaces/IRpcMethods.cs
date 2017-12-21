@@ -57,7 +57,7 @@ namespace BoxOptions.Common.Interfaces
         /// <param name="betValue">Bet Value</param>
         /// <returns>'OK' or error string</returns>
         [WampProcedure("game.placebet")]
-        IPlaceBetResult PlaceBet(string userId, string assetPair, string box, decimal betValue);
+        PlaceBetResult PlaceBet(string userId, string assetPair, string box, decimal betValue);
 
         /// <summary>
         /// Saves log to database
