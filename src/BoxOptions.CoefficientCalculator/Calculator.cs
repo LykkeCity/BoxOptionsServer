@@ -63,9 +63,9 @@ namespace BoxOptions.CoefficientCalculator
                     instrument.MarginHit, instrument.MarginMiss, instrument.MaxPayoutCoeff, instrument.BookingFee, instrument.HasWeekend);
 
                 var history = _historyHolder.GetHistory(instrument.Name);
-                if (history != null)
+                if (history != null && history.Length > 0)
                 {
-                   
+
                     var currentPrice = history.Last();
                     grid.InitiateGrid(_activities[instrument.Name], history.ToList(), instrument.Delta, instrument.MovingWindow, currentPrice);
                     _grids.Add(instrument.Name, grid);
