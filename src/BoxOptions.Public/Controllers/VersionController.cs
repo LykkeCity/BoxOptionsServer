@@ -5,6 +5,7 @@ using BoxOptions.Public.Models;
 using BoxOptions.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace BoxOptions.Public.Controllers
@@ -13,15 +14,12 @@ namespace BoxOptions.Public.Controllers
     public class VersionController : Controller
     {
         private readonly BoxOptionsApiSettings _settings;
-        ICoefficientCalculator coefCalculator;
+        ICoefficientCalculator _coefficientCalculator;
 
-        public VersionController(BoxOptionsApiSettings settings)
-        {
+        public VersionController(BoxOptionsApiSettings settings, ICoefficientCalculator coefficientCalculator)
+        {            
             _settings = settings;
-            if (_settings.CoefApiUrl.ToLower() == "mock")
-                coefCalculator = new MockCoefficientCalculator();
-            else
-                coefCalculator = new ProxyCoefficientCalculator(_settings);
+            _coefficientCalculator = coefficientCalculator;
         }
 
         [HttpGet]        
@@ -34,12 +32,13 @@ namespace BoxOptions.Public.Controllers
                 // CoefAPI test for slack logging
                 // TODO: remove API test
 
-                var result = await coefCalculator.RequestAsync("123456", "EURCHF");
-
-
+                var result = await _coefficientCalculator.RequestAsync("123456", "EURCHF");
+                
                 var answer = new VersionModel
                 {
-                    Version = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion
+                    Version = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion,
+                    CoefficientCalculatorInstruments = _settings.CoefficientCalculator.Instruments.Select(x => x.Name).ToArray(),
+                    DaysHistory = _settings.HistoryHolder.NumberOfDaysInCache
                 };
                 return  Ok(answer);
             }
