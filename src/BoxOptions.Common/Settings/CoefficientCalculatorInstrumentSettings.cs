@@ -21,5 +21,7 @@
         public long MovingWindow { get; set; }
 
         public string ActivityFileName { get; set; }
+
+        public int SmileVar { get; set; }
     }
 }
