@@ -5,6 +5,7 @@ using BoxOptions.Common.Models;
 using BoxOptions.Common.Settings;
 using BoxOptions.Core.Interfaces;
 using Common;
+using Common.Log;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +20,7 @@ namespace BoxOptions.CoefficientCalculator
         private readonly IAssetQuoteSubscriber _quoteSubscriber;
         private readonly IHistoryHolder _historyHolder;
         private readonly IActivityManager _activityManager;
+        private readonly ILog _logger;
         private readonly CoefficientCalculatorSettings _settings;
 
         private readonly PriceCache _priceCache;
@@ -28,21 +30,24 @@ namespace BoxOptions.CoefficientCalculator
         private Dictionary<string, List<double>> _activities;
         
 
-        public Calculator(CoefficientCalculatorSettings settings, IAssetQuoteSubscriber quoteSubscriber, IHistoryHolder historyHolder, IActivityManager activityManager)
-        {
+        public Calculator(CoefficientCalculatorSettings settings, IAssetQuoteSubscriber quoteSubscriber, IHistoryHolder historyHolder, IActivityManager activityManager, ILog logger)
+        {            
             _isSubscriberRunning = false;
             _settings = settings;
             _quoteSubscriber = quoteSubscriber;
             _historyHolder = historyHolder;
             _activityManager = activityManager;
             _priceCache = new PriceCache();
+            _logger = logger;
         }
 
         public void Start()
         {
             if (_historyHolder.IsStarting)
             {
-                Console.WriteLine("CoefficientCalculator Waiting for History Build Up...");
+                string msg = "CoefficientCalculator Waiting for History Build Up...";
+                Console.WriteLine(msg);
+                _logger.WriteInfoAsync("Calculator.Start", null, msg);
                 _historyHolder.InitializationFinished += HistoryHolder_InitializationFinished;
             }
             else
@@ -103,7 +108,11 @@ namespace BoxOptions.CoefficientCalculator
                         }
                         _grids[instrument.Name].UpdateCoefficients(newPrices.ToList(), newPrice, instrument.SmileVar);
                         if (newPrices.Length > 0)
-                            Console.WriteLine($"[{instrument.Name}] Updated. New prices size:{newPrices.Length}. Current Price:{newPrice}");
+                        {
+                            string msg = $"{DateTime.UtcNow.ToString("u")}[{instrument.Name}] Updated. New prices size:{newPrices.Length}. Current Price:{newPrice}";
+                            Console.WriteLine(msg);
+                            _logger.WriteInfoAsync("Calculator.instrumentTimer.Elapsed", null, msg);
+                        }
 
                         instrumentTimer.Start();
                     };
@@ -147,7 +156,9 @@ namespace BoxOptions.CoefficientCalculator
             var currentPrice = history.Last();
             grid.InitiateGrid(activities, history.ToList(), cfg.Delta, cfg.MovingWindow, currentPrice, cfg.SmileVar);
             _grids[pair] = grid;
-            Console.WriteLine("[{0}] Updated Grid", pair);
+            string msg = $"{DateTime.UtcNow.ToString("u")}[{pair}] Updated. History size:{history.Length}. Current Price:{currentPrice}";
+            Console.WriteLine(msg);
+            _logger.WriteInfoAsync("Calculator.ReinitGrid", null, msg);
         }
 
         public void Dispose()
@@ -205,7 +216,9 @@ namespace BoxOptions.CoefficientCalculator
         }
         private void HistoryHolder_InitializationFinished(object sender, EventArgs e)
         {
-            Console.WriteLine("...CoefficientCalculator Finished Waiting for History Build Up");
+            string msg = "...CoefficientCalculator Finished Waiting for History Build Up";
+            Console.WriteLine(msg);
+            _logger.WriteInfoAsync("Calculator.Start", null, msg);
             _historyHolder.InitializationFinished -= HistoryHolder_InitializationFinished;
             Task.Run(async () => await Initialize())
                     .Wait();
