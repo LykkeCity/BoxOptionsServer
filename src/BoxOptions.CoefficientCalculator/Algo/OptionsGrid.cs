@@ -42,7 +42,7 @@ namespace BoxOptions.CoefficientCalculator.Algo
             volatilityEstimators = new VolatilityEstimator[nTimeIndexes];
         }
 
-        public void InitiateGrid(List<Double> activityDistribution, List<Price> historicPrices, double delta, long movingWindow, Price price)
+        public void InitiateGrid(List<Double> activityDistribution, List<Price> historicPrices, double delta, long movingWindow, Price price, int smileV)
         {
 
             double minRelatBottomStrike = -(priceSize * nPriceIndexes / 2.0);
@@ -60,13 +60,23 @@ namespace BoxOptions.CoefficientCalculator.Algo
                 {
                     optionsGrid[i][j] = new BoxOption(optStartsInMs, optEndsInMs, minRelatUpperStrike + j * priceSize, minRelatBottomStrike + j * priceSize);
                   //BoxPricing boxPricing = new BoxPricing(price.getTime() + optStartsInMs, price.getTime() + optEndsInMs,  optionsGrid[i][j].relatUpStrike + price.midPrice(), optionsGrid[i][j].relatBotStrike + price.midPrice(), price, marginHit, marginMiss, maxPayoutCoeff, bookingFee);
-                    BoxPricing boxPricing = new BoxPricing(price.Time + optStartsInMs,      price.Time + optEndsInMs,       optionsGrid[i][j].RelatUpStrike + price.MidPrice(), optionsGrid[i][j].RelatBotStrike + price.MidPrice(), price, marginHit, marginMiss, maxPayoutCoeff, bookingFee);
+                    BoxPricing boxPricing = new BoxPricing(
+                        price.Time + optStartsInMs,      
+                        price.Time + optEndsInMs,       
+                        optionsGrid[i][j].RelatUpStrike + price.MidPrice(), 
+                        optionsGrid[i][j].RelatBotStrike + price.MidPrice(), 
+                        price, 
+                        marginHit, 
+                        marginMiss, 
+                        maxPayoutCoeff, 
+                        bookingFee,
+                        smileV);
                     optionsGrid[i][j].SetCoefficients(boxPricing.GetCoefficients(0, volatilityEstimators[i].volat));
                 }
             }
         }
 
-        public void UpdateCoefficients(List<Price> newPrices, Price price)
+        public void UpdateCoefficients(List<Price> newPrices, Price price, int smileV)
         {
             for (int i = 0; i < nTimeIndexes; i++)
             {                
@@ -75,7 +85,17 @@ namespace BoxOptions.CoefficientCalculator.Algo
                 {
                     for (int j = 0; j < nPriceIndexes; j++)
                     {
-                        BoxPricing boxPricing = new BoxPricing(price.Time + optionsGrid[i][j].StartsInMS, price.Time + optionsGrid[i][j].StartsInMS + optionsGrid[i][j].LenInMS, optionsGrid[i][j].RelatUpStrike + price.MidPrice(), optionsGrid[i][j].RelatBotStrike + price.MidPrice(), price, marginHit, marginMiss, maxPayoutCoeff, bookingFee);
+                        BoxPricing boxPricing = new BoxPricing(
+                            price.Time + optionsGrid[i][j].StartsInMS, 
+                            price.Time + optionsGrid[i][j].StartsInMS + optionsGrid[i][j].LenInMS, 
+                            optionsGrid[i][j].RelatUpStrike + price.MidPrice(), 
+                            optionsGrid[i][j].RelatBotStrike + price.MidPrice(),
+                            price,
+                            marginHit,
+                            marginMiss,
+                            maxPayoutCoeff,
+                            bookingFee,
+                            smileV);
                         optionsGrid[i][j].SetCoefficients(boxPricing.GetCoefficients(0, volatilityEstimators[i].volat));
                     }
                 }

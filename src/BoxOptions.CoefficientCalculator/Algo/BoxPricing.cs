@@ -18,9 +18,11 @@ namespace BoxOptions.CoefficientCalculator.Algo
         public double marginMiss;
         double maxPayoutCoeff;
         double bookingFee;
+        int smileVar;
 
-        public BoxPricing(long startTime, long endTime, double upperStrike, double lowerStrike, Price price, double marginHit, double marginMiss, double maxPayoutCoeff, double bookingFee)
+        public BoxPricing(long startTime, long endTime, double upperStrike, double lowerStrike, Price price, double marginHit, double marginMiss, double maxPayoutCoeff, double bookingFee, int smileVar)
         {
+            this.smileVar = smileVar;
             if (startTime < endTime)
             {
                 tStart = startTime;
@@ -130,7 +132,7 @@ namespace BoxOptions.CoefficientCalculator.Algo
 
         double VolSmile(double moneyness)
         {
-            return Math.Pow((moneyness - 1) * 500, 2) + 1;
+            return Math.Pow((moneyness - 1) * smileVar, 2) + 1;
         }
 
         double Prob(double r, double volatility)

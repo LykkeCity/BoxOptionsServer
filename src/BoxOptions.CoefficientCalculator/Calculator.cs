@@ -67,7 +67,7 @@ namespace BoxOptions.CoefficientCalculator
                 {
 
                     var currentPrice = history.Last();
-                    grid.InitiateGrid(_activities[instrument.Name], history.ToList(), instrument.Delta, instrument.MovingWindow, currentPrice);
+                    grid.InitiateGrid(_activities[instrument.Name], history.ToList(), instrument.Delta, instrument.MovingWindow, currentPrice, instrument.SmileVar);
                     _grids.Add(instrument.Name, grid);
 
                     Timer instrumentTimer = new Timer(instrument.Period);
@@ -101,7 +101,7 @@ namespace BoxOptions.CoefficientCalculator
                                 Bid = lastHistoryPrice.Bid
                             };
                         }
-                        _grids[instrument.Name].UpdateCoefficients(newPrices.ToList(), newPrice);
+                        _grids[instrument.Name].UpdateCoefficients(newPrices.ToList(), newPrice, instrument.SmileVar);
                         if (newPrices.Length > 0)
                             Console.WriteLine($"[{instrument.Name}] Updated. New prices size:{newPrices.Length}. Current Price:{newPrice}");
 
@@ -145,7 +145,7 @@ namespace BoxOptions.CoefficientCalculator
             var activities = _activities[pair];
             var history = _historyHolder.GetHistory(pair);
             var currentPrice = history.Last();
-            grid.InitiateGrid(activities, history.ToList(), cfg.Delta, cfg.MovingWindow, currentPrice);
+            grid.InitiateGrid(activities, history.ToList(), cfg.Delta, cfg.MovingWindow, currentPrice, cfg.SmileVar);
             _grids[pair] = grid;
             Console.WriteLine("[{0}] Updated Grid", pair);
         }

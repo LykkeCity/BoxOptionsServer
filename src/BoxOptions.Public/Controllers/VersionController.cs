@@ -31,13 +31,17 @@ namespace BoxOptions.Public.Controllers
             {
                 // CoefAPI test for slack logging
                 // TODO: remove API test
+                string coefStatus = "CoefficientCalculator is OK";
+                try { var result = await _coefficientCalculator.RequestAsync("123456", "EURCHF"); }
+                catch (Exception ex01){ coefStatus = $"Coefficient calculator status failed: {ex01.Message}"; }
 
-                var result = await _coefficientCalculator.RequestAsync("123456", "EURCHF");
-                
+                var coefCalc = _settings.CoefficientCalculator.Instruments.Select(x => x.Name).ToList();
+                coefCalc.Insert(0, coefStatus);
+
                 var answer = new VersionModel
                 {
                     Version = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion,
-                    CoefficientCalculatorInstruments = _settings.CoefficientCalculator.Instruments.Select(x => x.Name).ToArray(),
+                    CoefficientCalculatorInstruments = coefCalc.ToArray(),
                     DaysHistory = _settings.HistoryHolder.NumberOfDaysInCache
                 };
                 return  Ok(answer);
