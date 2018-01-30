@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <PackageId>Lykke.BoxOptions.Client</PackageId>
+    <Authors>Nuno Araujo</Authors>
+    <Company>Lykke</Company>    
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Lykke.WampSharp.Default.Client" Version="1.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BoxOptions.Core\BoxOptions.Core.csproj" />
+    <ProjectReference Include="..\..\src\BoxOptions.Services\BoxOptions.Services.csproj" />
+  </ItemGroup>
+
+</Project>
