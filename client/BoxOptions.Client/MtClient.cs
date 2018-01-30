@@ -55,13 +55,9 @@ namespace BoxOptions.Client
             switch (env)
             {
                 case ClientEnv.Local:
-                    // kestrel Port
                     _serverAddress = "ws://localhost:5000/ws";
-                    // IIS Port from launchSettings.json
-                    //_serverAddress = "ws://127.0.0.1:59136/ws";
                     break;
                 case ClientEnv.Dev:
-                    // kestrel Port
                     _serverAddress = "ws://box-options.lykke-box-options.svc.cluster.local/ws";
                     break;
                 case ClientEnv.Prod:
