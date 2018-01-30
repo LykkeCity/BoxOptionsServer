@@ -459,7 +459,7 @@ namespace BoxOptions.Services
             Console.WriteLine("{0} - RequestCoeff", DateTime.Now.ToString("u"));
             try
             {
-                return _gameManager.RequestUserCoeff(userId, pair);
+                return _gameManager.RequestUserCoeff(pair, userId);
             }
             catch (Exception ex)
             {

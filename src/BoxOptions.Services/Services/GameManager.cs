@@ -387,7 +387,8 @@ namespace BoxOptions.Services
             if (!isDisposing)
                 CoeffMonitorTimer.Change(CoeffMonitorTimerInterval, -1);
         }
-        
+           
+
         #endregion
 
         #region User Methods
@@ -936,11 +937,14 @@ namespace BoxOptions.Services
             return userState.Balance;
         }        
                
-        public string RequestUserCoeff(string userId, string pair)
+        public string RequestUserCoeff(string pair, string userId = null)
         {
-            UserState user = GetUserState(userId);
             string result = _coefficientCache.GetCache(pair);
-            SetUserStatus(user, GameStatus.CoeffRequest, 0, string.Format("[{0}]", pair));
+            if (userId != null)
+            {
+                UserState user = GetUserState(userId);
+                SetUserStatus(user, GameStatus.CoeffRequest, 0, string.Format("[{0}]", pair));
+            }
             return result;
         }
 

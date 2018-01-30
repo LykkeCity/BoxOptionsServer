@@ -25,7 +25,7 @@ namespace BoxOptions.Common.Interfaces
 
         //void SetUserParameters(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex);
         //CoeffParameters GetUserParameters(string userId, string pair);
-        string RequestUserCoeff(string userId, string pair);
+        string RequestUserCoeff(string pair, string userId = null);
 
         void AddUserLog(string userId, string eventCode, string message);
 
