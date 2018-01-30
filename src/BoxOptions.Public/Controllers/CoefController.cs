@@ -10,20 +10,21 @@ namespace BoxOptions.Public.Controllers
     [Route("api/[controller]")]
     public class CoefController : Controller
     {
-        private readonly BoxOptionsApiSettings _settings;
-        ICoefficientCalculator coefCalculator;
+        private readonly BoxOptionsApiSettings _settings;        
         private readonly ILogRepository logRepository;
         private readonly ILog log;
         private readonly IAssetDatabase history;
+        private readonly IGameManager _gameManager;
+        private readonly ICoefficientCalculator _coefficientCalculator;
 
-        public CoefController(BoxOptionsApiSettings settings, IAssetDatabase history, ILogRepository logRepository, ILog log, ICoefficientCalculator coefCalculator)
+        public CoefController(BoxOptionsApiSettings settings, IAssetDatabase history, ILogRepository logRepository, ILog log, IGameManager gameManager, ICoefficientCalculator coefficientCalculator)
         {
             _settings = settings;
             this.logRepository = logRepository;
             this.history = history;
             this.log = log;
-            this.coefCalculator = coefCalculator;
-            
+            _gameManager = gameManager;
+            _coefficientCalculator = coefficientCalculator;
         }
 
         /*[HttpGet]
@@ -70,7 +71,19 @@ namespace BoxOptions.Public.Controllers
         {
             try
             {
-                string result = await coefCalculator.RequestAsync(userId, pair);
+                string result =  _gameManager.RequestUserCoeff(pair, userId);
+                await log.WriteInfoAsync("CoefController.RequestAsync", HttpContext.ToString(), $"RequestUserCoeff [{pair},{userId}]");
+                return Ok(result);
+            }
+            catch (System.Exception ex) { return StatusCode(500, ex.Message); }
+        }
+        [HttpGet]
+        [Route("requestfromcalculator")]
+        public async Task<IActionResult> RequestFromCalculator(string pair, string userId = "0")
+        {
+            try
+            {
+                string result = await _coefficientCalculator.RequestAsync(userId, pair);
                 return Ok(result);
             }
             catch (System.Exception ex) { return StatusCode(500, ex.Message); }

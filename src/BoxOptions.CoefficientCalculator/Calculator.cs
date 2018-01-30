@@ -111,7 +111,7 @@ namespace BoxOptions.CoefficientCalculator
                             //Console.WriteLine($"Current Price[{instrument.Name}] Date: {currentPrice.Date.ToString("u")}");
                         }
                         _grids[instrument.Name].UpdateCoefficients(newPrices.ToList(), newPrice, instrument.SmileVar);                        
-                        if (newPrices.Length > 0 && DateTime.UtcNow > lastreport[instrument.Name].AddMinutes(1))
+                        if (newPrices.Length > 0 && DateTime.UtcNow > lastreport[instrument.Name].AddMinutes(30))
                         {
                             string msg = $"{DateTime.UtcNow.ToString("u")}[{instrument.Name}] Updated. New prices size:{newPrices.Length}. Current Price:{newPrice.Date.ToString("u")}";
                             Console.WriteLine(msg);
