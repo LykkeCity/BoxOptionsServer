@@ -33,15 +33,16 @@ namespace BoxOptions.Services
         /// Mutual Exclusion Process
         /// </summary>
         private static readonly System.Threading.SemaphoreSlim quoteReceivedSemaphoreSlim = new System.Threading.SemaphoreSlim(1, 1);
-
-        private static readonly object CoeffCacheLock = new object();
+                
         private static readonly object BetCacheLock = new object();
 
         private static readonly System.Globalization.CultureInfo Ci = new System.Globalization.CultureInfo("en-us");
 
         private readonly int MaxUserBuffer = 128;
         private readonly string GameManagerId;
-                
+
+        private readonly CoefficientCache _coefficientCache;
+
         /// <summary>
         /// Database Object
         /// </summary>
@@ -91,6 +92,7 @@ namespace BoxOptions.Services
         /// </summary>
         private List<UserState> userList;
 
+        
         private bool IsCoeffStarted;
 
         /// <summary>
@@ -107,7 +109,7 @@ namespace BoxOptions.Services
         private string LastErrorMessage = "";
 
 
-        private Dictionary<string, string> CoefficientCache;
+        
         private bool isChangingCoeffs = false;
         private bool isRequestingCoeffs = false;
         #endregion
@@ -125,6 +127,7 @@ namespace BoxOptions.Services
             this.wampRealm = wampRealm;
             this.boxConfigRepository = boxConfigRepository;
             this.micrographCache = micrographCache;
+            _coefficientCache = new CoefficientCache();
 
             if (this.settings != null && this.settings != null && this.settings.GameManager != null)
                 MaxUserBuffer = this.settings.GameManager.MaxUserBuffer;
@@ -330,10 +333,12 @@ namespace BoxOptions.Services
                 Dictionary<string, string> temp = await CoeffCalculatorRequestBatch(GameManagerId, assets);
 
                 if (temp != null)
-                    lock (CoeffCacheLock)
+                {
+                    foreach (var item in temp.Keys)
                     {
-                        CoefficientCache = temp;
+                        _coefficientCache.SetCache(item, temp[item]);
                     }
+                }
             }
             catch (Exception ex)
             {
@@ -341,18 +346,7 @@ namespace BoxOptions.Services
                 LogError("LoadCoefficientCache", ex.InnerException ?? ex);
             }
         }
-
-        private string GetCoefficients(string assetPair)
-        {
-            string retval = "";
-            lock (CoeffCacheLock)
-            {
-                //Console.WriteLine("{0} > LOCK B", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
-                retval = CoefficientCache[assetPair];
-                //Console.WriteLine("{0} > UNLOCK B", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
-            }
-            return retval;
-        }
+       
                 
         private async void CoeffMonitorTimerCallback(object status)
         {
@@ -443,7 +437,7 @@ namespace BoxOptions.Services
                     try
                     {
                         string res = await calculator.RequestAsync(userId, asset);
-                        //Console.WriteLine("{0} > Coeffs[{1}]  received", DateTime.UtcNow.ToString("HH:mm:ss.fff"), asset);
+                        Console.WriteLine("{0} > Coeffs[{1}]  received", DateTime.UtcNow.ToString("HH:mm:ss.fff"), asset);
                         retval.Add(asset, res);
                     }
                     catch(Exception ex)
@@ -1015,10 +1009,8 @@ namespace BoxOptions.Services
         public string RequestUserCoeff(string userId, string pair)
         {
             UserState user = GetUserState(userId);
-            // Request Coeffcalculator Data            
-            string result = GetCoefficients(pair);
-            //SetUserStatus(user, GameStatus.CoeffRequest, string.Format("[{0}]={1}", pair, result));
-            SetUserStatus(user, GameStatus.CoeffRequest,0, string.Format("[{0}]", pair));
+            string result = _coefficientCache.GetCache(pair);
+            SetUserStatus(user, GameStatus.CoeffRequest, 0, string.Format("[{0}]", pair));
             return result;
         }
 
