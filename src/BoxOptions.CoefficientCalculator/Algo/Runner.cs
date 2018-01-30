@@ -16,7 +16,7 @@ namespace BoxOptions.CoefficientCalculator.Algo
         public int _numberDC;
         public LinkedList<long> _timesDC;
         public LinkedList<double> _osLengths;
-        public double _avSqrtVar;
+        //public double _avSqrtVar;
         public double _osL;
         private LinkedList<IE> _ieLinkedList;
         private long _movingWindow;

@@ -46,7 +46,7 @@ namespace BoxOptions.Public.Processors
             }
         }
 
-        private async void InsertInAzure(List<IBestBidAsk> buffer)
+        private async Task InsertInAzure(List<IBestBidAsk> buffer)
         {
 #if !DEBUG
                 await assetRep.InsertManyAsync(buffer);

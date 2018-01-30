@@ -30,6 +30,6 @@ namespace BoxOptions.Common.Interfaces
         void AddUserLog(string userId, string eventCode, string message);
 
         Task SetBoxConfig(IBoxSize[] boxes);
-        Task<bool> ReloadGameAssets();
+        
     }
 }
