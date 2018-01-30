@@ -112,6 +112,8 @@ namespace BoxOptions.Services
         
         private bool isChangingCoeffs = false;
         private bool isRequestingCoeffs = false;
+
+        private Dictionary<string, string> coefStatus;
         #endregion
 
         #region Constructor
@@ -144,6 +146,8 @@ namespace BoxOptions.Services
             //calculateBoxConfig = null;
             dbBoxConfig = Task.Run(() => LoadBoxParameters()).Result;
             Console.WriteLine("Db Box Config = {0}", dbBoxConfig.Count);
+
+            coefStatus = new Dictionary<string, string>();
 
             // Create Coef Cache Monitor timer in paused state.
             CoeffMonitorTimer = new System.Threading.Timer(new System.Threading.TimerCallback(CoeffMonitorTimerCallback), null, -1, -1);
@@ -323,8 +327,8 @@ namespace BoxOptions.Services
                 CoeffMonitorTimer.Change(CoeffMonitorTimerInterval, -1);
             return true;
         }
-
-        private async void LoadCoefficientCache()
+        
+        private async Task LoadCoefficientCache()
         {
             try
             {
@@ -336,7 +340,21 @@ namespace BoxOptions.Services
                 {
                     foreach (var item in temp.Keys)
                     {
-                        _coefficientCache.SetCache(item, temp[item]);
+                        var res = _coefficientCache.SetCache(item, temp[item]);
+                        if (!coefStatus.ContainsKey(item))
+                            coefStatus.Add(item, "OK");
+                        if (res != coefStatus[item])
+                        {
+                            if (coefStatus[item] == "All coefficients are equal to 1.0" && res =="OK")
+                            {
+                                await appLog.WriteWarningAsync("LoadCoefficientCache", null, $"Coefficients for [{item}] are not 1.0 anymore");
+                            }
+                            else if (res == "All coefficients are equal to 1.0" && coefStatus[item] == "OK")
+                            {
+                                await appLog.WriteWarningAsync("LoadCoefficientCache", null, $"Coefficients for [{item}] are all 1.0");
+                            }
+                            coefStatus[item] = res;
+                        }
                     }
                 }
             }
@@ -437,12 +455,12 @@ namespace BoxOptions.Services
                     try
                     {
                         string res = await calculator.RequestAsync(userId, asset);
-                        Console.WriteLine("{0} > Coeffs[{1}]  received", DateTime.UtcNow.ToString("HH:mm:ss.fff"), asset);
+                        //Console.WriteLine("{0} > Coeffs[{1}]  received", DateTime.UtcNow.ToString("HH:mm:ss.fff"), asset);
                         retval.Add(asset, res);
                     }
                     catch(Exception ex)
                     {
-                        Console.WriteLine("{0} > Coeff Request Error: {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), ex.Message);
+                        Console.WriteLine("{0} > Coeff[{2}] Request Error: {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), ex.Message, asset);
                     }
                 }
                 //Console.WriteLine("{0} > Coeff Request DONE", DateTime.UtcNow.ToString("HH:mm:ss.fff"));

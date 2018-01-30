@@ -54,13 +54,15 @@ namespace BoxOptions.CoefficientCalculator
                 Task.Run(async () => await Initialize())
                     .Wait();
         }
-
+        
         private async Task Initialize()
         {
             _grids = new Dictionary<string, OptionsGrid>();
             _activities = new Dictionary<string, List<double>>();
+            Dictionary<string, DateTime> lastreport = new Dictionary<string, DateTime>();
             foreach (var instrument in _settings.Instruments)
             {
+                lastreport.Add(instrument.Name, DateTime.UtcNow);
                 var activity = await _activityManager.GetActivityByName(instrument.Name, instrument.ActivityFileName);
                 _activities.Add(instrument.Name, activity.ActivityArray.ToList());
 
@@ -72,6 +74,7 @@ namespace BoxOptions.CoefficientCalculator
                 {
 
                     var currentPrice = history.Last();
+                    await _logger.WriteInfoAsync("Caculator.Initialize", null, $"Current Price[{instrument.Name}] Date: {currentPrice.Date.ToString("u")}");
                     grid.InitiateGrid(_activities[instrument.Name], history.ToList(), instrument.Delta, instrument.MovingWindow, currentPrice, instrument.SmileVar);
                     _grids.Add(instrument.Name, grid);
 
@@ -105,13 +108,15 @@ namespace BoxOptions.CoefficientCalculator
                                 Ask = lastHistoryPrice.Ask,
                                 Bid = lastHistoryPrice.Bid
                             };
+                            //Console.WriteLine($"Current Price[{instrument.Name}] Date: {currentPrice.Date.ToString("u")}");
                         }
-                        _grids[instrument.Name].UpdateCoefficients(newPrices.ToList(), newPrice, instrument.SmileVar);
-                        if (newPrices.Length > 0)
+                        _grids[instrument.Name].UpdateCoefficients(newPrices.ToList(), newPrice, instrument.SmileVar);                        
+                        if (newPrices.Length > 0 && DateTime.UtcNow > lastreport[instrument.Name].AddMinutes(1))
                         {
-                            string msg = $"{DateTime.UtcNow.ToString("u")}[{instrument.Name}] Updated. New prices size:{newPrices.Length}. Current Price:{newPrice}";
+                            string msg = $"{DateTime.UtcNow.ToString("u")}[{instrument.Name}] Updated. New prices size:{newPrices.Length}. Current Price:{newPrice.Date.ToString("u")}";
                             Console.WriteLine(msg);
                             _logger.WriteInfoAsync("Calculator.instrumentTimer.Elapsed", null, msg);
+                            lastreport[instrument.Name] = DateTime.UtcNow;
                         }
 
                         instrumentTimer.Start();
@@ -156,7 +161,7 @@ namespace BoxOptions.CoefficientCalculator
             var currentPrice = history.Last();
             grid.InitiateGrid(activities, history.ToList(), cfg.Delta, cfg.MovingWindow, currentPrice, cfg.SmileVar);
             _grids[pair] = grid;
-            string msg = $"{DateTime.UtcNow.ToString("u")}[{pair}] Updated. History size:{history.Length}. Current Price:{currentPrice}";
+            string msg = $"{DateTime.UtcNow.ToString("u")}[{pair}] Updated. History size:{history.Length}. Current Price:{currentPrice.Date.ToString("u")}";
             Console.WriteLine(msg);
             _logger.WriteInfoAsync("Calculator.ReinitGrid", null, msg);
         }

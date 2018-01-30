@@ -38,7 +38,7 @@ namespace BoxOptions.Services.Models
                     if (block.Length < 1)
                         continue;
                     string[] coefs = block.Split('{');
-                    Console.WriteLine(coefs);
+                    //Console.WriteLine(coefs);
                     foreach (var coef in coefs)
                     {
                         if (coef.Length < 1)
