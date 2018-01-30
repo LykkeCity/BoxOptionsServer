@@ -72,6 +72,7 @@ namespace BoxOptions.Services
         /// Application Log Repository
         /// </summary>
         private readonly ILog appLog;
+        private readonly IHistoryHolder _historyHolder;
         /// <summary>
         /// Settings
         /// </summary>
@@ -81,7 +82,7 @@ namespace BoxOptions.Services
         /// </summary>
         private Dictionary<string, PriceCache> assetCache;
 
-        private readonly System.Threading.Timer CoeffMonitorTimer;
+        private System.Threading.Timer CoeffMonitorTimer;
 
         /// <summary>
         /// Ongoing Bets Cache
@@ -92,8 +93,7 @@ namespace BoxOptions.Services
         /// </summary>
         private List<UserState> userList;
 
-        
-        private bool IsCoeffStarted;
+                
 
         /// <summary>
         /// Box configuration
@@ -107,18 +107,13 @@ namespace BoxOptions.Services
         private DateTime lastCoeffChange;
         private DateTime LastErrorDate = DateTime.MinValue;
         private string LastErrorMessage = "";
-
-
         
-        private bool isChangingCoeffs = false;
-        private bool isRequestingCoeffs = false;
-
         private Dictionary<string, string> coefStatus;
         #endregion
 
         #region Constructor
         public GameManager(BoxOptionsApiSettings settings, IGameDatabase database, ICoefficientCalculator calculator,
-            IAssetQuoteSubscriber quoteFeed, IWampHostedRealm wampRealm, IMicrographCache micrographCache, IBoxConfigRepository boxConfigRepository, ILogRepository logRepository, ILog appLog)
+            IAssetQuoteSubscriber quoteFeed, IWampHostedRealm wampRealm, IMicrographCache micrographCache, IBoxConfigRepository boxConfigRepository, ILogRepository logRepository, ILog appLog, IHistoryHolder historyHolder)
         {
             this.database = database;
             this.calculator = calculator;
@@ -129,6 +124,7 @@ namespace BoxOptions.Services
             this.wampRealm = wampRealm;
             this.boxConfigRepository = boxConfigRepository;
             this.micrographCache = micrographCache;
+            _historyHolder = historyHolder;
             _coefficientCache = new CoefficientCache();
 
             if (this.settings != null && this.settings != null && this.settings.GameManager != null)
@@ -138,9 +134,7 @@ namespace BoxOptions.Services
             userList = new List<UserState>();
             betCache = new List<GameBet>();
             assetCache = new Dictionary<string, PriceCache>();
-
-            IsCoeffStarted = false;
-
+                        
             this.quoteFeed.MessageReceived += QuoteFeed_MessageReceived;
 
             //calculateBoxConfig = null;
@@ -149,8 +143,13 @@ namespace BoxOptions.Services
 
             coefStatus = new Dictionary<string, string>();
 
-            // Create Coef Cache Monitor timer in paused state.
-            CoeffMonitorTimer = new System.Threading.Timer(new System.Threading.TimerCallback(CoeffMonitorTimerCallback), null, -1, -1);
+            _historyHolder.InitializationFinished += _historyHolder_InitializationFinished;            
+        }
+
+        private void _historyHolder_InitializationFinished(object sender, EventArgs e)
+        {   
+            Task.Run(async () => await SetCoeffs()).Wait();
+            CoeffMonitorTimer = new System.Threading.Timer(new System.Threading.TimerCallback(CoeffMonitorTimerCallback), null, CoeffMonitorTimerInterval, -1);
         }
 
 
@@ -301,174 +300,94 @@ namespace BoxOptions.Services
         }
 
         #region Coefficient Cache Monitor
-        
-        private async Task<bool> InitializeCoefCalc(bool StartMonitor)
-        {
-            lastCoeffChange = DateTime.UtcNow;
 
+        private async Task SetCoeffs()
+        {
+            BoxSize[] boxes = CalculatedBoxes(dbBoxConfig.Where(b => b.GameAllowed).ToList(), micrographCache);
+            await coeffCalculatorSemaphoreSlim.WaitAsync();
             try
             {
-                LogInfo("InitializeCoefCalc", "Initializing CoeffCalc API");
-                BoxSize[] calculatedParams = CalculatedBoxes(dbBoxConfig.Where(b => b.GameAllowed).ToList(), micrographCache);
-                Console.WriteLine("{0} > InitializeCoefCalc({1})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), StartMonitor);
-                await CoeffCalculatorChangeBatch(GameManagerId, calculatedParams);
-
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("{0} > InitializeCoefCalc ERROR = ({1})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), ex.Message);
-                LogError("InitializeCoefCalc", ex);
-            }            
-            finally { lastCoeffChange = DateTime.UtcNow; }
-
-            LoadCoefficientCache();
-
-            if (StartMonitor)
-                CoeffMonitorTimer.Change(CoeffMonitorTimerInterval, -1);
-            return true;
-        }
-        
-        private async Task LoadCoefficientCache()
-        {
-            try
-            {
-                //Console.WriteLine("{0} > LoadCoefficientCache", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
-                string[] assets = dbBoxConfig.Where(a => a.GameAllowed).Select(b => b.AssetPair).ToArray();
-                Dictionary<string, string> temp = await CoeffCalculatorRequestBatch(GameManagerId, assets);
-
-                if (temp != null)
+                foreach (var box in boxes)
                 {
-                    foreach (var item in temp.Keys)
+                    try
                     {
-                        var res = _coefficientCache.SetCache(item, temp[item]);
-                        if (!coefStatus.ContainsKey(item))
-                            coefStatus.Add(item, "OK");
-                        if (res != coefStatus[item])
-                        {
-                            if (coefStatus[item] == "All coefficients are equal to 1.0" && res =="OK")
-                            {
-                                await appLog.WriteWarningAsync("LoadCoefficientCache", null, $"Coefficients for [{item}] are not 1.0 anymore");
-                            }
-                            else if (res == "All coefficients are equal to 1.0" && coefStatus[item] == "OK")
-                            {
-                                await appLog.WriteWarningAsync("LoadCoefficientCache", null, $"Coefficients for [{item}] are all 1.0");
-                            }
-                            coefStatus[item] = res;
-                        }
+                        var res = await calculator.ChangeAsync(GameManagerId, box.AssetPair, Convert.ToInt32(box.TimeToFirstBox), Convert.ToInt32(box.BoxHeight), box.BoxWidth, NPriceIndex, NTimeIndex);
+                        lastCoeffChange = DateTime.UtcNow;
+                        ProcessCoeffSetNotifications(box.AssetPair, res);                        
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"{DateTime.UtcNow.ToString("HH:mm:ss.fff")} > GetCoeffs[{box.AssetPair}] Error: {ex.Message}");
                     }
                 }
             }
-            catch (Exception ex)
+            finally
+            { coeffCalculatorSemaphoreSlim.Release(); }
+        }                
+        private async Task GetCoeffs()
+        {
+            string[] assets = dbBoxConfig.Where(a => a.GameAllowed).Select(b => b.AssetPair).ToArray();
+            await coeffCalculatorSemaphoreSlim.WaitAsync();
+            try
             {
-                Console.WriteLine("{0} > LoadCoefficientCache Error: {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), ex.Message);
-                LogError("LoadCoefficientCache", ex.InnerException ?? ex);
+                foreach (var asset in assets)
+                {
+                    try
+                    {
+                        string coeffString = await calculator.RequestAsync(GameManagerId, asset);
+                        var res = _coefficientCache.SetCache(asset, coeffString);
+                        await ProcessCoeffGetNotifications(asset, res);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"{DateTime.UtcNow.ToString("HH:mm:ss.fff")} > GetCoeffs[{asset}] Error: {ex.Message}");
+                    }
+                }
+            }
+            finally
+            { coeffCalculatorSemaphoreSlim.Release(); }
+        }
+
+        private async Task ProcessCoeffGetNotifications(string asset, string res)
+        {
+            if (!coefStatus.ContainsKey(asset))
+                coefStatus.Add(asset, "");
+
+            if (res != coefStatus[asset])
+            {
+                if (res == "OK" && coefStatus[asset]== "All coefficients are equal to 1.0")
+                {
+                    await appLog.WriteWarningAsync("LoadCoefficientCache", null, $"Coefficients for [{asset}] are not 1.0 anymore");
+                }
+                else if (res == "All coefficients are equal to 1.0" )
+                {
+                    await appLog.WriteWarningAsync("LoadCoefficientCache", null, $"Coefficients for [{asset}] are all 1.0");
+                }
+                coefStatus[asset] = res;
             }
         }
-       
+        private void ProcessCoeffSetNotifications(string assetPair, string res)
+        {
+            Console.WriteLine($"SetCoeffs[{assetPair}]: {res}");            
+        }
                 
-        private async void CoeffMonitorTimerCallback(object status)
+        private void CoeffMonitorTimerCallback(object status)
         {
             CoeffMonitorTimer.Change(-1, -1);
             try
             {
                 // If more than 10 minute passed since last change, do another change
                 if (lastCoeffChange.AddMinutes(30) < DateTime.UtcNow)
-                {                    
-                    bool done = await InitializeCoefCalc(false); 
-                }
+                    Task.Run(async () => await SetCoeffs()).Wait();
                 else
-                    LoadCoefficientCache();
+                    Task.Run(async () => await GetCoeffs()).Wait(); 
             }
             catch (Exception ex) { LogError("CoeffMonitorTimerCallback", ex); }
 
             if (!isDisposing)
                 CoeffMonitorTimer.Change(CoeffMonitorTimerInterval, -1);
         }
-
-        private async Task<string> CoeffCalculatorChangeBatch(string userId, BoxSize[] boxes)
-        {
-            if (isRequestingCoeffs)
-                return null;
-            if (isChangingCoeffs)
-                return null;
-
-            isChangingCoeffs = true;
-            await coeffCalculatorSemaphoreSlim.WaitAsync();
-            try
-            {
-                string res = "EMPTY BOXES";
-                //Console.WriteLine("{0} > Coeff Change", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
-                foreach (var box in boxes)
-                {
-                    // Change calculator parameters for current pair with User parameters
-                    //Console.WriteLine("{0} > ChangeAsync {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), box.AssetPair);
-                    res = await calculator.ChangeAsync(userId, box.AssetPair, Convert.ToInt32(box.TimeToFirstBox), Convert.ToInt32(box.BoxHeight), box.BoxWidth, NPriceIndex, NTimeIndex);
-                    if (res != "OK")
-                        throw new InvalidOperationException(res);
-
-                    string msg = $"ChangeAsync:[{box.AssetPair}] TimeToFirstBox={box.TimeToFirstBox}, BoxHeight={box.BoxHeight}, BoxWidth={box.BoxWidth}, NPriceIndex={NPriceIndex}, NTimeIndex={NTimeIndex}";
-                    //Console.WriteLine("{0} > {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), msg);
-                    LogInfo("CoeffCalculatorChangeBatch", msg);
-                    System.Threading.Thread.Sleep(150);
-                }
-                Console.WriteLine("{0} > Coeff Change DONE", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
-                return res;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("{0} > Coeff Change Failed. Error={1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), ex.Message);
-                //LogWarning("CoeffCalculatorChangeBatch", ex.Message);
-                return null;
-            }            
-            finally
-            {
-                coeffCalculatorSemaphoreSlim.Release();
-                isChangingCoeffs = false;
-            }
-
-
-        }
-        /// <summary>
-        /// Performs a Coefficient Request to CoeffCalculator object
-        /// </summary>
-        /// <param name="userId">User Id</param>
-        /// <param name="pair">Instrument</param>
-        /// <param name="timeToFirstOption">Time to first option</param>
-        /// <param name="optionLen">Option Length</param>
-        /// <param name="priceSize">Price Size</param>
-        /// <param name="nPriceIndex">NPrice Index</param>
-        /// <param name="nTimeIndex">NTime Index</param>
-        /// <returns>CoeffCalc result</returns>
-        private async Task<Dictionary<string, string>> CoeffCalculatorRequestBatch(string userId, string[] assetPairs)
-        {
-
-            if (isChangingCoeffs)
-                return null;
-
-            isRequestingCoeffs = true;
-            try
-            {
-                //Console.WriteLine("{0} > Coeff Request", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
-                Dictionary<string, string> retval = new Dictionary<string, string>();
-                foreach (var asset in assetPairs)
-                {
-                    try
-                    {
-                        string res = await calculator.RequestAsync(userId, asset);
-                        //Console.WriteLine("{0} > Coeffs[{1}]  received", DateTime.UtcNow.ToString("HH:mm:ss.fff"), asset);
-                        retval.Add(asset, res);
-                    }
-                    catch(Exception ex)
-                    {
-                        Console.WriteLine("{0} > Coeff[{2}] Request Error: {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), ex.Message, asset);
-                    }
-                }
-                //Console.WriteLine("{0} > Coeff Request DONE", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
-                return retval;
-            }
-            finally { isRequestingCoeffs = false; }
-        }
-
+        
         #endregion
 
         #region User Methods
@@ -478,14 +397,7 @@ namespace BoxOptions.Services
             try
             {
                 UserState userState = GetUserState(userId);
-                
-                if (!IsCoeffStarted)
-                {
-                    IsCoeffStarted = true;
-
-                    Task.Run(() => InitializeCoefCalc(true));
-
-                }
+                                
                 BoxSize[] retval = CalculatedBoxes(dbBoxConfig.Where(b => b.GameAllowed).ToList(), micrographCache);
 
                 // Add Launch to user history 
@@ -1076,29 +988,7 @@ namespace BoxOptions.Services
         {               
             await boxConfigRepository.InsertManyAsync(boxes);
         }
-
-        public async Task<bool> ReloadGameAssets()
-        {
-            try
-            {
-                // Stop Coeff Monitor if it is running
-                if (IsCoeffStarted)
-                    CoeffMonitorTimer.Change(-1, -1);
-
-                dbBoxConfig = await LoadBoxParameters();
-                LogInfo("ReloadGameAssets", "Reloaded game assets from database");
-
-                // Restart InitializeCoefCalc monitor
-                await InitializeCoefCalc(true); 
-                return true;
-            }
-            catch (Exception ex)
-            {
-                LogError("ReloadGameAssets", ex);
-                return false;
-            }
-        }
-
+                
         #endregion
 
         #region Nested Class

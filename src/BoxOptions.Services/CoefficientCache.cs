@@ -8,7 +8,11 @@ namespace BoxOptions.Services
     {
         private static readonly object CoeffCacheLock = new object();
         private Dictionary<string, CoefficientCacheItem> _coefCache;
-        
+
+        public CoefficientCache()
+        {
+            _coefCache = new Dictionary<string, CoefficientCacheItem>();
+        }
 
         public string SetCache(string assetPair, string cache)
         {
@@ -33,9 +37,7 @@ namespace BoxOptions.Services
                 throw new ArgumentException("AssetPair not in cache", "assetPair");
             lock (CoeffCacheLock)
             {
-                //Console.WriteLine("{0} > LOCK B", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                 return _coefCache[assetPair].Cache;
-                //Console.WriteLine("{0} > UNLOCK B", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
             }
         }
 
