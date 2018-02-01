@@ -210,10 +210,10 @@ namespace BoxOptions.Public.Controllers
                         if (entities.Count() > 0)
                         {
                             StringBuilder sb = new StringBuilder();
-                            sb.AppendLine("Date;UserId;Status;Message");
+                            sb.AppendLine("Date;UserId;Status;AccountDelta;Message;");
                             foreach (var item in entities)
                             {
-                                sb.AppendLine($"{item.Date.ToString("u")};{item.UserId};{item.GameStatus}-{(Common.GameStatus)item.GameStatus};{item.Message.Replace(';', '|')}");
+                                sb.AppendLine($"{item.Date.ToString("u")};{item.UserId};{item.GameStatus}-{(Common.GameStatus)item.GameStatus};{item.AccountDelta};{item.Message.Replace(';', '|')}");
                             }
                             return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", $"userHistory_{model.Client}.csv");
                         }

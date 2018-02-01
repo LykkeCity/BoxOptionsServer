@@ -59,7 +59,7 @@ namespace BoxOptions.Services.Models
 
         public override string ToString()
         {
-            return string.Format("{0} > {1:f4}", this.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff"), BetAmount);
+            return string.Format("{0} | {1:f4}", Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff"), BetAmount);
         }        
 
         internal void StartWaitTimeToGraph()
