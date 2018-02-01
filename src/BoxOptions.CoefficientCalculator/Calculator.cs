@@ -190,6 +190,12 @@ namespace BoxOptions.CoefficientCalculator
             return Task.FromResult(grid);
         }
 
+
+        public double GetVolatility(string asset)
+        {
+            return _grids[asset].Volatility;
+        }
+
         public bool ValidateRequest(string userId, string pair)
         {
             throw new NotImplementedException();

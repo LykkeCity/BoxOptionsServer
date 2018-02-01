@@ -225,7 +225,8 @@ namespace BoxOptions.Services
                             BoxWidth = 0.00003,
                             TimeToFirstBox = 4000,
                             GameAllowed = false,
-                            SaveHistory = false
+                            SaveHistory = false,
+                            VolatilityZoomFactor = 0
                         });
                     }
                 }
@@ -241,7 +242,7 @@ namespace BoxOptions.Services
             foreach (var item in DistictAssets)
             {
                 var box = boxConfig.Where(bx => bx.AssetPair == item).FirstOrDefault();
-                retval.Add(new BoxSize()
+                retval.Add(new BoxSize
                 {
                     AssetPair = box.AssetPair,
                     BoxesPerRow = box.BoxesPerRow,
@@ -249,7 +250,8 @@ namespace BoxOptions.Services
                     BoxWidth = box.BoxWidth,
                     TimeToFirstBox = box.TimeToFirstBox,
                     GameAllowed = box.GameAllowed,
-                    SaveHistory = box.SaveHistory
+                    SaveHistory = box.SaveHistory,
+                    VolatilityZoomFactor = box.VolatilityZoomFactor
                 });
 
             }

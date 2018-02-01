@@ -35,5 +35,7 @@ namespace BoxOptions.Common.Interfaces
 
         bool ValidateChange(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex);
         bool ValidateChangeResult(string result, out string errorMessage);
+
+        double GetVolatility(string asset);
     }
 }
