@@ -305,6 +305,7 @@ namespace BoxOptions.Services
 
         private async Task SetCoeffs()
         {
+            dbBoxConfig = await LoadBoxParameters();
             BoxSize[] boxes = CalculatedBoxes(dbBoxConfig.Where(b => b.GameAllowed).ToList(), micrographCache);
             await coeffCalculatorSemaphoreSlim.WaitAsync();
             try
@@ -315,11 +316,11 @@ namespace BoxOptions.Services
                     {
                         var res = await calculator.ChangeAsync(GameManagerId, box.AssetPair, Convert.ToInt32(box.TimeToFirstBox), Convert.ToInt32(box.BoxHeight), box.BoxWidth, NPriceIndex, NTimeIndex);
                         lastCoeffChange = DateTime.UtcNow;
-                        ProcessCoeffSetNotifications(box.AssetPair, res);                        
+                        await ProcessCoeffSetNotifications(box.AssetPair, res);                        
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"{DateTime.UtcNow.ToString("HH:mm:ss.fff")} > GetCoeffs[{box.AssetPair}] Error: {ex.Message}");
+                        Console.WriteLine($"{DateTime.UtcNow.ToString("HH:mm:ss.fff")} | GetCoeffs[{box.AssetPair}] Error: {ex.Message}");
                     }
                 }
             }
@@ -342,7 +343,7 @@ namespace BoxOptions.Services
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"{DateTime.UtcNow.ToString("HH:mm:ss.fff")} > GetCoeffs[{asset}] Error: {ex.Message}");
+                        Console.WriteLine($"{DateTime.UtcNow.ToString("HH:mm:ss.fff")} | GetCoeffs[{asset}] Error: {ex.Message}");
                     }
                 }
             }
@@ -359,18 +360,20 @@ namespace BoxOptions.Services
             {
                 if (res == "OK" && coefStatus[asset]== "All coefficients are equal to 1.0")
                 {
-                    await appLog.WriteWarningAsync("LoadCoefficientCache", null, $"Coefficients for [{asset}] are not 1.0 anymore");
+                    await appLog.WriteWarningAsync("GetCoeffs", null, $"Coefficients for [{asset}] are not 1.0 anymore");
                 }
                 else if (res == "All coefficients are equal to 1.0" )
                 {
-                    await appLog.WriteWarningAsync("LoadCoefficientCache", null, $"Coefficients for [{asset}] are all 1.0");
+                    await appLog.WriteWarningAsync("GetCoeffs", null, $"Coefficients for [{asset}] are all 1.0");
                 }
                 coefStatus[asset] = res;
             }
         }
-        private void ProcessCoeffSetNotifications(string assetPair, string res)
+        private async Task ProcessCoeffSetNotifications(string assetPair, string res)
         {
-            Console.WriteLine($"SetCoeffs[{assetPair}]: {res}");            
+            string msg = $"SetCoeffs[{assetPair}]: {res}";
+            Console.WriteLine(msg);
+            await appLog.WriteWarningAsync("SetCoeffs", null, msg);
         }
                 
         private void CoeffMonitorTimerCallback(object status)
@@ -378,8 +381,8 @@ namespace BoxOptions.Services
             CoeffMonitorTimer.Change(-1, -1);
             try
             {
-                // If more than 10 minute passed since last change, do another change
-                if (lastCoeffChange.AddMinutes(30) < DateTime.UtcNow)
+                // If more than 5 minute passed since last change, do another change
+                if (lastCoeffChange.AddMinutes(5) < DateTime.UtcNow)
                     Task.Run(async () => await SetCoeffs()).Wait();
                 else
                     Task.Run(async () => await GetCoeffs()).Wait(); 
@@ -409,7 +412,6 @@ namespace BoxOptions.Services
                 {
                     launchMsg += string.Format(Ci, "[{0};BoxWidth:{1};BoxHeight:{2};TimeToFirstBox:{3};BoxesPerRow:{4}]", boxSize.AssetPair, boxSize.BoxWidth, boxSize.BoxHeight, boxSize.TimeToFirstBox, boxSize.BoxesPerRow);
                 }
-                //Console.WriteLine("{0} > SetUserStatus", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
                 SetUserStatus(userState, GameStatus.Launch, 0, launchMsg);
 
                 // Return Calculate Price Sizes
@@ -547,11 +549,9 @@ namespace BoxOptions.Services
                 SetUserStatus(userState, GameStatus.Error, 0, "PlaceBet Failed:" + message);
                 return null;
             }
-
-            // TODO: Get Box from... somewhere            
+                        
             Box boxObject = Box.FromJson(box);
-            //Console.WriteLine("{0} > Placing Bet. TimetoGraph={1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), boxObject.TimeToGraph);
-
+            
             // Get Current Coeffs for Game's Assetpair
             var assetConfig = dbBoxConfig.Where(b => b.GameAllowed).Where(b => b.AssetPair == assetPair).FirstOrDefault();
             if (assetConfig == null)
@@ -857,9 +857,7 @@ namespace BoxOptions.Services
                 GameBet bet = sender as GameBet;
                 if (bet == null)
                     return;
-
-                //Console.WriteLine("{0} > Bet_TimeToGraphReached. TimeLength={1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), bet.Box.TimeLength);
-
+                
                 // Do initial Check            
                 if (assetCache.ContainsKey(bet.AssetPair))
                 {
@@ -876,7 +874,6 @@ namespace BoxOptions.Services
                 lock (BetCacheLock)
                 {
                     betCache.Add(bet);
-                    //Console.WriteLine("{0} > Added Bet To cache. {1}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), bet.Box.Id);
                 }
             }
             catch (Exception ex) { LogError("Bet_TimeToGraphReached", ex); }

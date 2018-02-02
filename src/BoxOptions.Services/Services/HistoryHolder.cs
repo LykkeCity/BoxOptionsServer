@@ -40,10 +40,10 @@ namespace BoxOptions.Services
 
         public async void Start()
         {
-            Console.WriteLine("{0} - History Holder Starting", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+            Console.WriteLine("{0} | History Holder Starting", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
             await _log?.WriteInfoAsync("BoxOptions.Services.HistoryHolder", "Start", null, "History Holder Started", DateTime.UtcNow);
 
-            string StartLog = string.Format("{0} - Getting History", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+            string StartLog = string.Format("{0} | Getting History", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
 
             historyAssets = _settings.HistoryHolder.Assets;
 
@@ -55,9 +55,9 @@ namespace BoxOptions.Services
                 // Get FromDate Ignoring weekends
                 var historyStart = GetHistoryStartDate(DateTime.UtcNow);
                                 
-                StartLog += $"\n\r{DateTime.UtcNow.ToString("HH:mm:ss.fff")} - GetHistory({asset}_{historyStart.ToString("yyyy-MM-dd")})";
+                StartLog += $"\n\r{DateTime.UtcNow.ToString("HH:mm:ss.fff")} | GetHistory({asset}_{historyStart.ToString("yyyy-MM-dd")})";
                 var tmp = await _assetDatabase.GetAssetHistory(historyStart, DateTime.UtcNow, asset);                
-                StartLog += $"\n\r{DateTime.UtcNow.ToString("HH:mm:ss.fff")} - GetHistory({asset}_{historyStart.ToString("yyyy-MM-dd")}) DONE";
+                StartLog += $"\n\r{DateTime.UtcNow.ToString("HH:mm:ss.fff")} | GetHistory({asset}_{historyStart.ToString("yyyy-MM-dd")}) DONE";
 
                 foreach (var historyItem in tmp)
                 {
@@ -68,7 +68,7 @@ namespace BoxOptions.Services
                         Date = historyItem.Timestamp
                     } );
                 }
-                StartLog += $"\n\r{DateTime.UtcNow.ToString("HH:mm:ss.fff")} > Build Cache({asset}_{_holder[asset].Count} items) DONE";
+                StartLog += $"\n\r{DateTime.UtcNow.ToString("HH:mm:ss.fff")} | Build Cache({asset}_{_holder[asset].Count} items) DONE";
             }
             Console.WriteLine(StartLog);
             await _log?.WriteInfoAsync("BoxOptions.Services.HistoryHolder", "Start", null, StartLog, DateTime.UtcNow);

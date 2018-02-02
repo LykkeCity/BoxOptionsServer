@@ -93,7 +93,7 @@ namespace BoxOptions.Client
                             Console.WriteLine("{0}>{1}", ++i, item.Key);
                             foreach (var bid in item.Value)
                             {
-                                Console.WriteLine("\t{0} > {1}/{2}", bid.Date.ToString("yyyy-MM-dd HH:mm:ss"), bid.Bid, bid.Ask);
+                                Console.WriteLine("\t{0} | {1}/{2}", bid.Date.ToString("yyyy-MM-dd HH:mm:ss"), bid.Bid, bid.Ask);
                             }
                         }
                         break;
