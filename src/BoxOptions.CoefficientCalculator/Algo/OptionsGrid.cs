@@ -1,7 +1,6 @@
 ﻿using BoxOptions.Common.Models;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace BoxOptions.CoefficientCalculator.Algo
 {
@@ -21,7 +20,8 @@ namespace BoxOptions.CoefficientCalculator.Algo
         public BoxOption[][] optionsGrid;
         VolatilityEstimator[] volatilityEstimators;
         bool hasWeekend;
-
+        double volatility;
+                
         public OptionsGrid(long timeToFirstOption, long optionLen, double priceSize, int nPriceIndexes, int nTimeIndexes, double marginHit, double marginMiss, double maxPayoutCoeff, double bookingFee, bool hasWeekend)
         {
 
@@ -41,6 +41,8 @@ namespace BoxOptions.CoefficientCalculator.Algo
             optionsGrid = new BoxOption[nTimeIndexes][];
             volatilityEstimators = new VolatilityEstimator[nTimeIndexes];
         }
+
+        public double Volatility { get => volatility; }
 
         public void InitiateGrid(List<Double> activityDistribution, List<Price> historicPrices, double delta, long movingWindow, Price price, int smileV)
         {
@@ -80,7 +82,7 @@ namespace BoxOptions.CoefficientCalculator.Algo
         {
             for (int i = 0; i < nTimeIndexes; i++)
             {                
-                double volatility = volatilityEstimators[i].Run(newPrices, price, optionsGrid[i][0].StartsInMS + optionsGrid[i][0].LenInMS);
+                volatility = volatilityEstimators[i].Run(newPrices, price, optionsGrid[i][0].StartsInMS + optionsGrid[i][0].LenInMS);
                 if (volatility != volatilityEstimators[i].prevVolat)
                 {
                     for (int j = 0; j < nPriceIndexes; j++)

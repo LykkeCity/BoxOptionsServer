@@ -1,12 +1,13 @@
 ﻿using Autofac;
+using BoxOptions.Common.Extensions;
 using BoxOptions.Common.Interfaces;
-using BoxOptions.Common.Settings;
 using BoxOptions.Common.Models;
+using BoxOptions.Common.Settings;
+using BoxOptions.Core.Interfaces;
 using Common.Log;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using BoxOptions.Core.Interfaces;
 
 namespace BoxOptions.Services
 {
@@ -40,10 +41,10 @@ namespace BoxOptions.Services
 
         public async void Start()
         {
-            Console.WriteLine("{0} | History Holder Starting", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+            Console.WriteLine("{0} | History Holder Starting", DateTime.UtcNow.ToTimeString());
             await _log?.WriteInfoAsync("BoxOptions.Services.HistoryHolder", "Start", null, "History Holder Started", DateTime.UtcNow);
 
-            string StartLog = string.Format("{0} | Getting History", DateTime.UtcNow.ToString("HH:mm:ss.fff"));
+            string StartLog = string.Format("{0} | Getting History", DateTime.UtcNow.ToTimeString());
 
             historyAssets = _settings.HistoryHolder.Assets;
 
@@ -55,9 +56,9 @@ namespace BoxOptions.Services
                 // Get FromDate Ignoring weekends
                 var historyStart = GetHistoryStartDate(DateTime.UtcNow);
                                 
-                StartLog += $"\n\r{DateTime.UtcNow.ToString("HH:mm:ss.fff")} | GetHistory({asset}_{historyStart.ToString("yyyy-MM-dd")})";
+                StartLog += $"\n\r{DateTime.UtcNow.ToTimeString()} | GetHistory({asset}_{historyStart.ToDateTimeString()})";
                 var tmp = await _assetDatabase.GetAssetHistory(historyStart, DateTime.UtcNow, asset);                
-                StartLog += $"\n\r{DateTime.UtcNow.ToString("HH:mm:ss.fff")} | GetHistory({asset}_{historyStart.ToString("yyyy-MM-dd")}) DONE";
+                StartLog += $"\n\r{DateTime.UtcNow.ToTimeString()} | GetHistory({asset}_{historyStart.ToDateTimeString()}) DONE";
 
                 foreach (var historyItem in tmp)
                 {
@@ -68,7 +69,7 @@ namespace BoxOptions.Services
                         Date = historyItem.Timestamp
                     } );
                 }
-                StartLog += $"\n\r{DateTime.UtcNow.ToString("HH:mm:ss.fff")} | Build Cache({asset}_{_holder[asset].Count} items) DONE";
+                StartLog += $"\n\r{DateTime.UtcNow.ToTimeString()} | Build Cache({asset}_{_holder[asset].Count} items) DONE";
             }
             Console.WriteLine(StartLog);
             await _log?.WriteInfoAsync("BoxOptions.Services.HistoryHolder", "Start", null, StartLog, DateTime.UtcNow);

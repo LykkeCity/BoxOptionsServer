@@ -1,4 +1,5 @@
-﻿using BoxOptions.Common.Interfaces;
+﻿using BoxOptions.Common.Extensions;
+using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Models;
 using BoxOptions.Core.Interfaces;
 using BoxOptions.Core.Repositories;
@@ -389,7 +390,7 @@ namespace BoxOptions.Services
 
         public string InitUser(string userId)
         {
-            Console.WriteLine("{0} - InitUser", DateTime.Now.ToString("u"));
+            Console.WriteLine("{0} | InitUser", DateTime.Now.ToTimeString());
             try
             {
                 var res = _gameManager.InitUser(userId);
@@ -405,7 +406,7 @@ namespace BoxOptions.Services
 
         public PlaceBetResult PlaceBet(string userId, string assetPair, string box, decimal betValue)
         {
-            Console.WriteLine("{0} - PlaceBet", DateTime.Now.ToString("u"));
+            Console.WriteLine("{0} | PlaceBet", DateTime.Now.ToTimeString());
             try
             {
                 DateTime betdate = _gameManager.PlaceBet(userId, assetPair, box, betValue, out string msg);
@@ -428,7 +429,7 @@ namespace BoxOptions.Services
 
         public decimal GetBalance(string userId)
         {
-            Console.WriteLine("{0} - GetBalance", DateTime.Now.ToString("u"));
+            Console.WriteLine("{0} | GetBalance", DateTime.Now.ToTimeString());
             try
             {
                 return _gameManager.GetUserBalance(userId);
@@ -442,7 +443,7 @@ namespace BoxOptions.Services
 
         public string SetBalance(string userId, decimal balance)
         {
-            Console.WriteLine("{0} - SetBalance", DateTime.Now.ToString("u"));
+            Console.WriteLine("{0} | SetBalance", DateTime.Now.ToTimeString());
             try
             {
                 _gameManager.SetUserBalance(userId, balance);
@@ -456,7 +457,7 @@ namespace BoxOptions.Services
         }
         public string RequestCoeff(string userId, string pair)
         {
-            Console.WriteLine("{0} - RequestCoeff", DateTime.Now.ToString("u"));
+            Console.WriteLine("{0} | RequestCoeff", DateTime.Now.ToTimeString());
             try
             {
                 return _gameManager.RequestUserCoeff(pair, userId);
@@ -470,7 +471,7 @@ namespace BoxOptions.Services
 
         public string SaveLog(string userId, string eventCode, string message)
         {
-            Console.WriteLine("{0} - PlaceBet", DateTime.Now.ToString("u"));
+            Console.WriteLine("{0} | PlaceBet", DateTime.Now.ToTimeString());
             try
             {                               
                 _gameManager.AddUserLog(userId, eventCode, message);

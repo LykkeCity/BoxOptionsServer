@@ -1,14 +1,13 @@
 ﻿using BoxOptions.Common.Models;
 using BoxOptions.Core.Interfaces;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace BoxOptions.Common.Interfaces
 {
     public interface IGameManager
     {
-
-
         IBoxSize[] InitUser(string userId);
 
         /// <summary>
@@ -28,8 +27,9 @@ namespace BoxOptions.Common.Interfaces
         string RequestUserCoeff(string pair, string userId = null);
 
         void AddUserLog(string userId, string eventCode, string message);
-
-        Task SetBoxConfig(IBoxSize[] boxes);
         
+        Task ReloadGameAssets();
+
+        Dictionary<string, double> GetVolatilities();
     }
 }

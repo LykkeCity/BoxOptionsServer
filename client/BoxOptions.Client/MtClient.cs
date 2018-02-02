@@ -1,4 +1,5 @@
-﻿using BoxOptions.Common.Interfaces;
+﻿using BoxOptions.Common.Extensions;
+using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Models;
 using BoxOptions.Core.Interfaces;
 using BoxOptions.Services;
@@ -127,7 +128,7 @@ namespace BoxOptions.Client
         void OnPriceFeed(InstrumentPrice info)
         {
             if (Program.ShowFeed)
-                Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] | BidDate[{info.Date.ToString("yyyy-MM-dd HH:mm:ss")}] | {info.Instrument} {info.Bid}/{info.Ask}");
+                Console.WriteLine($"UTC[{DateTime.UtcNow.ToDateTimeString()}] | BidDate[{info.Date.ToDateTimeString()}] | {info.Instrument} {info.Bid}/{info.Ask}");
         }
 
         public void SubscribeGameEvents()
@@ -146,7 +147,7 @@ namespace BoxOptions.Client
         }
         void OnGameResult(GameEvent info)
         {
-            Console.WriteLine($"UTC[{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff")}] | Type={info.EventType} pars={info.EventParameters}");
+            Console.WriteLine($"UTC[{DateTime.UtcNow.ToDateTimeString()}] | Type={info.EventType} pars={info.EventParameters}");
             if (RunningBets  != null && info.EventType == 1)
             {
                 BetInfo binfo = (from b in RunningBets
@@ -174,7 +175,7 @@ namespace BoxOptions.Client
         internal void PlaceBet(string userId, string assetpair, string box, decimal betAmount)
         {
             var result = _service.PlaceBet(userId, assetpair, box, betAmount);
-            Console.WriteLine("{0} | PlaceBet({1},{2},{3}) = {4}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, box, betAmount, result.Status);
+            Console.WriteLine("{0} | PlaceBet({1},{2},{3}) = {4}", DateTime.UtcNow.ToTimeString(), userId, box, betAmount, result.Status);
         }
 
       
@@ -183,12 +184,12 @@ namespace BoxOptions.Client
         internal void GetBalance(string userId)
         {
             decimal result = _service.GetBalance(userId);
-            Console.WriteLine("{0} | GetBalance({1}) = {2}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, result);
+            Console.WriteLine("{0} | GetBalance({1}) = {2}", DateTime.UtcNow.ToTimeString(), userId, result);
         }
         internal void SetBalance(string userId, decimal newBalance)
         {
             string result = _service.SetBalance(userId, newBalance);
-            Console.WriteLine("{0} | SetBalance({1},{2}) = {3}", DateTime.UtcNow.ToString("HH:mm:ss.fff"), userId, newBalance, result);
+            Console.WriteLine("{0} | SetBalance({1},{2}) = {3}", DateTime.UtcNow.ToTimeString(), userId, newBalance, result);
         }
 
       
@@ -238,9 +239,9 @@ namespace BoxOptions.Client
                     {
                         string box = string.Format(CI, boxstring, GUID, coef);
                         coef += 0.02;
-                        Console.WriteLine("{0} | {1} | Placing Bet", DateTime.UtcNow.ToString("HH:mm:ss.fff"), GUID);
+                        Console.WriteLine("{0} | {1} | Placing Bet", DateTime.UtcNow.ToTimeString(), GUID);
                         IPlaceBetResult result = _service.PlaceBet(userId, "EURCHF", box, 1);
-                        Console.WriteLine("{0} | {1} | Result = {2} ({3})", DateTime.UtcNow.ToString("HH:mm:ss.fff"), GUID, result.BetTimeStamp.ToString("yyyy-MM-dd_HH:mm:ss.fff"), result.Status);
+                        Console.WriteLine("{0} | {1} | Result = {2} ({3})", DateTime.UtcNow.ToTimeString(), GUID, result.BetTimeStamp.ToTimeString(), result.Status);
                         b.Result = result;
                         RunningBets.Add(b);
                     }

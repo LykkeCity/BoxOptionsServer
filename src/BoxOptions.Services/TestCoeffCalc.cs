@@ -20,6 +20,11 @@ namespace BoxOptions.Services
             throw new NotImplementedException();
         }
 
+        public double GetVolatility(string asset)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<string> RequestAsync(string userId, string pair)
         {
             List<string> res = new List<string>();

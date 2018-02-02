@@ -30,6 +30,9 @@
         /// Allowed to play in game
         /// </summary>
         bool GameAllowed { get; }
-
+        /// <summary>
+        /// Volatility Zoom Factor for box width calculation
+        /// </summary>
+        double ScaleK { get; }
     }
 }
