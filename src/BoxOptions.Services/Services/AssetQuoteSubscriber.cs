@@ -378,7 +378,7 @@ namespace BoxOptions.Services
         {
             DateTime currentdate = DateTime.UtcNow;
 #if DEBUG
-            Console.WriteLine("{0} > CheckConnectionTimerCallback", currentdate.ToString("HH:mm:ss.fff"));
+            Console.WriteLine("{0} | CheckConnectionTimerCallback", currentdate.ToString("HH:mm:ss.fff"));
 #endif
             // Stop Timer
             _checkConnectionTimer.Change(-1, -1);
@@ -400,7 +400,7 @@ namespace BoxOptions.Services
                     {
                         // Not in exclusion interval, report error.        
                         string msg = string.Format("No Messages from Primary Feed for {0}", currentdate - _primaryStreamLastMessageTimeStamp);
-                        Console.WriteLine("{0} > {1}", currentdate.ToString("HH:mm:ss.fff"), msg);
+                        Console.WriteLine("{0} | {1}", currentdate.ToString("HH:mm:ss.fff"), msg);
                         LogWarning("CheckConnectionTimerCallback", msg);
                     }
                 }
@@ -424,7 +424,7 @@ namespace BoxOptions.Services
                     {
                         // Not in exclusion interval, report error.                                                                    
                         string msg = string.Format("No Messages from Secondary Feed for {0}", currentdate - _secondaryStreamLastMessageTimeStamp);
-                        Console.WriteLine("{0} > {1}", currentdate.ToString("HH:mm:ss.fff"), msg);
+                        Console.WriteLine("{0} | {1}", currentdate.ToString("HH:mm:ss.fff"), msg);
                         LogWarning("CheckConnectionTimerCallback", msg);
                     }
                 }
