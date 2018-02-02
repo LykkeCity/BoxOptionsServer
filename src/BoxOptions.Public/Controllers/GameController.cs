@@ -82,7 +82,7 @@ namespace BoxOptions.Public.Controllers
                                         SaveHistory = i.SaveHistory,
                                         TimeToFirstBox = i.TimeToFirstBox,
                                         ScaleK = i.ScaleK,
-                                        Volatility = Volats[i.AssetPair]
+                                        Volatility = Volats.ContainsKey(i.AssetPair) ? Volats[i.AssetPair] : 0
                                     }).ToList()
             };
             
