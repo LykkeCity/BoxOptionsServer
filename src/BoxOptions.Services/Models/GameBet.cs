@@ -1,4 +1,5 @@
-﻿using BoxOptions.Common.Models;
+﻿using BoxOptions.Common.Extensions;
+using BoxOptions.Common.Models;
 using BoxOptions.Core.Interfaces;
 using Common;
 using System;
@@ -59,7 +60,7 @@ namespace BoxOptions.Services.Models
 
         public override string ToString()
         {
-            return string.Format("{0} | {1:f4}", Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff"), BetAmount);
+            return string.Format("{0} | {1:f4}", Timestamp.ToDateTimeString(), BetAmount);
         }        
 
         internal void StartWaitTimeToGraph()
@@ -67,8 +68,8 @@ namespace BoxOptions.Services.Models
             BetStatus = BetStates.Waiting;
             DateTime now = DateTime.UtcNow;
             BetLog += string.Format("RUNBET Calc:{0} Real:{1} Delta(seconds):{2}", 
-                Timestamp.ToString("HH:mm:ss.ffff"), 
-                now.ToString("HH:mm:ss.ffff"),
+                Timestamp.ToTimeString(), 
+                now.ToTimeString(),
                 (now- Timestamp).TotalSeconds);
             BetTimer.Change((int)(1000 * Box.TimeToGraph), -1);
         }
@@ -80,8 +81,8 @@ namespace BoxOptions.Services.Models
             BetStatus = BetStates.OnGoing;
 
             BetLog += string.Format("\n\rGRAPHR Calc:{0} Real:{1} Delta(seconds):{2}",
-                Timestamp.AddSeconds(Box.TimeToGraph).ToString("HH:mm:ss.ffff"),
-                TimeToGraphStamp.Value.ToString("HH:mm:ss.ffff"),
+                Timestamp.AddSeconds(Box.TimeToGraph).ToTimeString(),
+                TimeToGraphStamp.Value.ToTimeString(),
                 (TimeToGraphStamp.Value - Timestamp.AddSeconds(Box.TimeToGraph)).TotalSeconds);
 
             BetTimer = new System.Threading.Timer(new System.Threading.TimerCallback(WaitTimeLengthCallback), Box, (int)(1000 * Box.TimeLength), -1);
@@ -94,8 +95,8 @@ namespace BoxOptions.Services.Models
             FinishedStamp = DateTime.UtcNow;
 
             BetLog += string.Format("\n\rBETEND Calc:{0} Real:{1} Delta(seconds):{2}",
-                Timestamp.AddSeconds(Box.TimeToGraph+Box.TimeLength).ToString("HH:mm:ss.ffff"),
-                FinishedStamp.Value.ToString("HH:mm:ss.ffff"),
+                Timestamp.AddSeconds(Box.TimeToGraph+Box.TimeLength).ToTimeString(),
+                FinishedStamp.Value.ToTimeString(),
                 (FinishedStamp.Value - Timestamp.AddSeconds(Box.TimeToGraph+Box.TimeLength)).TotalSeconds);
                         
             TimeLenghFinished?.Invoke(this, new EventArgs());

@@ -1,13 +1,11 @@
-﻿using System;
+﻿using BoxOptions.Public.Models;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace BoxOptions.Public.ViewModels
 {
     public class AssetConfigurationViewModel
     {
         public string SaveInformation { get; set; }
-        public List<BoxSizeViewModel> BoxConfiguration { get; set; }
+        public List<BoxSizeModel> BoxConfiguration { get; set; }
     }
 }

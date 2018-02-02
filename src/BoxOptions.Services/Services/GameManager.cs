@@ -1,4 +1,5 @@
 ﻿using BoxOptions.Common;
+using BoxOptions.Common.Extensions;
 using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Models;
 using BoxOptions.Common.Settings;
@@ -20,8 +21,9 @@ namespace BoxOptions.Services
     {
         const int NPriceIndex = 15; // Number of columns hardcoded
         const int NTimeIndex = 8;   // Number of rows hardcoded
-        const int CoeffMonitorTimerInterval = 1000; // Coeff cache update interval (milliseconds)
-        
+        const int CoefficientCacheUpdateInterval = 1000; // Coeff cache update interval (milliseconds)
+        const int BoxRecalculationInterval = 3600 * 1000; // BoxSize recalculation interval (milliseconds)
+
         #region Vars
         /// <summary>
         /// Coefficient Calculator Request Semaphore
@@ -36,7 +38,7 @@ namespace BoxOptions.Services
                 
         private static readonly object BetCacheLock = new object();
 
-        private static readonly System.Globalization.CultureInfo Ci = new System.Globalization.CultureInfo("en-us");
+        private static readonly CultureInfo Ci = new CultureInfo("en-us");
 
         private readonly int MaxUserBuffer = 128;
         private readonly string GameManagerId;
@@ -82,7 +84,8 @@ namespace BoxOptions.Services
         /// </summary>
         private Dictionary<string, PriceCache> assetCache;
 
-        private System.Threading.Timer CoeffMonitorTimer;
+        private System.Threading.Timer CoefficientCacheUpdateTimer;
+        private System.Threading.Timer BoxRecalculationTimer;
 
         /// <summary>
         /// Ongoing Bets Cache
@@ -99,6 +102,7 @@ namespace BoxOptions.Services
         /// Box configuration
         /// </summary>
         private List<BoxSize> dbBoxConfig;
+        private List<BoxSize> _calculatedBoxes;
 
         private Queue<string> appLogInfoQueue = new Queue<string>();
                 
@@ -138,64 +142,61 @@ namespace BoxOptions.Services
             this.quoteFeed.MessageReceived += QuoteFeed_MessageReceived;
 
             //calculateBoxConfig = null;
-            dbBoxConfig = Task.Run(() => LoadBoxParameters()).Result;
-            Console.WriteLine("Db Box Config = {0}", dbBoxConfig.Count);
+            dbBoxConfig = Task.Run(() => LoadBoxParameters()).Result;            
+            Console.WriteLine("Db Box Config = [{0}]", string.Join(",", dbBoxConfig.Select(b => b.AssetPair)));
 
             coefStatus = new Dictionary<string, string>();
 
-            _historyHolder.InitializationFinished += _historyHolder_InitializationFinished;            
+            _historyHolder.InitializationFinished += HistoryHolder_InitializationFinished;            
         }
-
-        private void _historyHolder_InitializationFinished(object sender, EventArgs e)
-        {   
-            Task.Run(async () => await SetCoeffs()).Wait();
-            CoeffMonitorTimer = new System.Threading.Timer(new System.Threading.TimerCallback(CoeffMonitorTimerCallback), null, CoeffMonitorTimerInterval, -1);
-        }
-
 
         #endregion
 
-        #region Methods
+        /// <summary>
+        /// Disposes GameManager Resources
+        /// </summary>
+        public void Dispose()
+        {
+            if (isDisposing)
+                return;
+            isDisposing = true;
 
-        private async void LogInfo(string process, string info)
-        {
-            await appLog?.WriteInfoAsync("BoxOptions.Services.GameManager", process, null, info, DateTime.UtcNow);
-        }
-        private async void LogWarning(string process, string warning)
-        {
-            await appLog?.WriteWarningAsync("BoxOptions.Services.GameManager", process, null, warning, DateTime.UtcNow);
-          
-        }
-        private async void LogError(string process, Exception ex)
-        {
-            Exception innerEx;
-            if (ex.InnerException != null)
-                innerEx = ex.InnerException;
-            else
-                innerEx = ex;
+            quoteFeed.MessageReceived -= QuoteFeed_MessageReceived;
 
-            bool LogError;
-            if (LastErrorMessage != innerEx.Message)
+            if (CoefficientCacheUpdateTimer != null)
             {
-                LogError = true;
-            }
-            else
-            {
-                if (DateTime.UtcNow > LastErrorDate.AddMinutes(1))
-                    LogError = true;
-                else
-                    LogError = false;
+                CoefficientCacheUpdateTimer.Change(-1, -1);
+                CoefficientCacheUpdateTimer.Dispose();
             }
 
-
-            if (LogError)
+            if (BoxRecalculationTimer != null)
             {
-                LastErrorMessage = innerEx.Message;
-                LastErrorDate = DateTime.UtcNow;
-                await appLog?.WriteErrorAsync("BoxOptions.Services.GameManager", process, null, innerEx);
-                //Console.WriteLine("Logged: {0}", innerEx.Message);
+                BoxRecalculationTimer.Change(-1, -1);
+                BoxRecalculationTimer.Dispose();
             }
+
+            betCache = null;
+            foreach (var user in userList)
+            {
+                user.Dispose();
+            }
+
+            userList = null;
+
         }
+
+        private GameBet[] GetRunningBets()
+        {
+            GameBet[] retval;
+            lock (BetCacheLock)
+            {
+                retval = new GameBet[betCache.Count];
+                betCache.CopyTo(retval);
+            }
+            return retval;
+        }
+        
+        #region Box Sizes
         private async Task<List<BoxSize>> LoadBoxParameters()
         {
             var dbConfig = await boxConfigRepository.GetAll();
@@ -217,7 +218,7 @@ namespace BoxOptions.Services
                     if (!AssetsToAdd.Select(config => config.AssetPair).Contains(item))
                     {
                         // Add default settings
-                        AssetsToAdd.Add(new BoxSize()
+                        AssetsToAdd.Add(new BoxSize
                         {
                             AssetPair = item,
                             BoxesPerRow = 7,
@@ -226,7 +227,7 @@ namespace BoxOptions.Services
                             TimeToFirstBox = 4000,
                             GameAllowed = false,
                             SaveHistory = false,
-                            VolatilityZoomFactor = 0
+                            ScaleK = 0.0009
                         });
                     }
                 }
@@ -235,8 +236,26 @@ namespace BoxOptions.Services
             if (AssetsToAdd.Count > 0)
             {
                 await boxConfigRepository.InsertManyAsync(AssetsToAdd);
-                boxConfig.AddRange(AssetsToAdd);
             }
+
+            // Check if boxes have Scale_K
+            AssetsToAdd.Clear();
+            foreach (var item in boxConfig)
+            {
+                if (item.ScaleK == 0)
+                {
+                    var b = item.ToDto();
+                    b.ScaleK = 0.0009;
+                    AssetsToAdd.Add(b);                    
+                }
+            }
+            if (AssetsToAdd.Count > 0)
+            {
+                await boxConfigRepository.InsertManyAsync(AssetsToAdd);                
+            }
+
+            //Refresh list
+            boxConfig = (await boxConfigRepository.GetAll()).ToList();
 
             List<BoxSize> retval = new List<BoxSize>();
             foreach (var item in DistictAssets)
@@ -251,7 +270,7 @@ namespace BoxOptions.Services
                     TimeToFirstBox = box.TimeToFirstBox,
                     GameAllowed = box.GameAllowed,
                     SaveHistory = box.SaveHistory,
-                    VolatilityZoomFactor = box.VolatilityZoomFactor
+                    ScaleK = box.ScaleK
                 });
 
             }
@@ -265,52 +284,73 @@ namespace BoxOptions.Services
         /// <param name="boxConfig"></param>
         /// <param name="priceCache"></param>
         /// <returns></returns>
-        private BoxSize[] CalculatedBoxes(List<BoxSize> boxConfig, IMicrographCache priceCache)
-        {
-            var gdata = priceCache.GetGraphData();
+        private List<BoxSize> CalculateBoxes(List<BoxSize> boxConfig, IMicrographCache priceCache)
+        {   
+            var graphData = priceCache.GetGraphData();
 
             // Only send pairs with graph data
-            var filtered = from c in boxConfig
-                           where gdata.ContainsKey(c.AssetPair)
-                           select c;
+            var filtered = boxConfig.Where(c => graphData.ContainsKey(c.AssetPair));
 
+            // Get Volatility
+            var Volatility = GetVolatilities();
+            
             // Calculate BoxWidth according to average prices
             // BoxWidth = average(asset.midprice) * Box.PriceSize from database
-            BoxSize[] retval = (from c in filtered
-                                select new BoxSize()
-                                {
-                                    AssetPair = c.AssetPair,
-                                    BoxesPerRow = c.BoxesPerRow,
-                                    BoxHeight = c.BoxHeight,
-                                    TimeToFirstBox = c.TimeToFirstBox,
-                                    BoxWidth = gdata[c.AssetPair].Average(price => price.MidPrice()) * c.BoxWidth,
-                                    SaveHistory = c.SaveHistory,
-                                    GameAllowed = c.GameAllowed
-                                }).ToArray();
+            var retval = (from b in filtered
+                          select new BoxSize
+                          {
+                              AssetPair = b.AssetPair,
+                              BoxesPerRow = b.BoxesPerRow,
+                              BoxHeight = b.BoxHeight,
+                              TimeToFirstBox = b.TimeToFirstBox,
+                              BoxWidth = CalcBoxWidth(b.AssetPair, graphData[b.AssetPair], Volatility[b.AssetPair], b.ScaleK, b.BoxWidth),
+                              SaveHistory = b.SaveHistory,
+                              GameAllowed = b.GameAllowed
+                          }).ToList();
             return retval;
         }
-
-        private GameBet[] GetRunningBets()
+        private double CalcBoxWidth(string assetPair, IEnumerable<Price> graphData, double volatility, double scale_K, double dbBoxWidth)
         {
-            GameBet[] retval;
-            lock (BetCacheLock)
+            double boxWidth;
+            if (volatility == 0)
+                boxWidth = graphData.Average(price => price.MidPrice()) * dbBoxWidth;
+            else
             {
-                retval = new GameBet[betCache.Count];
-                betCache.CopyTo(retval);                
+                boxWidth = graphData.Average(price => price.MidPrice()) * volatility * scale_K;
+                UpdateDatabaseBox(assetPair, volatility * scale_K);
             }
-            return retval;
+            LogInfo("CalcBoxWidth", $"[{assetPair}] Volatility={volatility}, Scale_K={scale_K}, BoxWidth={boxWidth}");
+            return boxWidth;
         }
 
-        #region Coefficient Cache Monitor
+        private void BoxRecalculationTimerCallback(object status)
+        {
+            BoxRecalculationTimer.Change(-1, -1);
+            _calculatedBoxes = CalculateBoxes(dbBoxConfig, micrographCache).ToList();
+
+            if (!isDisposing)
+                BoxRecalculationTimer.Change(BoxRecalculationInterval, -1);
+
+        }
+
+        private void UpdateDatabaseBox(string assetPair, double boxWidth)
+        {
+            var box = dbBoxConfig.FirstOrDefault(b => b.AssetPair == assetPair);
+            if (box == null)
+                return;
+            box.BoxWidth = boxWidth;
+            Task.Run(async () => await boxConfigRepository.InsertAsync(box));
+        }
+        #endregion
+                
+        #region Coefficient Cache
 
         private async Task SetCoeffs()
-        {
-            dbBoxConfig = await LoadBoxParameters();
-            BoxSize[] boxes = CalculatedBoxes(dbBoxConfig.Where(b => b.GameAllowed).ToList(), micrographCache);
+        {            
             await coeffCalculatorSemaphoreSlim.WaitAsync();
             try
             {
-                foreach (var box in boxes)
+                foreach (var box in _calculatedBoxes)
                 {
                     try
                     {
@@ -320,7 +360,7 @@ namespace BoxOptions.Services
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"{DateTime.UtcNow.ToString("HH:mm:ss.fff")} | GetCoeffs[{box.AssetPair}] Error: {ex.Message}");
+                        LogInfo("SetCoeffs", $"[{box.AssetPair}] Error: {ex.Message}");
                     }
                 }
             }
@@ -343,7 +383,7 @@ namespace BoxOptions.Services
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"{DateTime.UtcNow.ToString("HH:mm:ss.fff")} | GetCoeffs[{asset}] Error: {ex.Message}");
+                        LogInfo("GetCoeffs", $"[{asset}] Error: {ex.Message}");
                     }
                 }
             }
@@ -371,14 +411,13 @@ namespace BoxOptions.Services
         }
         private async Task ProcessCoeffSetNotifications(string assetPair, string res)
         {
-            string msg = $"SetCoeffs[{assetPair}]: {res}";
-            Console.WriteLine(msg);
-            await appLog.WriteWarningAsync("SetCoeffs", null, msg);
+            string msg = $"{DateTime.UtcNow.ToTimeString()} | SetCoeffs[{assetPair}]: {res}";
+            Console.WriteLine(msg);            
         }
                 
-        private void CoeffMonitorTimerCallback(object status)
+        private void CoefficientCacheUpdateTimerCallback(object status)
         {
-            CoeffMonitorTimer.Change(-1, -1);
+            CoefficientCacheUpdateTimer.Change(-1, -1);
             try
             {
                 // If more than 5 minute passed since last change, do another change
@@ -390,10 +429,9 @@ namespace BoxOptions.Services
             catch (Exception ex) { LogError("CoeffMonitorTimerCallback", ex); }
 
             if (!isDisposing)
-                CoeffMonitorTimer.Change(CoeffMonitorTimerInterval, -1);
+                CoefficientCacheUpdateTimer.Change(CoefficientCacheUpdateInterval, -1);
         }
-           
-
+        
         #endregion
 
         #region User Methods
@@ -403,23 +441,21 @@ namespace BoxOptions.Services
             try
             {
                 UserState userState = GetUserState(userId);
-                                
-                BoxSize[] retval = CalculatedBoxes(dbBoxConfig.Where(b => b.GameAllowed).ToList(), micrographCache);
 
                 // Add Launch to user history 
                 string launchMsg = "User Initialization. BoxSizes:";
-                foreach (var boxSize in retval)
+                foreach (var boxSize in _calculatedBoxes)
                 {
                     launchMsg += string.Format(Ci, "[{0};BoxWidth:{1};BoxHeight:{2};TimeToFirstBox:{3};BoxesPerRow:{4}]", boxSize.AssetPair, boxSize.BoxWidth, boxSize.BoxHeight, boxSize.TimeToFirstBox, boxSize.BoxesPerRow);
                 }
                 SetUserStatus(userState, GameStatus.Launch, 0, launchMsg);
 
-                // Return Calculate Price Sizes
-                return retval;
+                // Return Calculated Price Sizes
+                return _calculatedBoxes.ToArray();
             }
             catch (Exception ex01)
             {
-                Console.WriteLine("ERROR: {0}", ex01.Message);
+                LogInfo("InitializeUser", $"UserId:[{userId}] Error:{ex01.Message}");
                 throw;
             }            
             
@@ -650,8 +686,7 @@ namespace BoxOptions.Services
         /// </summary>
         /// <param name="bet">Bet</param>
         private void ProcessBetCheck(GameBet bet, bool IsFirstCheck)
-        {
-            //Console.WriteLine("ProcessBetCheck({0})={1}", IsFirstCheck, bet.Box.Id);
+        {   
             if (bet == null || bet.BetStatus == BetStates.Win || bet.BetStatus == BetStates.Lose)
             {
                 // bet already processed;
@@ -786,109 +821,7 @@ namespace BoxOptions.Services
         }
 
         #endregion
-
-        /// <summary>
-        /// Disposes GameManager Resources
-        /// </summary>
-        public void Dispose()
-        {
-            if (isDisposing)
-                return;
-            isDisposing = true;
-
-            if (CoeffMonitorTimer != null)
-            {
-                CoeffMonitorTimer.Change(-1, -1);
-                CoeffMonitorTimer.Dispose();                
-            }
-            
-            quoteFeed.MessageReceived -= QuoteFeed_MessageReceived;
-            betCache = null;
-
-            foreach (var user in userList)
-            {
-                user.Dispose();
-            }
-
-            userList = null;
-
-        }
-
-        #endregion
-
-        #region Event Handlers
-        private async void QuoteFeed_MessageReceived(object sender, IInstrumentPrice e)
-        {
-            //Activate Mutual Exclusion Semaphore
-            await quoteReceivedSemaphoreSlim.WaitAsync();
-            try
-            {                
-                // Add price to cache
-                if (!assetCache.ContainsKey(e.Instrument))
-                    assetCache.Add(e.Instrument, new PriceCache());
-
-                // Update price cache
-                assetCache[e.Instrument].PreviousPrice = assetCache[e.Instrument].CurrentPrice;
-                assetCache[e.Instrument].CurrentPrice = (InstrumentPrice)e.ClonePrice();
-
-                // Get bets for current asset
-                // That are not yet with WIN status
-                var betCacheSnap = GetRunningBets();
-
-                var assetBets = (from b in betCacheSnap
-                                 where b.AssetPair == e.Instrument &&
-                                 b.BetStatus != BetStates.Win
-                                 select b).ToList();                               
-                if (assetBets.Count == 0)
-                    return;
-                foreach (var bet in assetBets)
-                {
-                    ProcessBetCheck(bet, false);
-                }
-            }
-            catch (Exception ex) { LogError("QuoteFeed_MessageReceived", ex); }
-            finally { quoteReceivedSemaphoreSlim.Release(); }
-        }
-
-        private void Bet_TimeToGraphReached(object sender, EventArgs e)
-        {
-            try
-            {
-                GameBet bet = sender as GameBet;
-                if (bet == null)
-                    return;
-                
-                // Do initial Check            
-                if (assetCache.ContainsKey(bet.AssetPair))
-                {
-                    if (assetCache[bet.AssetPair].CurrentPrice != null &&
-                        assetCache[bet.AssetPair].PreviousPrice != null &&
-                        assetCache[bet.AssetPair].CurrentPrice.MidPrice() > 0 &&
-                        assetCache[bet.AssetPair].PreviousPrice.MidPrice() > 0)
-                    {
-                        ProcessBetCheck(bet, true);
-                    }
-                }
-
-                // Add bet to cache
-                lock (BetCacheLock)
-                {
-                    betCache.Add(bet);
-                }
-            }
-            catch (Exception ex) { LogError("Bet_TimeToGraphReached", ex); }
-        }
-        private void Bet_TimeLenghFinished(object sender, EventArgs e)
-        {
-            GameBet sdr = sender as GameBet;
-            if (sdr == null)
-                return;
-            
-            ProcessBetTimeOut(sdr);
-        }
-                
-        #endregion
-
+        
         #region IGameManager
         public IBoxSize[] InitUser(string userId)
         {   
@@ -987,11 +920,152 @@ namespace BoxOptions.Services
             SetUserStatus(userState, (GameStatus)ecode, accountdelta, message);
         }
 
-        public async Task SetBoxConfig(IBoxSize[] boxes)
-        {               
-            await boxConfigRepository.InsertManyAsync(boxes);
+        public async Task ReloadGameAssets()
+        {
+            dbBoxConfig = await LoadBoxParameters();
+            BoxRecalculationTimer.Change(1000, -1);
         }
-                
+
+        public Dictionary<string, double> GetVolatilities()
+        {   
+            Dictionary<string, double> Volatility = new Dictionary<string, double>();
+            foreach (var box in dbBoxConfig.Where(b=>b.GameAllowed))
+            {
+                Volatility.Add(box.AssetPair, calculator.GetVolatility(box.AssetPair));
+            }
+            return Volatility;
+        }
+
+        #endregion
+
+        private async void LogInfo(string process, string info)
+        {
+            Console.WriteLine($"{DateTime.UtcNow.ToTimeString()} | {process} | {info}");
+            await appLog?.WriteInfoAsync("BoxOptions.Services.GameManager", process, null, info, DateTime.UtcNow);
+        }
+        private async void LogWarning(string process, string warning)
+        {
+            Console.WriteLine($"WRN {DateTime.UtcNow.ToTimeString()} | {process} | {warning}");
+            await appLog?.WriteWarningAsync("BoxOptions.Services.GameManager", process, null, warning, DateTime.UtcNow);
+        }
+        private async void LogError(string process, Exception ex)
+        {
+            Exception innerEx;
+            if (ex.InnerException != null)
+                innerEx = ex.InnerException;
+            else
+                innerEx = ex;
+
+            bool LogError;
+            if (LastErrorMessage != innerEx.Message)
+            {
+                LogError = true;
+            }
+            else
+            {
+                if (DateTime.UtcNow > LastErrorDate.AddMinutes(1))
+                    LogError = true;
+                else
+                    LogError = false;
+            }
+
+            Console.WriteLine($"ERR {DateTime.UtcNow.ToTimeString()} | {process} | {innerEx.Message}\n{innerEx.StackTrace}");
+            if (LogError)
+            {
+                LastErrorMessage = innerEx.Message;
+                LastErrorDate = DateTime.UtcNow;                
+                await appLog?.WriteErrorAsync("BoxOptions.Services.GameManager", process, null, innerEx);
+            }
+        }
+
+        #region Event Handlers
+        private void HistoryHolder_InitializationFinished(object sender, EventArgs e)
+        {
+            _calculatedBoxes = CalculateBoxes(dbBoxConfig, micrographCache).ToList();
+
+            Task.Run(async () => await SetCoeffs()).Wait();
+
+            CoefficientCacheUpdateTimer = new System.Threading.Timer(
+                new System.Threading.TimerCallback(CoefficientCacheUpdateTimerCallback),
+                null, CoefficientCacheUpdateInterval, -1);
+
+            BoxRecalculationTimer = new System.Threading.Timer(
+                new System.Threading.TimerCallback(BoxRecalculationTimerCallback),
+                null, BoxRecalculationInterval, -1);
+        }
+
+        private async void QuoteFeed_MessageReceived(object sender, IInstrumentPrice e)
+        {
+            //Activate Mutual Exclusion Semaphore
+            await quoteReceivedSemaphoreSlim.WaitAsync();
+            try
+            {
+                // Add price to cache
+                if (!assetCache.ContainsKey(e.Instrument))
+                    assetCache.Add(e.Instrument, new PriceCache());
+
+                // Update price cache
+                assetCache[e.Instrument].PreviousPrice = assetCache[e.Instrument].CurrentPrice;
+                assetCache[e.Instrument].CurrentPrice = (InstrumentPrice)e.ClonePrice();
+
+                // Get bets for current asset
+                // That are not yet with WIN status
+                var betCacheSnap = GetRunningBets();
+
+                var assetBets = (from b in betCacheSnap
+                                 where b.AssetPair == e.Instrument &&
+                                 b.BetStatus != BetStates.Win
+                                 select b).ToList();
+                if (assetBets.Count == 0)
+                    return;
+                foreach (var bet in assetBets)
+                {
+                    ProcessBetCheck(bet, false);
+                }
+            }
+            catch (Exception ex) { LogError("QuoteFeed_MessageReceived", ex); }
+            finally { quoteReceivedSemaphoreSlim.Release(); }
+        }
+
+        private void Bet_TimeToGraphReached(object sender, EventArgs e)
+        {
+            try
+            {
+                GameBet bet = sender as GameBet;
+                if (bet == null)
+                    return;
+
+                // Do initial Check            
+                if (assetCache.ContainsKey(bet.AssetPair))
+                {
+                    if (assetCache[bet.AssetPair].CurrentPrice != null &&
+                        assetCache[bet.AssetPair].PreviousPrice != null &&
+                        assetCache[bet.AssetPair].CurrentPrice.MidPrice() > 0 &&
+                        assetCache[bet.AssetPair].PreviousPrice.MidPrice() > 0)
+                    {
+                        ProcessBetCheck(bet, true);
+                    }
+                }
+
+                // Add bet to cache
+                lock (BetCacheLock)
+                {
+                    betCache.Add(bet);
+                }
+            }
+            catch (Exception ex) { LogError("Bet_TimeToGraphReached", ex); }
+        }
+        private void Bet_TimeLenghFinished(object sender, EventArgs e)
+        {
+            GameBet sdr = sender as GameBet;
+            if (sdr == null)
+                return;
+
+            ProcessBetTimeOut(sdr);
+        }
+
+        
+
         #endregion
 
         #region Nested Class

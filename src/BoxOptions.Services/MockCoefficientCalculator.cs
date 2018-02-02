@@ -14,6 +14,11 @@ namespace BoxOptions.Services
             return await Task.FromResult("OK");
         }
 
+        public double GetVolatility(string asset)
+        {
+            throw new NotImplementedException();
+        }
+
         public async Task<string> RequestAsync(string userId, string pair)
         {
             // result copied from command request?pair=EURUSD on 2017-05-03 from proxy Coefficient Calculator.

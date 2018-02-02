@@ -33,6 +33,6 @@
         /// <summary>
         /// Volatility Zoom Factor for box width calculation
         /// </summary>
-        double VolatilityZoomFactor { get; }
+        double ScaleK { get; }
     }
 }

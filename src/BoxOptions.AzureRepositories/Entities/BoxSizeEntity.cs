@@ -13,7 +13,7 @@ namespace BoxOptions.AzureRepositories.Entities
         public int BoxesPerRow { get; set; }
         public bool SaveHistory { get; set; }
         public bool GameAllowed { get; set; }
-        public double VolatilityZoomFactor { get; set; }
+        public double ScaleK { get; set; }
 
         public static string GetPartitionKey()
         {
@@ -33,7 +33,7 @@ namespace BoxOptions.AzureRepositories.Entities
                 TimeToFirstBox = src.TimeToFirstBox,
                 SaveHistory = src.SaveHistory,
                 GameAllowed = src.GameAllowed,
-                VolatilityZoomFactor = src.VolatilityZoomFactor
+                ScaleK = src.ScaleK
             };
         }
 
@@ -48,7 +48,7 @@ namespace BoxOptions.AzureRepositories.Entities
                 TimeToFirstBox = src.TimeToFirstBox,
                 SaveHistory = src.SaveHistory,
                 GameAllowed = src.GameAllowed,
-                VolatilityZoomFactor = src.VolatilityZoomFactor
+                ScaleK = src.ScaleK
             };
         }
     }

@@ -1,4 +1,5 @@
-﻿using BoxOptions.Services.Models;
+﻿using BoxOptions.Common.Extensions;
+using BoxOptions.Services.Models;
 using Newtonsoft.Json;
 using System;
 
@@ -93,7 +94,7 @@ namespace BoxOptions.Client
                             Console.WriteLine("{0}>{1}", ++i, item.Key);
                             foreach (var bid in item.Value)
                             {
-                                Console.WriteLine("\t{0} | {1}/{2}", bid.Date.ToString("yyyy-MM-dd HH:mm:ss"), bid.Bid, bid.Ask);
+                                Console.WriteLine("\t{0} | {1}/{2}", bid.Date.ToDateTimeString(), bid.Bid, bid.Ask);
                             }
                         }
                         break;

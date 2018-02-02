@@ -1,4 +1,5 @@
-﻿using BoxOptions.Core.Interfaces;
+﻿using BoxOptions.Common.Extensions;
+using BoxOptions.Core.Interfaces;
 using System;
 
 namespace BoxOptions.Common.Models
@@ -14,7 +15,7 @@ namespace BoxOptions.Common.Models
 
         public override string ToString()
         {
-            return string.Format("{0}>[{1}]|{2}/{3}", ReceiveDate.ToString("yyyy-MM-dd HH:mm:ss.fff"), Asset, BestBid, BestAsk);
+            return string.Format("{0}>[{1}]|{2}/{3}", ReceiveDate.ToDateTimeString(), Asset, BestBid, BestAsk);
         }
     }
 }

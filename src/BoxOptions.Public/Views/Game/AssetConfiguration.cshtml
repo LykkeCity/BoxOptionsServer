@@ -19,41 +19,51 @@
                             <th>Box Price Size (1% = 0.01)</th>
                             <th>Time To First Box (ms)</th>
                             <th>Boxes/Row</th>
+                            <th>Scale_K</th>
+                            <th>Volatility</th>
+
                         </tr>
                     </thead>                  
                     <tbody>
                         @for (int i = 0; i < Model.BoxConfiguration.Count; i++)
                         {
-                            <tr class="info" id="RowId_@i.ToString()">
-                                <td>
-                                    @Html.HiddenFor(m => m.BoxConfiguration[i].AssetPair)
-                                    @Html.DisplayFor(m => m.BoxConfiguration[i].AssetPair)
-                                </td>
-                                <td>
-                                    @Html.EditorFor(m => m.BoxConfiguration[i].GameAllowed)<br />
-                                    @Html.ValidationMessageFor(m => m.BoxConfiguration[i].GameAllowed, "", new { @class = "text-danger" })
-                                </td>
-                                <td>
-                                    @Html.EditorFor(m => m.BoxConfiguration[i].SaveHistory)<br />
-                                    @Html.ValidationMessageFor(m => m.BoxConfiguration[i].SaveHistory, "", new { @class = "text-danger" })
-                                </td>
-                                <td>
-                                    @Html.EditorFor(m => m.BoxConfiguration[i].BoxHeight)<br />
-                                    @Html.ValidationMessageFor(m => m.BoxConfiguration[i].BoxHeight, "", new { @class = "text-danger" })
-                                </td>
-                                <td>
-                                    @Html.EditorFor(m => m.BoxConfiguration[i].BoxWidth)<br />
-                                    @Html.ValidationMessageFor(m => m.BoxConfiguration[i].BoxWidth, "", new { @class = "text-danger" })
-                                </td>
-                                <td>
-                                    @Html.EditorFor(m => m.BoxConfiguration[i].TimeToFirstBox)<br />
-                                    @Html.ValidationMessageFor(m => m.BoxConfiguration[i].TimeToFirstBox, "", new { @class = "text-danger" })
-                                </td>
-                                <td>
-                                    @Html.EditorFor(m => m.BoxConfiguration[i].BoxesPerRow)<br />
-                                    @Html.ValidationMessageFor(m => m.BoxConfiguration[i].BoxesPerRow, "", new { @class = "text-danger" })
-                                </td>
-                            </tr>
+                        <tr class="info" id="RowId_@i.ToString()">
+                            <td>
+                                @Html.HiddenFor(m => m.BoxConfiguration[i].AssetPair)
+                                @Html.DisplayFor(m => m.BoxConfiguration[i].AssetPair)
+                            </td>
+                            <td>
+                                @Html.EditorFor(m => m.BoxConfiguration[i].GameAllowed)<br />
+                                @Html.ValidationMessageFor(m => m.BoxConfiguration[i].GameAllowed, "", new { @class = "text-danger" })
+                            </td>
+                            <td>
+                                @Html.EditorFor(m => m.BoxConfiguration[i].SaveHistory)<br />
+                                @Html.ValidationMessageFor(m => m.BoxConfiguration[i].SaveHistory, "", new { @class = "text-danger" })
+                            </td>
+                            <td>
+                                @Html.EditorFor(m => m.BoxConfiguration[i].BoxHeight)<br />
+                                @Html.ValidationMessageFor(m => m.BoxConfiguration[i].BoxHeight, "", new { @class = "text-danger" })
+                            </td>
+                            <td>
+                                @Html.EditorFor(m => m.BoxConfiguration[i].BoxWidth)<br />
+                                @Html.ValidationMessageFor(m => m.BoxConfiguration[i].BoxWidth, "", new { @class = "text-danger" })
+                            </td>
+                            <td>
+                                @Html.EditorFor(m => m.BoxConfiguration[i].TimeToFirstBox)<br />
+                                @Html.ValidationMessageFor(m => m.BoxConfiguration[i].TimeToFirstBox, "", new { @class = "text-danger" })
+                            </td>
+                            <td>
+                                @Html.EditorFor(m => m.BoxConfiguration[i].BoxesPerRow)<br />
+                                @Html.ValidationMessageFor(m => m.BoxConfiguration[i].BoxesPerRow, "", new { @class = "text-danger" })
+                            </td>
+                            <td>
+                                @Html.EditorFor(m => m.BoxConfiguration[i].ScaleK)<br />
+                                @Html.ValidationMessageFor(m => m.BoxConfiguration[i].ScaleK, "", new { @class = "text-danger" })
+                            </td>
+                            <td>
+                                @Html.DisplayFor(m => m.BoxConfiguration[i].Volatility)<br />                                
+                            </td>
+                        </tr>
                         }
                     </tbody>
                 </table>

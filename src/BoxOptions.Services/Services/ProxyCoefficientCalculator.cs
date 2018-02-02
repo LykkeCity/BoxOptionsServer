@@ -58,6 +58,11 @@ namespace BoxOptions.Services
             return result;
         }
 
+        public double GetVolatility(string asset)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Request method forwarded to Coefficient API and returns result.
         /// </summary>

@@ -33,6 +33,6 @@ namespace BoxOptions.Common.Models
         /// </summary>
         public bool GameAllowed { get; set; }
 
-        public double VolatilityZoomFactor { get; set; }
+        public double ScaleK { get; set; }
     }
 }

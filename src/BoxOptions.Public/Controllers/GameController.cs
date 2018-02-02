@@ -1,8 +1,12 @@
 ﻿using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Settings;
 using BoxOptions.Core.Repositories;
+using BoxOptions.Public.Models;
+using BoxOptions.Public.ViewModels;
 using Common.Log;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace BoxOptions.Public.Controllers
 {
@@ -55,43 +59,51 @@ namespace BoxOptions.Public.Controllers
         //    return Ok();
         //}
 
-        //[HttpGet]
-        //[Route("assetconfiguration")]
-        //public async Task<IActionResult> AssetConfiguration()
-        //{
+        [HttpGet]
+        [Route("assetconfiguration")]
+        public async Task<IActionResult> AssetConfiguration()
+        {
 
-        //    var boxConfig = await assetConfigRepo.GetAll();
+            var boxConfig = await assetConfigRepo.GetAll();
+            var Volats = gameManager.GetVolatilities();
 
-        //    AssetConfigurationViewModel viewModel = new AssetConfigurationViewModel();
-        //    viewModel.BoxConfiguration = (from i in boxConfig
-        //                                  select new BoxSizeViewModel()
-        //                                  {
-        //                                      AssetPair = i.AssetPair,
-        //                                      BoxesPerRow = i.BoxesPerRow,
-        //                                      BoxHeight = i.BoxHeight,
-        //                                      BoxWidth = i.BoxWidth,
-        //                                      GameAllowed = i.GameAllowed,
-        //                                      SaveHistory = i.SaveHistory,
-        //                                      TimeToFirstBox = i.TimeToFirstBox
-        //                                  }).ToList();
-        //    return View(viewModel);
-        //}
-        //[HttpPost]
-        //[Route("assetconfiguration")]
-        //public async Task<ActionResult> AssetConfiguration([Bind("BoxConfiguration")] AssetConfigurationViewModel config)
-        //{
-        //    if (ModelState.IsValid)
-        //    {
-                
-        //        await assetConfigRepo.InsertManyAsync(config.BoxConfiguration);
-        //        config.SaveInformation = "Asset Configuration Saved Successfully";
-        //        bool gmOk = await gameManager.ReloadGameAssets();
-        //        bool asOk = await assetQuoteSubscriber.ReloadAssetConfiguration();
 
-        //        await log?.WriteInfoAsync("BoxOptions.Public.GameController", "AssetConfiguration", null, "Asset configuration changed");
-        //    }
+            var viewModel = new AssetConfigurationViewModel
+            {
+                SaveInformation = "Saving ths form will update Asset Configuration and recalculate game parameters.",
+                BoxConfiguration = boxConfig.Select(i =>
+                                    new BoxSizeModel
+                                    {
+                                        AssetPair = i.AssetPair,
+                                        BoxesPerRow = i.BoxesPerRow,
+                                        BoxHeight = i.BoxHeight,
+                                        BoxWidth = i.BoxWidth,
+                                        GameAllowed = i.GameAllowed,
+                                        SaveHistory = i.SaveHistory,
+                                        TimeToFirstBox = i.TimeToFirstBox,
+                                        ScaleK = i.ScaleK,
+                                        Volatility = Volats[i.AssetPair]
+                                    }).ToList()
+            };
             
-        //    return View(config);
-        //}
+            return View(viewModel);
+        }
+        [HttpPost]
+        [Route("assetconfiguration")]
+        public async Task<ActionResult> AssetConfiguration([Bind("BoxConfiguration")] AssetConfigurationViewModel config)
+        {
+            if (ModelState.IsValid)
+            {
+
+                await assetConfigRepo.InsertManyAsync(config.BoxConfiguration);
+                config.SaveInformation = "Asset Configuration Saved Successfully";
+                await gameManager.ReloadGameAssets();
+                bool asOk = await assetQuoteSubscriber.ReloadAssetConfiguration();
+
+                await log?.WriteInfoAsync("BoxOptions.Public.GameController", "AssetConfiguration", null, "Asset configuration changed");
+            }
+
+            return View(config);
+        }
     }
 }

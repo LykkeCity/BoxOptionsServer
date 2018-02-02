@@ -1,5 +1,6 @@
 ﻿using Autofac;
 using BoxOptions.CoefficientCalculator.Algo;
+using BoxOptions.Common.Extensions;
 using BoxOptions.Common.Interfaces;
 using BoxOptions.Common.Models;
 using BoxOptions.Common.Settings;
@@ -45,7 +46,7 @@ namespace BoxOptions.CoefficientCalculator
         {
             if (_historyHolder.IsStarting)
             {
-                string msg = "CoefficientCalculator Waiting for History Build Up...";
+                string msg = $"{DateTime.UtcNow.ToTimeString()} | CoefficientCalculator Waiting for History Build Up...";                
                 Console.WriteLine(msg);
                 _logger.WriteInfoAsync("Calculator.Start", null, msg);
                 _historyHolder.InitializationFinished += HistoryHolder_InitializationFinished;
@@ -74,7 +75,7 @@ namespace BoxOptions.CoefficientCalculator
                 {
 
                     var currentPrice = history.Last();
-                    await _logger.WriteInfoAsync("Caculator.Initialize", null, $"Current Price[{instrument.Name}] Date: {currentPrice.Date.ToString("u")}");
+                    await _logger.WriteInfoAsync("Calculator.Initialize", null, $"Current Price[{instrument.Name}] Date: {currentPrice.Date.ToDateTimeString()}");
                     grid.InitiateGrid(_activities[instrument.Name], history.ToList(), instrument.Delta, instrument.MovingWindow, currentPrice, instrument.SmileVar);
                     _grids.Add(instrument.Name, grid);
 
@@ -107,13 +108,12 @@ namespace BoxOptions.CoefficientCalculator
                                 Date = now,
                                 Ask = lastHistoryPrice.Ask,
                                 Bid = lastHistoryPrice.Bid
-                            };
-                            //Console.WriteLine($"Current Price[{instrument.Name}] Date: {currentPrice.Date.ToString("u")}");
+                            };                            
                         }
                         _grids[instrument.Name].UpdateCoefficients(newPrices.ToList(), newPrice, instrument.SmileVar);                        
                         if (newPrices.Length > 0 && DateTime.UtcNow > lastreport[instrument.Name].AddMinutes(30))
                         {
-                            string msg = $"{DateTime.UtcNow.ToString("u")}[{instrument.Name}] Updated. New prices size:{newPrices.Length}. Current Price:{newPrice.Date.ToString("u")}";
+                            string msg = $"{DateTime.UtcNow.ToTimeString()}[{instrument.Name}] Updated. New prices size:{newPrices.Length}. Current Price:{newPrice.Date.ToDateTimeString()}";
                             Console.WriteLine(msg);
                             _logger.WriteInfoAsync("Calculator.instrumentTimer.Elapsed", null, msg);
                             lastreport[instrument.Name] = DateTime.UtcNow;
@@ -161,7 +161,7 @@ namespace BoxOptions.CoefficientCalculator
             var currentPrice = history.Last();
             grid.InitiateGrid(activities, history.ToList(), cfg.Delta, cfg.MovingWindow, currentPrice, cfg.SmileVar);
             _grids[pair] = grid;
-            string msg = $"{DateTime.UtcNow.ToString("u")}[{pair}] Updated. History size:{history.Length}. Current Price:{currentPrice.Date.ToString("u")}";
+            string msg = $"{DateTime.UtcNow.ToTimeString()} | [{pair}] Updated. History size:{history.Length}. Current Price:{currentPrice.Date.ToDateTimeString()}";
             Console.WriteLine(msg);
             _logger.WriteInfoAsync("Calculator.ReinitGrid", null, msg);
         }
@@ -178,7 +178,7 @@ namespace BoxOptions.CoefficientCalculator
 
         public Task<string> ChangeAsync(string userId, string pair, int timeToFirstOption, int optionLen, double priceSize, int nPriceIndex, int nTimeIndex)
         {
-            ReinitGrid(pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);
+            ReinitGrid(pair, timeToFirstOption, optionLen, priceSize, nPriceIndex, nTimeIndex);            
             return Task.FromResult("OK");
         }
 
@@ -227,7 +227,7 @@ namespace BoxOptions.CoefficientCalculator
         }
         private void HistoryHolder_InitializationFinished(object sender, EventArgs e)
         {
-            string msg = "...CoefficientCalculator Finished Waiting for History Build Up";
+            string msg = $"{DateTime.UtcNow.ToTimeString()} | ...CoefficientCalculator Finished Waiting for History Build Up";
             Console.WriteLine(msg);
             _logger.WriteInfoAsync("Calculator.Start", null, msg);
             _historyHolder.InitializationFinished -= HistoryHolder_InitializationFinished;
