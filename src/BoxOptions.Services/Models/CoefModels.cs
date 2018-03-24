@@ -1,6 +1,7 @@
 ﻿using System;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using Common;
 
 namespace BoxOptions.Services.Models
 {
@@ -93,6 +94,18 @@ namespace BoxOptions.Services.Models
             public decimal MissCoeff { get; set; }
         }
 
-
+        public static string GetEmptyCoeffs()
+        {
+            Coeff[][] res = new Coeff[8][];
+            for (int i = 0; i < 8; i++)
+            {
+                res[i] = new Coeff[15];
+                for (int j = 0; j < 15; j++)
+                {
+                    res[i][j] = new Coeff { HitCoeff = 1m, MissCoeff = 1m };
+                }   
+            }
+            return res.ToJson();
+        }
     }
 }
