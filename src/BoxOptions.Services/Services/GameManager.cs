@@ -56,7 +56,7 @@ namespace BoxOptions.Services
         /// <summary>
         /// QuoteFeed Object
         /// </summary>
-        private readonly IAssetQuoteSubscriber quoteFeed;
+        private readonly IAssetQuoteSubscriber _assetQuoteSubscriber;
         /// <summary>
         /// WAMP Realm Object
         /// </summary>
@@ -121,7 +121,7 @@ namespace BoxOptions.Services
         {
             this.database = database;
             this.calculator = calculator;
-            this.quoteFeed = quoteFeed;
+            this._assetQuoteSubscriber = quoteFeed;
             this.settings = settings;
             this.logRepository = logRepository;
             this.appLog = appLog;
@@ -139,7 +139,7 @@ namespace BoxOptions.Services
             betCache = new List<GameBet>();
             assetCache = new Dictionary<string, PriceCache>();
                         
-            this.quoteFeed.MessageReceived += QuoteFeed_MessageReceived;
+            this._assetQuoteSubscriber.MessageReceived += QuoteFeed_MessageReceived;
 
             //calculateBoxConfig = null;
             dbBoxConfig = Task.Run(() => LoadBoxParameters()).Result;            
@@ -161,7 +161,7 @@ namespace BoxOptions.Services
                 return;
             isDisposing = true;
 
-            quoteFeed.MessageReceived -= QuoteFeed_MessageReceived;
+            _assetQuoteSubscriber.MessageReceived -= QuoteFeed_MessageReceived;
 
             if (CoefficientCacheUpdateTimer != null)
             {
@@ -871,6 +871,10 @@ namespace BoxOptions.Services
                
         public string RequestUserCoeff(string pair, string userId = null)
         {
+            // feature_BOXOPT-56_all_payoffs_must_be_1
+            // If no prices were received in the last ten minutes return all at 1.0
+            if (!assetCache.ContainsKey(pair) || DateTime.UtcNow - assetCache[pair].CurrentPrice.Date > new TimeSpan(0, 10, 0))
+                return CoefModels.GetEmptyCoeffs();
             string result = _coefficientCache.GetCache(pair);
             if (userId != null)
             {
