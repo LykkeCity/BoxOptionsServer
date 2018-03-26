@@ -431,19 +431,23 @@ namespace BoxOptions.Services
             if (!isDisposing)
                 CoefficientCacheUpdateTimer.Change(CoefficientCacheUpdateInterval, -1);
         }
-        
+
         #endregion
 
         #region User Methods
 
         private BoxSize[] InitializeUser(string userId)
         {
-            try
-            {
-                UserState userState = GetUserState(userId);
+            // Server is still building History
+            if (_calculatedBoxes == null)
+                return new BoxSize[0];
 
+            try
+            { 
+                UserState userState = GetUserState(userId);
                 // Add Launch to user history 
                 string launchMsg = "User Initialization. BoxSizes:";
+
                 foreach (var boxSize in _calculatedBoxes)
                 {
                     launchMsg += string.Format(Ci, "[{0};BoxWidth:{1};BoxHeight:{2};TimeToFirstBox:{3};BoxesPerRow:{4}]", boxSize.AssetPair, boxSize.BoxWidth, boxSize.BoxHeight, boxSize.TimeToFirstBox, boxSize.BoxesPerRow);
