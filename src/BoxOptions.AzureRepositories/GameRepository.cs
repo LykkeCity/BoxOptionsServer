@@ -57,7 +57,7 @@ namespace BoxOptions.AzureRepositories
             do
             {
                 string partitionKey = GameBetEntity.GetPartitionKey(userId, currentDate);
-                var entities = (await _betstorage.GetDataAsync(new[] { partitionKey }, int.MaxValue))
+                var entities = (await _betstorage.GetDataAsync(new[] { partitionKey }, 100))
                 .OrderByDescending(item => item.Timestamp);
                 retval.AddRange(entities);
 
@@ -81,7 +81,7 @@ namespace BoxOptions.AzureRepositories
             do
             {
                 string partitionKey = GameBetEntity.GetPartitionKey(userId, currentDate);
-                var entities = (await _betstorage.GetDataAsync(new[] { partitionKey }, int.MaxValue,
+                var entities = (await _betstorage.GetDataAsync(new[] { partitionKey }, 100,
                     entity => entity.BetStatus == betState))
                 .OrderByDescending(item => item.Timestamp);
                 retval.AddRange(entities);

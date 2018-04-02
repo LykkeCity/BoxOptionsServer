@@ -35,7 +35,7 @@ namespace BoxOptions.AzureRepositories
             do
             {
                 string partitionKey = LogEntity.GetPartitionKey(clientId, currentDate);
-                var entities = (await _storage.GetDataAsync(new[] { partitionKey }, int.MaxValue))
+                var entities = (await _storage.GetDataAsync(new[] { partitionKey }, 100))
                 .OrderByDescending(item => item.Timestamp);
                 retval.AddRange(entities);
 
@@ -68,7 +68,7 @@ namespace BoxOptions.AzureRepositories
 
             foreach (var clientId in clientList)
             {
-                var entities = (await _storage.GetDataAsync(new[] { clientId }, int.MaxValue,
+                var entities = (await _storage.GetDataAsync(new[] { clientId }, 100,
                     entity => entity.Timestamp >= dateFrom && entity.Timestamp < dateTo));
 
                 logs.AddRange(entities);

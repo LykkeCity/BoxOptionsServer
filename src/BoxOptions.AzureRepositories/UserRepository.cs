@@ -48,7 +48,7 @@ namespace BoxOptions.AzureRepositories
         }
         public async Task<IUserItem> GetUser(string userId)
         {
-            var entities = (await _storage.GetDataAsync(new[] { userId }, int.MaxValue,
+            var entities = (await _storage.GetDataAsync(new[] { userId }, 1,
                 entity => entity.RowKey == "User"));
             return UserEntity.CreateDto(entities.FirstOrDefault());
                 
@@ -101,7 +101,7 @@ namespace BoxOptions.AzureRepositories
             do
             {
                 string partitionKey = UserHistoryEntity.GetPartitionKey(userId, currentDate);
-                var entities = (await _hstorage.GetDataAsync(new[] { partitionKey }, int.MaxValue))
+                var entities = (await _hstorage.GetDataAsync(new[] { partitionKey }, 100))
                 .OrderByDescending(item => item.Timestamp);
                 retval.AddRange(entities);
 
