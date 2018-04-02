@@ -4,7 +4,7 @@ using BoxOptions.Core;
 using System.Collections.Generic;
 using System.Text;
 
-namespace BoxOptionsTests
+namespace BoxOptions.Tests
 {
     [TestFixture]
     public class JavaDate

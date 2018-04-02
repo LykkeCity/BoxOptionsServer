@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2010
+VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BoxOptions.Public", "src\BoxOptions.Public\BoxOptions.Public.csproj", "{DCDA01AE-29CE-4A34-B835-EFC2D82E57BA}"
 EndProject
@@ -32,7 +32,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4. Tests", "4. Tests", "{05
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "5. Clients", "5. Clients", "{A6BE7317-4C6A-4CCF-AFE0-2E0A64BBBA87}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoxOptionsTests", "tests\BoxOptionsTests\BoxOptionsTests.csproj", "{85734322-BF62-45D8-82BE-ED4D3A1C3F7F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BoxOptions.Tests", "tests\BoxOptionsTests\BoxOptions.Tests.csproj", "{85734322-BF62-45D8-82BE-ED4D3A1C3F7F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
