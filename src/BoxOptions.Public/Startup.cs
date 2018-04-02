@@ -24,6 +24,7 @@ using WampSharp.AspNetCore.WebSockets.Server;
 using WampSharp.Binding;
 using WampSharp.V2;
 using WampSharp.V2.Realm;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace BoxOptions.Public
 {
