@@ -4,7 +4,8 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <PackageId>Lykke.BoxOptions.CoefficientCalculator</PackageId>
     <Authors>Nuno Araujo</Authors>
-    <Company>Lykke</Company>    
+    <Company>Lykke</Company>
+    <Version>1.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

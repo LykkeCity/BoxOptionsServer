@@ -9,6 +9,7 @@
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <Authors>Nuno Araujo</Authors>
+    <Version>1.0.0</Version>
   </PropertyGroup>
 
 </Project>
