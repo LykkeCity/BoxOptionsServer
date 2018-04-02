@@ -55,27 +55,20 @@ namespace BoxOptions.Services
 
                 // Get FromDate Ignoring weekends
                 var historyStart = GetHistoryStartDate(DateTime.UtcNow);
-                try
-                {
-                    StartLog += $"\n\r{DateTime.UtcNow.ToTimeString()} | GetHistory({asset}_{historyStart.ToDateTimeString()})";
-                    var tmp = await _assetDatabase.GetAssetHistory(historyStart, DateTime.UtcNow, asset);
-                    StartLog += $"\n\r{DateTime.UtcNow.ToTimeString()} | GetHistory({asset}_{historyStart.ToDateTimeString()}) DONE";
+                StartLog += $"\n\r{DateTime.UtcNow.ToTimeString()} | GetHistory({asset}_{historyStart.ToDateTimeString()})";
+                var tmp = await _assetDatabase.GetAssetHistory(historyStart, DateTime.UtcNow, asset);
+                StartLog += $"\n\r{DateTime.UtcNow.ToTimeString()} | GetHistory({asset}_{historyStart.ToDateTimeString()}) DONE";
 
-                    foreach (var historyItem in tmp)
-                    {
-                        _holder[asset].AddLast(new Price()
-                        {
-                            Ask = historyItem.BestAsk.Value,
-                            Bid = historyItem.BestBid.Value,
-                            Date = historyItem.Timestamp
-                        });
-                    }
-                    StartLog += $"\n\r{DateTime.UtcNow.ToTimeString()} | Build Cache({asset}_{_holder[asset].Count} items) DONE";
-                }
-                catch (Exception ex01)
+                foreach (var historyItem in tmp)
                 {
-                    await _log.WriteErrorAsync("HistoryHolder.Start", $"StartTime:[{historyStart:u}]", ex01, DateTime.UtcNow);
+                    _holder[asset].AddLast(new Price()
+                    {
+                        Ask = historyItem.BestAsk.Value,
+                        Bid = historyItem.BestBid.Value,
+                        Date = historyItem.Timestamp
+                    });
                 }
+                StartLog += $"\n\r{DateTime.UtcNow.ToTimeString()} | Build Cache({asset}_{_holder[asset].Count} items) DONE";
             }
             Console.WriteLine(StartLog);
             await _log?.WriteInfoAsync("BoxOptions.Services.HistoryHolder", "Start", null, StartLog, DateTime.UtcNow);

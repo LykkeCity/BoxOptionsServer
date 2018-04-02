@@ -37,7 +37,7 @@ namespace BoxOptions.AzureRepositories
 
         public async Task<IEnumerable<IBoxSize>> GetAll()
         {
-            var asset = await _storage.GetDataAsync(new[] { "BoxConfig" }, int.MaxValue);
+            var asset = await _storage.GetDataAsync(new[] { "BoxConfig" }, 100);
             return asset.Select(BoxSizeEntity.CreateDto);
         }
     }

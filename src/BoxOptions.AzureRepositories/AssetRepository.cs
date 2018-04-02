@@ -57,7 +57,7 @@ namespace BoxOptions.AzureRepositories
             {
                 string PartitionKey = string.Format("{0}_{1}", assetPair, currentDate.ToString("yyyyMMdd_HH"));
                 
-                var entities = (await _storage.GetDataAsync(new[] { PartitionKey }, int.MaxValue))
+                var entities = (await _storage.GetDataAsync(new[] { PartitionKey }, 10000))
                 .OrderByDescending(item => item.Timestamp);
                 retval.AddRange(entities);
                 // Next partition key (hours)
