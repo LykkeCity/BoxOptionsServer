@@ -55,21 +55,27 @@ namespace BoxOptions.Services
 
                 // Get FromDate Ignoring weekends
                 var historyStart = GetHistoryStartDate(DateTime.UtcNow);
-                                
-                StartLog += $"\n\r{DateTime.UtcNow.ToTimeString()} | GetHistory({asset}_{historyStart.ToDateTimeString()})";
-                var tmp = await _assetDatabase.GetAssetHistory(historyStart, DateTime.UtcNow, asset);                
-                StartLog += $"\n\r{DateTime.UtcNow.ToTimeString()} | GetHistory({asset}_{historyStart.ToDateTimeString()}) DONE";
-
-                foreach (var historyItem in tmp)
+                try
                 {
-                    _holder[asset].AddLast( new Price()
+                    StartLog += $"\n\r{DateTime.UtcNow.ToTimeString()} | GetHistory({asset}_{historyStart.ToDateTimeString()})";
+                    var tmp = await _assetDatabase.GetAssetHistory(historyStart, DateTime.UtcNow, asset);
+                    StartLog += $"\n\r{DateTime.UtcNow.ToTimeString()} | GetHistory({asset}_{historyStart.ToDateTimeString()}) DONE";
+
+                    foreach (var historyItem in tmp)
                     {
-                        Ask = historyItem.BestAsk.Value,
-                        Bid = historyItem.BestBid.Value,
-                        Date = historyItem.Timestamp
-                    } );
+                        _holder[asset].AddLast(new Price()
+                        {
+                            Ask = historyItem.BestAsk.Value,
+                            Bid = historyItem.BestBid.Value,
+                            Date = historyItem.Timestamp
+                        });
+                    }
+                    StartLog += $"\n\r{DateTime.UtcNow.ToTimeString()} | Build Cache({asset}_{_holder[asset].Count} items) DONE";
                 }
-                StartLog += $"\n\r{DateTime.UtcNow.ToTimeString()} | Build Cache({asset}_{_holder[asset].Count} items) DONE";
+                catch (Exception ex01)
+                {
+                    await _log.WriteErrorAsync("HistoryHolder.Start", $"StartTime:[{historyStart:u}]", ex01, DateTime.UtcNow);
+                }
             }
             Console.WriteLine(StartLog);
             await _log?.WriteInfoAsync("BoxOptions.Services.HistoryHolder", "Start", null, StartLog, DateTime.UtcNow);
